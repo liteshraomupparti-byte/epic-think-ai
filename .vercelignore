@@ -1,0 +1,11 @@
+# Vercel Ignore File
+fine_tuning/
+test/
+docs/
+*.bat
+*.log
+.git
+.github
+.venv/
+service-account*.json
+.env*
