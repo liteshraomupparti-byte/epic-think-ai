@@ -3625,6 +3625,21 @@
 </head>
 
 <body>
+  <script>
+    // Global Safety Timeout: Ensure loading screen never blocks user if network or auth takes > 3.5s
+    window.__authTimeout = setTimeout(function() {
+      var loader = document.getElementById('authLoadingScreen');
+      var overlay = document.getElementById('authOverlay');
+      var app = document.getElementById('appView');
+      if (loader && !loader.classList.contains('hidden')) {
+        console.warn('[SafetyTimeout] Auth check exceeded 3.5s. Dismissing loading screen.');
+        loader.classList.add('hidden');
+        if (overlay && (!app || app.style.display === 'none')) {
+          overlay.style.display = 'flex';
+        }
+      }
+    }, 3500);
+  </script>
 
   <!-- ==========================================================================
      AUTHENTICATION CHECK SCREEN (Prevents UI flash)
@@ -8191,66 +8206,78 @@
         const authOverlay = $('#authOverlay');
         const appView = $('#appView');
 
-        if (user) {
-          // User is authenticated
-          currentUser = user;
-          updateProfileUI(user);
+        try {
+          if (user) {
+            // User is authenticated
+            currentUser = user;
+            updateProfileUI(user);
 
-          // Restore isolated chats from MongoDB real-time service (with localStorage cache fallback)
-          await MongoChatService.init(user);
-          const serverChats = await MongoChatService.getConversations(user.uid);
-          state.chats = (serverChats && serverChats.length > 0) ? serverChats : storage.get('eta_chats_' + user.uid, []);
-          state.memories = await MemoryService.getMemories(user.uid);
-          state.activeChatId = state.chats.length > 0 ? state.chats[0].id : null;
+            // Restore isolated chats from MongoDB real-time service (with localStorage cache fallback)
+            try { await MongoChatService.init(user); } catch (e) { console.warn('[MongoChatService:Init]', e); }
+            let serverChats = [];
+            try { serverChats = await MongoChatService.getConversations(user.uid); } catch (e) { console.warn('[MongoChatService:Get]', e); }
+            state.chats = (serverChats && serverChats.length > 0) ? serverChats : storage.get('eta_chats_' + user.uid, []);
+            try { state.memories = await MemoryService.getMemories(user.uid); } catch (e) { state.memories = []; }
+            state.activeChatId = state.chats.length > 0 ? state.chats[0].id : null;
 
-          authOverlay.style.display = 'none';
-          appView.style.display = 'flex';
+            authOverlay.style.display = 'none';
+            appView.style.display = 'flex';
 
-          renderHistory();
-          renderMemoryCounter();
-          renderMessages();
-          updateSendButtonState();
+            renderHistory();
+            renderMemoryCounter();
+            renderMessages();
+            updateSendButtonState();
 
-          // Load active plugins & tools
-          await refreshPluginsState();
+            // Load active plugins & tools
+            try { await refreshPluginsState(); } catch (e) { console.warn('[Plugins:Refresh]', e); }
 
-          // Handle OAuth callback parameters in URL
-          const urlParams = new URLSearchParams(window.location.search);
-          if (urlParams.has('plugin_oauth_success')) {
-            showToast(`Connected ${urlParams.get('plugin_oauth_success')} successfully!`);
-            window.history.replaceState({}, document.title, window.location.pathname);
-            await refreshPluginsState();
-          } else if (urlParams.has('plugin_oauth_error')) {
-            showToast(`OAuth Error: ${urlParams.get('plugin_oauth_error')}`);
-            window.history.replaceState({}, document.title, window.location.pathname);
+            // Handle OAuth callback parameters in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('plugin_oauth_success')) {
+              showToast(`Connected ${urlParams.get('plugin_oauth_success')} successfully!`);
+              window.history.replaceState({}, document.title, window.location.pathname);
+              try { await refreshPluginsState(); } catch (_) {}
+            } else if (urlParams.has('plugin_oauth_error')) {
+              showToast(`OAuth Error: ${urlParams.get('plugin_oauth_error')}`);
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
+            showToast(`Welcome back, ${user.displayName || user.email?.split('@')[0] || 'Epic Thinker'}`);
+          } else {
+            // User is unauthenticated - enforce login gating
+            currentUser = null;
+            state.chats = [];
+            state.memories = [];
+            state.plugins = [...DEFAULT_PLUGINS];
+            state.activeToolsCount = 4;
+            const badge = $('#activeToolsCount');
+            if (badge) badge.textContent = '4';
+            const sidebarBadge = $('#sidebarActiveToolsCount');
+            if (sidebarBadge) sidebarBadge.textContent = '4';
+            const modalBadge = $('#activeToolsCountModal');
+            if (modalBadge) modalBadge.textContent = '4';
+            renderPluginsGrid();
+            state.activeChatId = null;
+            try { MongoChatService.init(null); } catch (e) { console.warn('[MongoChatService:InitNull]', e); }
+
+            appView.style.display = 'none';
+            authOverlay.style.display = 'flex';
+            switchAuthTab('signin');
           }
-
-          showToast(`Welcome back, ${user.displayName || user.email?.split('@')[0] || 'Epic Thinker'}`);
-        } else {
-          // User is unauthenticated - enforce login gating
-          currentUser = null;
-          state.chats = [];
-          state.memories = [];
-          state.plugins = [...DEFAULT_PLUGINS];
-          state.activeToolsCount = 4;
-          const badge = $('#activeToolsCount');
-          if (badge) badge.textContent = '4';
-          const sidebarBadge = $('#sidebarActiveToolsCount');
-          if (sidebarBadge) sidebarBadge.textContent = '4';
-          const modalBadge = $('#activeToolsCountModal');
-          if (modalBadge) modalBadge.textContent = '4';
-          renderPluginsGrid();
-          state.activeChatId = null;
-          MongoChatService.init(null);
-
-          appView.style.display = 'none';
-          authOverlay.style.display = 'flex';
-          switchAuthTab('signin');
-        }
-
-        // Dismiss loading screen smoothly
-        if (loadingScreen) {
-          loadingScreen.classList.add('hidden');
+        } catch (err) {
+          console.error('[Auth:State] Error handling auth state change:', err);
+          if (authOverlay && (!appView || appView.style.display === 'none')) {
+            authOverlay.style.display = 'flex';
+          }
+        } finally {
+          // Dismiss loading screen smoothly
+          if (loadingScreen) {
+            loadingScreen.classList.add('hidden');
+          }
+          if (window.__authTimeout) {
+            clearTimeout(window.__authTimeout);
+            window.__authTimeout = null;
+          }
         }
       });
 

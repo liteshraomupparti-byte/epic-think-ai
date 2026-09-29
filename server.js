@@ -10,6 +10,7 @@
  * 6. Cross-Origin Resource Sharing (CORS) support for local/hosted development
  */
 
+import fs from 'fs';
 import http from 'http';
 import express from 'express';
 import cors from 'cors';
@@ -506,7 +507,23 @@ app.delete('/api/memory', requireAuth, async (req, res) => {
 // ============================================================================
 // STATIC ASSET SERVING
 // ============================================================================
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(__dirname));
+
+// Explicit client auth module route with application/javascript MIME type
+app.get('/auth/:file', (req, res) => {
+  const fileName = path.basename(req.params.file);
+  const publicPath = path.join(__dirname, 'public', 'auth', fileName);
+  const rootPath = path.join(__dirname, 'auth', fileName);
+  res.type('application/javascript');
+  if (fs.existsSync(publicPath)) {
+    return res.sendFile(publicPath);
+  }
+  if (fs.existsSync(rootPath)) {
+    return res.sendFile(rootPath);
+  }
+  res.status(404).send('Not found');
+});
 
 // Route root to index.html
 app.get('/', (req, res) => {
