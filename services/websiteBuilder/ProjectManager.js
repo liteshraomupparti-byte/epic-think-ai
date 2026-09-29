@@ -10,6 +10,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { fileURLToPath } from 'url';
@@ -17,11 +18,17 @@ import { fileURLToPath } from 'url';
 const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const PROJECTS_ROOT = path.resolve(__dirname, '../../builder_projects');
+const PROJECTS_ROOT = process.env.VERCEL 
+  ? path.join(os.tmpdir(), 'builder_projects')
+  : path.resolve(__dirname, '../../builder_projects');
 
-// Ensure root projects directory exists
-if (!fs.existsSync(PROJECTS_ROOT)) {
-  fs.mkdirSync(PROJECTS_ROOT, { recursive: true });
+// Ensure root projects directory exists safely
+try {
+  if (!fs.existsSync(PROJECTS_ROOT)) {
+    fs.mkdirSync(PROJECTS_ROOT, { recursive: true });
+  }
+} catch (err) {
+  console.warn('[PROJECT_MANAGER] Non-fatal root init note:', err.message);
 }
 
 export class ProjectManager {
