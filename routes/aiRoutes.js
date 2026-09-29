@@ -1,0 +1,325 @@
+/**
+ * Epic Think AI - Multi-Provider AI Engine API Routes
+ * 
+ * Exposes:
+ * - POST /api/ai/chat (Authenticated multi-provider chat with tools & memory)
+ * - POST /api/ai/stream (Server-Sent Events streaming endpoint)
+ * - GET  /api/ai/providers (Provider configuration status)
+ * - GET  /api/ai/models (Available model registry)
+ * - GET  /api/ai/health (Circuit breaker telemetry)
+ * - POST /api/ai/image (AI Image Studio generation helper)
+ * - POST /api/ai/video (AI Video Generation prompt synthesizer)
+ */
+
+import express from 'express';
+import { requireAuth } from '../services/firebaseAuthService.js';
+import { AIEngine, healthMonitor, modelRegistry, providers } from '../ai/index.js';
+import { SafeLogger } from '../plugins/core/SafeLogger.js';
+
+const router = express.Router();
+
+/**
+ * Primary AI Chat & Tool Execution
+ * POST /api/ai/chat
+ */
+router.post('/chat', requireAuth, async (req, res) => {
+  const { prompt, text, message, conversationId, recentMessages, history, modelPreset, confirmationId } = req.body || {};
+  const userPrompt = prompt || text || message;
+  const effectiveMessages = recentMessages || history || [];
+
+  if (!userPrompt && !confirmationId) {
+    return res.status(400).json({
+      success: false,
+      error: 'Missing required field: "prompt" or "message" or "confirmationId".'
+    });
+  }
+
+  try {
+    const result = await AIEngine.chat({
+      uid: req.user.uid,
+      prompt: userPrompt,
+      conversationId,
+      recentMessages: effectiveMessages,
+      modelPreset: modelPreset || 'Epic Think 4o',
+      confirmationId
+    });
+
+    res.json({
+      success: true,
+      text: result.text,
+      provider: result.provider,
+      model: result.model,
+      latency: result.latency || result.durationMs,
+      recalledMemoriesCount: result.recalledMemoriesCount,
+      executedToolCalls: result.executedToolCalls,
+      requiresConfirmation: result.requiresConfirmation,
+      confirmationTicket: result.confirmationTicket,
+      durationMs: result.durationMs || result.latency
+    });
+  } catch (err) {
+    SafeLogger.error('AI chat endpoint failure', {
+      user: SafeLogger.hashUid(req.user.uid),
+      error: err.message
+    });
+
+    res.status(err.statusCode || 500).json({
+      success: false,
+      error: err.message,
+      type: err.name || 'AIProviderError'
+    });
+  }
+});
+
+/**
+ * Server-Sent Events (SSE) Real-Time AI Streaming
+ * POST /api/ai/stream
+ */
+router.post('/stream', requireAuth, async (req, res) => {
+  const { prompt, text, conversationId, recentMessages, modelPreset } = req.body || {};
+  const userPrompt = prompt || text;
+
+  if (!userPrompt) {
+    return res.status(400).json({ success: false, error: 'Missing required field: "prompt".' });
+  }
+
+  // Setup SSE Headers
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+
+  const sendEvent = (event, data) => {
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  };
+
+  const abortController = new AbortController();
+  req.on('close', () => {
+    abortController.abort();
+  });
+
+  try {
+    await AIEngine.chat({
+      uid: req.user.uid,
+      prompt: userPrompt,
+      conversationId,
+      recentMessages,
+      modelPreset: modelPreset || 'Epic Think 4o',
+      signal: abortController.signal,
+      onEvent: (evt) => {
+        sendEvent(evt.event, evt);
+      }
+    });
+
+    sendEvent('ai:done', { success: true });
+    res.end();
+  } catch (err) {
+    sendEvent('ai:error', {
+      error: err.message,
+      type: err.name
+    });
+    res.end();
+  }
+});
+
+/**
+ * Provider Readiness
+ * GET /api/ai/providers
+ */
+router.get('/providers', (req, res) => {
+  res.json({
+    success: true,
+    providers: AIEngine.getProviders()
+  });
+});
+
+/**
+ * Model Registry
+ * GET /api/ai/models
+ */
+router.get('/models', (req, res) => {
+  const models = AIEngine.getModels();
+  res.json({
+    success: true,
+    count: models.length,
+    presets: {
+      'Epic Think Fast': {
+        name: 'Epic Think Fast',
+        tag: 'Ultra Fast',
+        description: 'Lightweight and instant for everyday tasks and quick drafting.',
+        recommendedProvider: 'groq',
+        recommendedModel: 'qwen/qwen3.8-27b'
+      },
+      'Epic Think o1': {
+        name: 'Epic Think o1',
+        tag: 'Deep Think',
+        description: 'Advanced chain-of-thought reasoning with multi-step validation.',
+        recommendedProvider: 'groq',
+        recommendedModel: 'openai/gpt-oss-20b'
+      },
+      'Epic Think 4o': {
+        name: 'Epic Think 4o',
+        tag: 'Smartest',
+        description: 'High-intelligence flagship model for complex reasoning, analysis, and coding.',
+        recommendedProvider: 'openrouter',
+        recommendedModel: 'meta-llama/llama-3.3-70b-instruct'
+      }
+    },
+    models
+  });
+});
+
+/**
+ * Health & Circuit Breaker Status
+ * GET /api/ai/health
+ */
+router.get('/health', (req, res) => {
+  res.json({
+    success: true,
+    health: AIEngine.getHealth()
+  });
+});
+
+/**
+ * AI Image Studio Generator Helper
+ * POST /api/ai/image
+ */
+router.post('/image', requireAuth, async (req, res) => {
+  const { prompt, style = 'photorealistic', aspectRatio = '1:1' } = req.body || {};
+  if (!prompt) {
+    return res.status(400).json({ success: false, error: 'Prompt is required for image generation.' });
+  }
+
+  try {
+    // Synthesize high-fidelity prompt expansion using Groq/OpenRouter
+    const synthPrompt = `Act as an expert generative AI prompt engineer.
+Create an ultra-detailed, cinematic visual prompt based on the user's concept: "${prompt}".
+Style: ${style}. Aspect Ratio: ${aspectRatio}.
+Respond with ONLY the optimized image generation prompt.`;
+
+    const generated = await AIEngine.generate({
+      prompt: synthPrompt,
+      modelPreset: 'Epic Think Fast'
+    });
+
+    const enhanced = generated.content ? generated.content.trim() : prompt;
+
+    // Determine dimensions based on aspect ratio
+    let width = 1024;
+    let height = 1024;
+    if (aspectRatio === '16:9') { width = 1280; height = 720; }
+    else if (aspectRatio === '9:16') { width = 720; height = 1280; }
+    else if (aspectRatio === '4:3') { width = 1024; height = 768; }
+
+    const cleanPrompt = `${prompt}, ${style} style, high resolution, highly detailed, masterwork`;
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?width=${width}&height=${height}&nologo=true&enhance=true`;
+
+    res.json({
+      success: true,
+      imageUrl,
+      engine: `Epic Think AI Studio (${generated.providerUsed || 'Groq LPU'})`,
+      originalPrompt: prompt,
+      enhancedPrompt: enhanced,
+      style,
+      aspectRatio,
+      providerUsed: generated.providerUsed,
+      modelUsed: generated.modelUsed
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * AI Video Prompt & Storyboard Studio Helper
+ * POST /api/ai/video
+ */
+router.post('/video', requireAuth, async (req, res) => {
+  const { prompt, duration = '5s', durationSeconds, cameraMotion = 'cinematic dolly' } = req.body || {};
+  if (!prompt) {
+    return res.status(400).json({ success: false, error: 'Prompt is required for video generation.' });
+  }
+
+  const durationSec = durationSeconds || parseInt(duration, 10) || 5;
+
+  try {
+    const videoPrompt = `You are a film director and AI video generator specialist.
+Create a structured scene-by-scene storyboard JSON for the following concept: "${prompt}".
+Target Duration: ${durationSec} seconds. Camera Motion Style: ${cameraMotion}.
+
+Format your response strictly as valid JSON with NO commentary:
+{
+  "scenes": [
+    {
+      "scene": 1,
+      "timeframe": "0s - 2s",
+      "cameraMotion": "Wide establishing dolly-in",
+      "description": "Short scene narrative description",
+      "visualPrompt": "Detailed visual generator prompt for scene 1"
+    }
+  ]
+}`;
+
+    const generated = await AIEngine.generate({
+      prompt: videoPrompt,
+      modelPreset: 'Epic Think Fast'
+    });
+
+    let storyboard = [];
+    try {
+      const raw = generated.content || '';
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        if (Array.isArray(parsed.scenes) && parsed.scenes.length > 0) {
+          storyboard = parsed.scenes;
+        }
+      }
+    } catch {
+      // Fallback manual scene generation if model output was not strict JSON
+    }
+
+    if (storyboard.length === 0) {
+      const sceneDur = Math.max(2, Math.round(durationSec / 3));
+      storyboard = [
+        {
+          scene: 1,
+          timeframe: `0s - ${sceneDur}s`,
+          cameraMotion: cameraMotion || 'Wide Establishing Shot',
+          description: `Opening hook: Visual introduction for "${prompt}"`,
+          visualPrompt: `Cinematic wide shot, ${prompt}, atmospheric lighting, 4k ultra-detailed`
+        },
+        {
+          scene: 2,
+          timeframe: `${sceneDur}s - ${sceneDur * 2}s`,
+          cameraMotion: 'Dynamic Tracking Pan',
+          description: `Core action and focus development`,
+          visualPrompt: `Dynamic tracking medium shot, intricate details of ${prompt}, cinematic depth of field`
+        },
+        {
+          scene: 3,
+          timeframe: `${sceneDur * 2}s - ${durationSec}s`,
+          cameraMotion: 'Slow Motion Orbit Close-up',
+          description: `Climactic resolution and lasting visual impact`,
+          visualPrompt: `Dramatic slow-motion close-up, vivid colors, resolution for ${prompt}`
+        }
+      ];
+    }
+
+    res.json({
+      success: true,
+      storyboard,
+      scenesCount: storyboard.length,
+      originalPrompt: prompt,
+      videoScript: generated.content?.trim(),
+      cameraMotion,
+      duration: `${durationSec}s`,
+      providerUsed: generated.providerUsed,
+      modelUsed: generated.modelUsed
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+export default router;

@@ -1,0 +1,35 @@
+{
+  "id": "google_drive",
+  "name": "Google Drive",
+  "version": "1.0.0",
+  "description": "Search cloud files, read documents, inspect folder structures, and upload assets.",
+  "author": "Epic Think AI Team",
+  "category": "productivity",
+  "authType": "oauth2",
+  "icon": "folder",
+  "requiredScopes": [
+    "https://www.googleapis.com/auth/drive.file"
+  ],
+  "tools": [
+    {
+      "name": "search_files",
+      "description": "Search files in Google Drive by filename or content keywords.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "read_file",
+      "description": "Read text or json content of a specified file from Google Drive.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "list_folders",
+      "description": "List directories and folders stored in Google Drive.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "upload_file",
+      "description": "Upload a new text/document file to Google Drive.",
+      "permissionTier": "WRITE"
+    }
+  ]
+}

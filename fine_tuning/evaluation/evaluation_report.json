@@ -1,0 +1,32 @@
+{
+  "status": "COMPLETED",
+  "validation_loss": 1.6298,
+  "validation_perplexity": 5.1,
+  "cot_compliance_rate": "25.0%",
+  "benchmarks": [
+    {
+      "id": "eval-logic-01",
+      "prompt": "If all Zorblaxians are Plonkians, and no Plonkians eat Glip-glops, can a Zorblaxian eat a Glip-glop? Explain with strict syllogistic logic.",
+      "has_valid_think_tag": true,
+      "response_snippet": "<think>\nTo determine if a Zorblaxian can eat a Glip-glop, we need to apply syllogistic reasoning.\n\n1. Premise 1: All Zorblaxians are Plonkians.\n2. Premise 2: No Plonkians eat Glip-glops.\n\nFrom the pre..."
+    },
+    {
+      "id": "eval-code-02",
+      "prompt": "Write a Python function to detect if a directed graph contains a cycle using Kahn's algorithm (topological sort). Include cycle path identification if detected.",
+      "has_valid_think_tag": false,
+      "response_snippet": "Certainly! Below is the implementation of Kahn\u2019s Algorithm (Topological Sort) in Python for detecting cycles in a Directed Acyclic Graph (DAG), along with identifying the cycle if one exists.\n\n### Kah..."
+    },
+    {
+      "id": "eval-tool-03",
+      "prompt": "The user wants to check current CPU usage on host 'prod-worker-01' and alert Slack channel #ops if it exceeds 90%. Generate the required tool call.",
+      "has_valid_think_tag": false,
+      "response_snippet": "To address this request, I would use a tool or library that allows me to interact with the system's monitoring capabilities (e.g., Prometheus, Nagios, etc.) to query the CPU usage of the specified hos..."
+    },
+    {
+      "id": "eval-math-04",
+      "prompt": "Find the sum of all integers between 1 and 200 that are divisible by 3 or 5 but not both.",
+      "has_valid_think_tag": false,
+      "response_snippet": "To find the sum of all integers between 1 and 200 that are divisible by 3 or 5 but not both, we will first calculate the sum of integers divisible by 3, then the sum of integers divisible by 5, and fi..."
+    }
+  ]
+}

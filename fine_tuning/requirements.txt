@@ -1,0 +1,40 @@
+# ==============================================================================
+# Epic Think AI - Qwen LoRA / QLoRA Fine-Tuning Pipeline Dependencies
+# ==============================================================================
+
+# Core PyTorch (compatible with CUDA 11.8 / 12.1 / 12.4 or CPU fallback)
+torch>=2.2.0
+
+# Hugging Face Ecosystem
+transformers>=4.45.0
+peft>=0.13.0
+trl>=0.11.0
+accelerate>=0.34.0
+datasets>=3.0.0
+tokenizers>=0.20.0
+huggingface_hub>=0.25.0
+
+# Quantization & Memory Optimization
+bitsandbytes>=0.43.0
+scipy>=1.11.0
+
+# Data Processing & Validation
+pydantic>=2.7.0
+pyyaml>=6.0.1
+tqdm>=4.66.0
+tiktoken>=0.7.0
+numpy>=1.26.0
+
+# Inference Server & Deployment
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+requests>=2.31.0
+aiohttp>=3.9.0
+
+# Monitoring & Tracking (Optional but recommended)
+tensorboard>=2.16.0
+# wandb>=0.17.0
+
+# Optional Accelerators (Install based on hardware availability)
+# unsloth>=2024.9
+# flash-attn>=2.6.3

@@ -1,0 +1,538 @@
+/**
+ * Epic Think AI - Production Backend Server with Hindsight Semantic Memory & MongoDB Real-Time Persistence
+ * 
+ * Provides:
+ * 1. Secure proxy to Hindsight Cloud API (https://api.hindsight.vectorize.io)
+ * 2. MongoDB Real-Time Conversation & Message Persistence with automatic sync
+ * 3. Strict user isolation per Firebase UID (verified server-side)
+ * 4. Bidirectional WebSocket synchronization for live multi-tab / multi-device updates
+ * 5. Static asset hosting for Epic Think AI frontend
+ * 6. Cross-Origin Resource Sharing (CORS) support for local/hosted development
+ */
+
+import http from 'http';
+import express from 'express';
+import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+import {
+  retainMemory,
+  recallMemory,
+  reflectMemory,
+  listMemories,
+  clearMemory,
+  getHealth
+} from './services/hindsightService.js';
+import { requireAuth } from './services/firebaseAuthService.js';
+import {
+  initMongoDB,
+  getMongoStatus,
+  getConversations,
+  getConversation,
+  saveConversation,
+  updateConversationTitle,
+  saveMessage,
+  saveMessageFeedback,
+  deleteConversation,
+  deleteAllConversations
+} from './services/mongoService.js';
+import { initRealtimeSync, broadcastToUser } from './services/realtimeSync.js';
+import pluginRoutes from './routes/pluginRoutes.js';
+import agentRoutes from './routes/agentRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
+import { initializePlugins } from './plugins/index.js';
+import { initAIEngine } from './ai/index.js';
+
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Initialize Epic Think AI Plugins System
+initializePlugins();
+
+// Initialize Epic Think AI Multi-Provider Engine
+initAIEngine();
+
+// Middlewares
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
+app.use(express.json({ limit: '15mb' }));
+
+// Request logging (sanitized - no tokens or keys logged)
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  if (req.path.startsWith('/api/memory') || req.path.startsWith('/api/conversations') || req.path.startsWith('/api/plugins') || req.path.startsWith('/api/agent') || req.path.startsWith('/api/ai')) {
+    console.log(`[HTTP ${timestamp}] ${req.method} ${req.path}`);
+  }
+  next();
+});
+
+// ============================================================================
+// PLUGIN, AGENT & MULTI-PROVIDER AI API ROUTES (PROTECTED BY FIREBASE AUTH)
+// ============================================================================
+app.use('/api/plugins', pluginRoutes);
+app.use('/api/agent', agentRoutes);
+app.use('/api', agentRoutes); // Exposes /api/confirmations and aliases
+app.use('/api/ai', aiRoutes);
+
+// ============================================================================
+// REAL-TIME CONVERSATIONS & MONGODB API (PROTECTED BY FIREBASE AUTH)
+// ============================================================================
+
+/**
+ * MongoDB status endpoint (public)
+ * GET /api/conversations/status
+ */
+app.get('/api/conversations/status', async (req, res) => {
+  try {
+    const status = await getMongoStatus();
+    res.json({
+      success: true,
+      service: 'Epic Think AI - MongoDB Real-Time Persistence',
+      ...status
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
+/**
+ * Get all conversations for authenticated user
+ * GET /api/conversations
+ */
+app.get('/api/conversations', requireAuth, async (req, res) => {
+  try {
+    const conversations = await getConversations(req.user.uid);
+    res.json({
+      success: true,
+      uid: req.user.uid,
+      conversations,
+      count: conversations.length
+    });
+  } catch (err) {
+    console.error(`[API] getConversations failed for ${req.user.uid}:`, err.message);
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
+/**
+ * Get single conversation by ID
+ * GET /api/conversations/:id
+ */
+app.get('/api/conversations/:id', requireAuth, async (req, res) => {
+  try {
+    const conversation = await getConversation(req.user.uid, req.params.id);
+    if (!conversation) {
+      return res.status(404).json({
+        success: false,
+        error: 'Conversation not found.'
+      });
+    }
+    res.json({
+      success: true,
+      conversation
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
+/**
+ * Save or upsert conversation in real time
+ * POST /api/conversations
+ * Body: { conversation: object }
+ */
+app.post('/api/conversations', requireAuth, async (req, res) => {
+  const conversation = req.body.conversation || req.body;
+  if (!conversation || !conversation.id) {
+    return res.status(400).json({
+      success: false,
+      error: 'Missing required field: conversation object with "id".'
+    });
+  }
+
+  try {
+    const result = await saveConversation(req.user.uid, conversation);
+
+    // Broadcast update in real time to any other active tabs/sessions of this user
+    broadcastToUser(req.user.uid, {
+      type: 'chat_saved',
+      conversation: result.conversation,
+      timestamp: Date.now()
+    });
+
+    res.json(result);
+  } catch (err) {
+    console.error(`[API] saveConversation failed for ${req.user.uid}:`, err.message);
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
+/**
+ * Update conversation title
+ * PATCH /api/conversations/:id/title
+ * Body: { title: string }
+ */
+app.patch('/api/conversations/:id/title', requireAuth, async (req, res) => {
+  const { title } = req.body || {};
+  if (!title || typeof title !== 'string') {
+    return res.status(400).json({
+      success: false,
+      error: 'Missing required field: "title" (string).'
+    });
+  }
+
+  try {
+    const result = await updateConversationTitle(req.user.uid, req.params.id, title);
+
+    broadcastToUser(req.user.uid, {
+      type: 'chat_title_updated',
+      chatId: req.params.id,
+      title: result.title,
+      timestamp: result.updatedAt
+    });
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
+/**
+ * Append or update a message in a conversation in real time
+ * POST /api/conversations/:id/messages
+ * Body: { message: object }
+ */
+app.post('/api/conversations/:id/messages', requireAuth, async (req, res) => {
+  const message = req.body.message || req.body;
+  if (!message || !message.role) {
+    return res.status(400).json({
+      success: false,
+      error: 'Missing valid message object with "role".'
+    });
+  }
+
+  try {
+    const result = await saveMessage(req.user.uid, req.params.id, message);
+
+    broadcastToUser(req.user.uid, {
+      type: 'message_saved',
+      chatId: req.params.id,
+      message,
+      timestamp: Date.now()
+    });
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
+/**
+ * Save user feedback on a message (thumbs up / thumbs down + comment)
+ * POST /api/conversations/:id/feedback
+ * Body: { messageIndex: number, feedback: object }
+ */
+app.post('/api/conversations/:id/feedback', requireAuth, async (req, res) => {
+  const { messageIndex, feedback } = req.body || {};
+  if (typeof messageIndex !== 'number' || !feedback) {
+    return res.status(400).json({
+      success: false,
+      error: 'messageIndex (number) and feedback (object) are required.'
+    });
+  }
+
+  try {
+    const result = await saveMessageFeedback(req.user.uid, req.params.id, messageIndex, feedback);
+
+    broadcastToUser(req.user.uid, {
+      type: 'message_feedback_updated',
+      chatId: req.params.id,
+      messageIndex,
+      feedback,
+      timestamp: Date.now()
+    });
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
+/**
+ * Delete a single conversation
+ * DELETE /api/conversations/:id
+ */
+app.delete('/api/conversations/:id', requireAuth, async (req, res) => {
+  try {
+    const result = await deleteConversation(req.user.uid, req.params.id);
+
+    broadcastToUser(req.user.uid, {
+      type: 'chat_deleted',
+      chatId: req.params.id,
+      timestamp: Date.now()
+    });
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
+/**
+ * Clear all conversations for authenticated user
+ * DELETE /api/conversations
+ */
+app.delete('/api/conversations', requireAuth, async (req, res) => {
+  try {
+    const result = await deleteAllConversations(req.user.uid);
+
+    broadcastToUser(req.user.uid, {
+      type: 'chats_cleared',
+      timestamp: Date.now()
+    });
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
+// ============================================================================
+// MEMORY API ENDPOINTS (PROTECTED BY FIREBASE AUTH)
+// ============================================================================
+
+/**
+ * Health check & status endpoint (public)
+ */
+app.get('/api/memory/status', async (req, res) => {
+  try {
+    const health = await getHealth();
+    res.json({
+      success: true,
+      service: 'Epic Think AI - Hindsight Long-Term Memory',
+      ...health
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      status: 'error',
+      error: err.message
+    });
+  }
+});
+
+/**
+ * Recall relevant memories for a user query
+ * POST /api/memory/recall
+ * Body: { query: string, maxTokens?: number }
+ */
+app.post('/api/memory/recall', requireAuth, async (req, res) => {
+  const { query, maxTokens } = req.body || {};
+  if (!query || typeof query !== 'string') {
+    return res.status(400).json({
+      success: false,
+      error: 'Missing required field: "query" (string)'
+    });
+  }
+
+  try {
+    const result = await recallMemory(req.bankId, query, { maxTokens });
+    res.json({
+      success: true,
+      bankId: req.bankId,
+      results: result.results || [],
+      promptContext: result.promptContext || '',
+      entities: result.entities || [],
+      count: (result.results || []).length
+    });
+  } catch (err) {
+    console.error(`[API] Recall failed for ${req.bankId}:`, err.message);
+    res.json({
+      success: true,
+      bankId: req.bankId,
+      results: [],
+      promptContext: '',
+      entities: [],
+      count: 0,
+      fallback: true
+    });
+  }
+});
+
+/**
+ * Retain new memory / preference / project facts
+ * POST /api/memory/retain
+ * Body: { content?: string, text?: string, context?: string, tags?: string[] }
+ */
+app.post('/api/memory/retain', requireAuth, async (req, res) => {
+  const content = req.body.content || req.body.text;
+  const context = req.body.context || 'general';
+  const tags = req.body.tags || ['epic-think'];
+
+  if (!content || typeof content !== 'string') {
+    return res.status(400).json({
+      success: false,
+      error: 'Missing required field: "content" or "text" (string)'
+    });
+  }
+
+  try {
+    const result = await retainMemory(req.bankId, content, context, tags);
+    res.json({
+      success: result.success,
+      bankId: req.bankId,
+      itemsCount: result.itemsCount,
+      operationId: result.operationId || null,
+      error: result.error || null
+    });
+  } catch (err) {
+    console.error(`[API] Retain failed for ${req.bankId}:`, err.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retain memory in Hindsight: ' + err.message
+    });
+  }
+});
+
+/**
+ * Reflect across user memories
+ * POST /api/memory/reflect
+ * Body: { query: string }
+ */
+app.post('/api/memory/reflect', requireAuth, async (req, res) => {
+  const { query } = req.body || {};
+  if (!query || typeof query !== 'string') {
+    return res.status(400).json({
+      success: false,
+      error: 'Missing required field: "query" (string)'
+    });
+  }
+
+  try {
+    const result = await reflectMemory(req.bankId, query);
+    res.json({
+      success: true,
+      bankId: req.bankId,
+      ...result
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
+/**
+ * List all stored memories for the authenticated user
+ * GET /api/memory/list
+ */
+app.get('/api/memory/list', requireAuth, async (req, res) => {
+  try {
+    const result = await listMemories(req.bankId);
+    res.json({
+      success: true,
+      bankId: req.bankId,
+      memories: result.memories || []
+    });
+  } catch (err) {
+    res.json({
+      success: true,
+      bankId: req.bankId,
+      memories: []
+    });
+  }
+});
+
+/**
+ * Clear/delete all memories for the authenticated user
+ * DELETE /api/memory
+ */
+app.delete('/api/memory', requireAuth, async (req, res) => {
+  try {
+    const result = await clearMemory(req.bankId);
+    res.json({
+      success: result.success,
+      bankId: req.bankId,
+      message: result.message || 'Memory bank wiped successfully'
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
+// ============================================================================
+// STATIC ASSET SERVING
+// ============================================================================
+app.use(express.static(__dirname));
+
+// Route root to index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Route /app or /chat to Epic Think AI.html
+app.get('/chat', (req, res) => {
+  res.sendFile(path.join(__dirname, 'Epic Think AI.html'));
+});
+
+// Create HTTP server
+const server = http.createServer(app);
+
+// Initialize WebSocket real-time synchronization
+initRealtimeSync(server);
+
+// Initialize MongoDB connection
+initMongoDB().catch((err) => {
+  console.warn('[MONGODB] Initial connection warning:', err.message);
+});
+
+// Start Server
+server.listen(PORT, () => {
+  console.log('====================================================');
+  console.log(` Epic Think AI Backend Server Running on Port ${PORT}`);
+  console.log(` Web Interface:   http://localhost:${PORT}/`);
+  console.log(` Alternative URL: http://localhost:${PORT}/Epic%20Think%20AI.html`);
+  console.log(` Memory Status:   http://localhost:${PORT}/api/memory/status`);
+  console.log(` Mongo Status:    http://localhost:${PORT}/api/conversations/status`);
+  console.log(` Real-Time WS:    ws://localhost:${PORT}/ws`);
+  console.log('====================================================');
+});

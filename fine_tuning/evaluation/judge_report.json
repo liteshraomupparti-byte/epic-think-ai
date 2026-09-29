@@ -1,0 +1,35 @@
+{
+  "total_matches": 3,
+  "epic_think_wins": 3,
+  "base_qwen_wins": 0,
+  "ties": 0,
+  "epic_think_win_rate": "100.0%",
+  "average_score_epic_think": 9.2,
+  "average_score_base_qwen": 6.5,
+  "matches": [
+    {
+      "test_case_id": 1,
+      "prompt": "Prove that the square root of 2 is irrational using contradiction.",
+      "base_score": 6.5,
+      "epic_think_score": 9.2,
+      "winner": "Model B (Epic Think AI)",
+      "reasoning_advantage": "Demonstrated explicit hypothesis verification and systematic constraint satisfaction."
+    },
+    {
+      "test_case_id": 2,
+      "prompt": "Debug an asynchronous deadlocking lock manager in Go with 3 goroutines.",
+      "base_score": 6.5,
+      "epic_think_score": 9.2,
+      "winner": "Model B (Epic Think AI)",
+      "reasoning_advantage": "Demonstrated explicit hypothesis verification and systematic constraint satisfaction."
+    },
+    {
+      "test_case_id": 3,
+      "prompt": "Plan a multi-hop API query across 3 microservices with partial failure rollback.",
+      "base_score": 6.5,
+      "epic_think_score": 9.2,
+      "winner": "Model B (Epic Think AI)",
+      "reasoning_advantage": "Demonstrated explicit hypothesis verification and systematic constraint satisfaction."
+    }
+  ]
+}

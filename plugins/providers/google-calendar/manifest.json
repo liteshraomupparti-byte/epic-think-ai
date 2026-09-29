@@ -1,0 +1,30 @@
+{
+  "id": "google_calendar",
+  "name": "Google Calendar",
+  "version": "1.0.0",
+  "description": "View calendar events, find available meeting slots, and schedule appointments.",
+  "author": "Epic Think AI Team",
+  "category": "productivity",
+  "authType": "oauth2",
+  "icon": "calendar",
+  "requiredScopes": [
+    "https://www.googleapis.com/auth/calendar"
+  ],
+  "tools": [
+    {
+      "name": "list_events",
+      "description": "List upcoming events from the primary calendar.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "find_free_slots",
+      "description": "Find free meeting windows on a specified date.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "schedule_event",
+      "description": "Schedule a new event on Google Calendar.",
+      "permissionTier": "EXTERNAL_ACTION"
+    }
+  ]
+}

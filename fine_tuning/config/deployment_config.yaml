@@ -1,0 +1,51 @@
+# ==============================================================================
+# Epic Think AI - Deployment & Serving Configuration
+# ==============================================================================
+
+model_export:
+  base_model: "Qwen/Qwen2.5-7B-Instruct"
+  lora_adapter_path: "./checkpoints/epic-think-qwen-lora"
+  merged_output_dir: "./exported/epic-think-qwen-merged"
+  torch_dtype: "bfloat16"
+  safe_serialization: true
+
+gguf_export:
+  llama_cpp_path: "./llama.cpp" # Path to compiled llama.cpp if available
+  output_dir: "./exported/gguf"
+  quantization_types:
+    - "Q4_K_M" # Recommended default (balanced speed/quality, ~4.5 GB for 7B)
+    - "Q5_K_M" # Higher fidelity (~5.2 GB)
+    - "Q8_0"   # Near-FP16 fidelity (~7.7 GB)
+    - "F16"    # Full precision 16-bit
+  base_gguf_name: "epic-think-qwen2.5-7b"
+
+ollama:
+  model_name: "epic-think-qwen"
+  modelfile_path: "./deployment/Modelfile"
+  parameters:
+    temperature: 0.6
+    top_p: 0.95
+    top_k: 40
+    repeat_penalty: 1.1
+    num_ctx: 16384
+
+vllm:
+  model_path: "./exported/epic-think-qwen-merged"
+  host: "0.0.0.0"
+  port: 8000
+  gpu_memory_utilization: 0.90
+  max_model_len: 8192
+  tensor_parallel_size: 1
+  enable_prefix_caching: true
+  trust_remote_code: true
+  enable_chunked_prefill: true
+  response_role: "assistant"
+
+api_service:
+  host: "127.0.0.1"
+  port: 8001
+  model_name: "epic-think-qwen2.5-7b"
+  device: "cuda" # "cuda" or "cpu"
+  dtype: "bfloat16"
+  stream_chunk_delay_ms: 0 # Real-time streaming
+  extract_thinking_to_meta: true # Parse <think> tokens into reasoning_content for OpenAI/Groq compatibility

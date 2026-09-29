@@ -1,0 +1,65 @@
+# ==============================================================================
+# Epic Think AI - Git Ignore
+# ==============================================================================
+
+# Environment variables & secrets (CRITICAL)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+service-account*.json
+*adminsdk*.json
+auth_users.json
+
+# Local resilient stores & database snapshots
+.*_store.json
+.mongo_resilient_store.json
+.vault_resilient_store.json
+.plugin_settings_store.json
+
+# Node dependencies & lock files
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python virtual environments & bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ML Model Weights, Checkpoints & Large Binary Artifacts (>50MB)
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.gguf
+fine_tuning/checkpoints/
+fine_tuning/exported/gguf/*.gguf
+fine_tuning/exported/epic-think-qwen-merged/*.safetensors
+!fine_tuning/exported/gguf/GGUF_EXPORT_INSTRUCTIONS.md
+!fine_tuning/exported/epic-think-qwen-merged/export_metadata.json
+
+# Logs & System directories
+logs/
+*.log
+tasks/
+.system_generated/
+.user_uploaded/
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp

@@ -1,0 +1,23 @@
+{
+  "id": "whatsapp",
+  "name": "WhatsApp",
+  "version": "1.0.0",
+  "description": "Send notifications and messages via WhatsApp Cloud API with human confirmation.",
+  "author": "Epic Think AI Team",
+  "category": "communication",
+  "authType": "api_key",
+  "icon": "phone",
+  "requiredScopes": [],
+  "tools": [
+    {
+      "name": "get_business_profile",
+      "description": "Retrieve profile and status of configured WhatsApp Business number.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "send_message",
+      "description": "Send a WhatsApp message to a phone number. (Requires human confirmation).",
+      "permissionTier": "EXTERNAL_ACTION"
+    }
+  ]
+}

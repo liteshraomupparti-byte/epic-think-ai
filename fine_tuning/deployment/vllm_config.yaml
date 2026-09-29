@@ -1,0 +1,29 @@
+# ==============================================================================
+# Epic Think AI - vLLM Production Serving Configuration
+# ==============================================================================
+
+model:
+  model_path: "./exported/epic-think-qwen-merged" # Or base model + --enable-lora
+  served_model_name: "epic-think-qwen2.5-7b"
+  tensor_parallel_size: 1 # Increase to 2 or 4 for multi-GPU setups (e.g. 14B/32B models)
+  gpu_memory_utilization: 0.90
+  max_model_len: 16384 # Qwen2.5 supports up to 32k/128k context
+  dtype: "bfloat16"
+  trust_remote_code: true
+
+server:
+  host: "0.0.0.0"
+  port: 8000
+  api_key: null # Set to secret key if requiring bearer token authentication
+  enable_chunked_prefill: true
+  enable_prefix_caching: true # Drastically accelerates multi-turn chat & system prompts
+  max_num_seqs: 256
+
+lora_serving:
+  # Dynamic LoRA serving without requiring offline fusion
+  enable_lora: true
+  max_loras: 4
+  max_lora_rank: 64
+  lora_modules:
+    - name: "epic-think-lora"
+      path: "./checkpoints/epic-think-qwen-lora/best_adapter"

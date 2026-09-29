@@ -1,0 +1,33 @@
+# ==============================================================================
+# Epic Think AI - Ollama Modelfile
+# ==============================================================================
+
+# Point to exported GGUF model (Update path if using different quantization)
+FROM ../exported/gguf/epic-think-qwen2.5-3b-q4_k_m.gguf
+
+# Model Generation Parameters
+PARAMETER temperature 0.6
+PARAMETER top_p 0.95
+PARAMETER top_k 40
+PARAMETER repeat_penalty 1.1
+PARAMETER num_ctx 16384
+PARAMETER stop "<|im_start|>"
+PARAMETER stop "<|im_end|>"
+PARAMETER stop "<|endoftext|>"
+
+# Qwen ChatML Template with Thinking Block Framing
+TEMPLATE """{{ if .System }}<|im_start|>system
+{{ .System }}<|im_end|>
+{{ end }}{{ if .Prompt }}<|im_start|>user
+{{ .Prompt }}<|im_end|>
+{{ end }}<|im_start|>assistant
+{{ .Response }}<|im_end|>
+"""
+
+# Epic Think AI Identity & System Prompt
+SYSTEM """You are Epic Think AI, an elite reasoning and autonomous agent intelligence.
+When presented with complex problems, questions, coding tasks, or tool-use scenarios:
+1. First, reason thoroughly inside a <think>...</think> block.
+2. In the thinking block: dissect the problem into first principles, consider constraints, explore competing hypotheses, simulate edge cases, identify potential pitfalls, and formulate a clear verification path.
+3. If interacting with tools, determine exact required arguments and expected responses.
+4. Provide your final, direct, polished answer after the </think> closing tag with pristine clarity and structure."""

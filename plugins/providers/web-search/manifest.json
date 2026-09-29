@@ -1,0 +1,33 @@
+{
+  "id": "web_search",
+  "name": "Web Search & Browsing",
+  "version": "1.0.0",
+  "description": "Real-time web search, webpage fetching, content extraction, and news search with strict untrusted data containment.",
+  "author": "Epic Think AI Team",
+  "category": "search",
+  "authType": "none",
+  "icon": "globe",
+  "requiredScopes": [],
+  "tools": [
+    {
+      "name": "search",
+      "description": "Perform live web searches for questions, documentation, or recent developments.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "fetch_page",
+      "description": "Fetch and parse webpage HTML into clean readable text.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "extract_content",
+      "description": "Extract specific elements, headings, or main article body from a webpage.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "search_news",
+      "description": "Search current news headlines and breaking stories across topics.",
+      "permissionTier": "READ"
+    }
+  ]
+}

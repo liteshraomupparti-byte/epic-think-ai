@@ -1,0 +1,1 @@
+{"status": "READY_FOR_FUSION", "base_model": "Qwen/Qwen2.5-7B-Instruct", "adapter": "D:\Ai Agent HPS\fine_tuning\checkpoints\epic-think-qwen-lora\best_adapter"}

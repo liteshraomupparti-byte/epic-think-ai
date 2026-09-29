@@ -1,0 +1,33 @@
+{
+  "id": "github",
+  "name": "GitHub",
+  "version": "1.0.0",
+  "description": "Interact with GitHub repositories, inspect code files, view pull requests, and track issues.",
+  "author": "Epic Think AI Team",
+  "category": "developer",
+  "authType": "oauth2",
+  "icon": "github",
+  "requiredScopes": ["repo", "read:user"],
+  "tools": [
+    {
+      "name": "search_repositories",
+      "description": "Search public and private GitHub repositories by keywords, language, or topic.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "read_code_file",
+      "description": "Read file contents from a repository at a specified path and branch.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "list_pull_requests",
+      "description": "List pull requests for a repository with status, author, and branch details.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "create_issue",
+      "description": "Create a new issue in a GitHub repository.",
+      "permissionTier": "WRITE"
+    }
+  ]
+}

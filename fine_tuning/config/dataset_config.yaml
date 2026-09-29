@@ -1,0 +1,53 @@
+# ==============================================================================
+# Epic Think AI - Dataset & Reasoning Alignment Configuration
+# ==============================================================================
+
+persona:
+  name: "Epic Think AI"
+  version: "2.0-Reasoning"
+  system_prompt: |
+    You are Epic Think AI, an elite reasoning and autonomous agent intelligence.
+    When presented with complex problems, questions, coding tasks, or tool-use scenarios:
+    1. First, reason thoroughly inside a <think>...</think> block.
+    2. In the thinking block: dissect the problem into first principles, consider constraints, explore competing hypotheses, simulate edge cases, identify potential pitfalls, and formulate a clear verification path.
+    3. If interacting with tools, determine exact required arguments and expected responses.
+    4. Provide your final, direct, polished answer after the </think> closing tag with pristine clarity and structure.
+
+thinking_format:
+  tag_open: "<think>"
+  tag_close: "</think>"
+  min_thinking_tokens: 64
+  max_thinking_tokens: 2048
+  required_subsections:
+    - "Problem Deconstruction"
+    - "Hypothesis & Execution Plan"
+    - "Edge Case & Verification"
+
+dataset_mix:
+  # Target domain distribution for balanced reasoning capabilities
+  domains:
+    deep_reasoning:
+      weight: 0.30
+      description: "Complex logic puzzles, multi-step counterfactual deductions, algorithmic decision trees."
+    agentic_coding:
+      weight: 0.25
+      description: "System architecture, full-stack debugging, AST analysis, async concurrency, clean code."
+    tool_orchestration:
+      weight: 0.20
+      description: "API tool-use, multi-step parameter preparation, JSON schema compliance, error-handling."
+    math_and_symbolic:
+      weight: 0.15
+      description: "Mathematical problem solving, probability, discrete math, combinatorial proofs."
+    error_recovery_reflection:
+      weight: 0.10
+      description: "Correcting deceptive inputs, recovering from flawed premises, iterative self-repair."
+
+validation_rules:
+  max_sequence_tokens: 4096
+  min_response_tokens: 80
+  strict_chatml: true
+  disallow_leakage_tokens:
+    - "<|im_start|>"
+    - "<|im_end|>"
+    - "<|endoftext|>"
+  minhash_dedup_threshold: 0.85

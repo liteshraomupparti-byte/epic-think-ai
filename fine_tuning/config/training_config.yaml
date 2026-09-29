@@ -1,0 +1,79 @@
+# ==============================================================================
+# Epic Think AI - Qwen LoRA / QLoRA Fine-Tuning Configuration
+# ==============================================================================
+
+model:
+  # Base foundation model: Qwen2.5-3B-Instruct (Optimal for 8GB VRAM with ~3.8GB peak footprint)
+  base_model_name_or_path: "Qwen/Qwen2.5-3B-Instruct"
+  torch_dtype: "bfloat16" # "bfloat16" or "float16"
+  attn_implementation: "sdpa" # PyTorch built-in scaled dot-product attention
+  trust_remote_code: true
+  use_cache: false # Disabled during training for gradient checkpointing
+
+quantization:
+  # QLoRA 4-bit Configuration (Saves ~70% VRAM with minimal quality loss)
+  load_in_4bit: true
+  bnb_4bit_quant_type: "nf4" # Normal Float 4
+  bnb_4bit_use_double_quant: true # Nested quantization for extra memory savings
+  bnb_4bit_compute_dtype: "bfloat16" # Computation dtype inside 4-bit linear layers
+
+lora:
+  task_type: "CAUSAL_LM"
+  r: 16 # Optimized for 8GB VRAM (lightweight, expressivity preserved)
+  lora_alpha: 32 # Scaling factor = 2 * r
+  lora_dropout: 0.05
+  bias: "none"
+  # Apply LoRA to all linear layers (All-Linear LoRA achieves best reasoning transfer)
+  target_modules:
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+  modules_to_save: null # Optional: ["embed_tokens", "lm_head"] if adding new tokens
+
+training:
+  output_dir: "fine_tuning/checkpoints/epic-think-qwen-lora"
+  run_name: "epic-think-qwen-qlora-rtx5050"
+  num_train_epochs: 3
+  max_steps: -1 # Overrides epochs if > 0
+  per_device_train_batch_size: 1 # Set to 1 for 8GB VRAM safety
+  per_device_eval_batch_size: 1
+  gradient_accumulation_steps: 16 # Effective batch size = 1 * 16 = 16
+  learning_rate: 0.00015 # 1.5e-4 for QLoRA
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.05
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+
+  # Memory & Speed Optimization
+  gradient_checkpointing: true
+  gradient_checkpointing_kwargs:
+    use_reentrant: false
+  optim: "paged_adamw_8bit" # Prevents OOM spikes during backward pass
+  bf16: true
+  fp16: false
+
+  # Evaluation & Checkpointing
+  eval_strategy: "steps"
+  eval_steps: 50
+  save_strategy: "steps"
+  save_steps: 50
+  save_total_limit: 3
+  load_best_model_at_end: true
+  metric_for_best_model: "eval_loss"
+  greater_is_better: false
+
+  # Logging & Reporting
+  logging_steps: 10
+  report_to: "none"
+
+dataset:
+  train_file: "fine_tuning/data/train.jsonl"
+  val_file: "fine_tuning/data/val.jsonl"
+  max_seq_length: 2048 # Full context sequence length for Qwen2.5-3B on 8GB VRAM
+  packing: false # Set true for token packing with flash-attn
+  response_loss_only: true # CRITICAL: Loss calculated ONLY on assistant response & reasoning tokens
+  response_template: "<|im_start|>assistant\n" # Qwen ChatML response prefix

@@ -1,0 +1,28 @@
+{
+  "id": "telegram",
+  "name": "Telegram",
+  "version": "1.0.0",
+  "description": "Interact with Telegram channels, inspect chats, and send messages with human confirmation.",
+  "author": "Epic Think AI Team",
+  "category": "communication",
+  "authType": "api_key",
+  "icon": "send",
+  "requiredScopes": [],
+  "tools": [
+    {
+      "name": "get_bot_info",
+      "description": "Retrieve verified information about the connected Telegram bot account.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "get_updates",
+      "description": "Fetch recent incoming messages and channel events from Telegram.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "send_message",
+      "description": "Send a message to a Telegram chat, user, or group. (Requires human confirmation).",
+      "permissionTier": "EXTERNAL_ACTION"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "id": "notion",
+  "name": "Notion",
+  "version": "1.0.0",
+  "description": "Search Notion workspace pages, read document content, query structured databases, and create pages.",
+  "author": "Epic Think AI Team",
+  "category": "productivity",
+  "authType": "oauth2",
+  "icon": "book-open",
+  "requiredScopes": [],
+  "tools": [
+    {
+      "name": "search_pages",
+      "description": "Search Notion workspace for pages, databases, and documents.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "read_content",
+      "description": "Read text blocks and contents of a specific Notion page or block.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "query_database",
+      "description": "Query rows and properties from a Notion database.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "create_page",
+      "description": "Create a new page in a Notion database or under a parent page.",
+      "permissionTier": "WRITE"
+    }
+  ]
+}

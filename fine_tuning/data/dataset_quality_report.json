@@ -1,0 +1,27 @@
+{
+  "summary": {
+    "total_raw_samples": 100,
+    "valid_samples_passed": 63,
+    "duplicates_removed": 37,
+    "validation_errors_count": 0,
+    "train_samples": 57,
+    "val_samples": 6,
+    "val_split_percentage": "10.0%"
+  },
+  "token_statistics": {
+    "min_tokens": 485,
+    "max_tokens": 1371,
+    "avg_tokens": 616.2,
+    "p50_tokens": 607,
+    "p90_tokens": 702,
+    "p99_tokens": 1371
+  },
+  "domain_distribution": {
+    "deep_reasoning": 2,
+    "agentic_coding": 27,
+    "tool_orchestration": 32,
+    "math_and_symbolic": 1,
+    "error_recovery_reflection": 1
+  },
+  "sample_errors": []
+}

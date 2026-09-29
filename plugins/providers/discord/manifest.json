@@ -1,0 +1,28 @@
+{
+  "id": "discord",
+  "name": "Discord",
+  "version": "1.0.0",
+  "description": "Connect to Discord servers, read channel conversations, and post messages with human confirmation.",
+  "author": "Epic Think AI Team",
+  "category": "communication",
+  "authType": "api_key",
+  "icon": "message-square",
+  "requiredScopes": [],
+  "tools": [
+    {
+      "name": "get_current_user",
+      "description": "Get verified bot user details and connected guilds from Discord.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "get_channel_messages",
+      "description": "Read recent message history from a specific Discord text channel.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "send_message",
+      "description": "Send a message to a Discord channel. (Requires human confirmation).",
+      "permissionTier": "EXTERNAL_ACTION"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "id": "gmail",
+  "name": "Gmail",
+  "version": "1.0.0",
+  "description": "Search email threads, view messages, compose drafts, and securely dispatch emails.",
+  "author": "Epic Think AI Team",
+  "category": "productivity",
+  "authType": "oauth2",
+  "icon": "mail",
+  "requiredScopes": [
+    "https://www.googleapis.com/auth/gmail.modify"
+  ],
+  "tools": [
+    {
+      "name": "search_emails",
+      "description": "Search user emails with standard Gmail search syntax.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "read_email",
+      "description": "Read details and content of a specific email message.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "create_draft",
+      "description": "Create an email draft in Gmail without sending it.",
+      "permissionTier": "WRITE"
+    },
+    {
+      "name": "send_email",
+      "description": "Send an email to specified recipients.",
+      "permissionTier": "EXTERNAL_ACTION"
+    }
+  ]
+}
