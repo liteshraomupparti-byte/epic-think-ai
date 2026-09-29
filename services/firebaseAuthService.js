@@ -17,24 +17,34 @@ let isFirebaseInitialized = false;
 
 // Attempt to initialize Firebase Admin SDK
 try {
-  const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || './service-account.json';
-  const resolvedPath = path.resolve(serviceAccountPath);
-
-  if (fs.existsSync(resolvedPath)) {
-    const serviceAccount = JSON.parse(fs.readFileSync(resolvedPath, 'utf8'));
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
-      projectId: process.env.FIREBASE_PROJECT_ID || 'epic-think'
+      projectId: process.env.FIREBASE_PROJECT_ID || serviceAccount.project_id || 'epic-think'
     });
     isFirebaseInitialized = true;
-    console.log('[FIREBASE:AUTH] Firebase Admin SDK initialized with service account.');
+    console.log('[FIREBASE:AUTH] Firebase Admin SDK initialized with environment service account.');
   } else {
-    // Initialize with project ID
-    admin.initializeApp({
-      projectId: process.env.FIREBASE_PROJECT_ID || 'epic-think'
-    });
-    isFirebaseInitialized = true;
-    console.log('[FIREBASE:AUTH] Firebase Admin SDK initialized with default project.');
+    const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || './service-account.json';
+    const resolvedPath = path.resolve(serviceAccountPath);
+
+    if (fs.existsSync(resolvedPath)) {
+      const serviceAccount = JSON.parse(fs.readFileSync(resolvedPath, 'utf8'));
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        projectId: process.env.FIREBASE_PROJECT_ID || 'epic-think'
+      });
+      isFirebaseInitialized = true;
+      console.log('[FIREBASE:AUTH] Firebase Admin SDK initialized with service account file.');
+    } else {
+      // Initialize with project ID
+      admin.initializeApp({
+        projectId: process.env.FIREBASE_PROJECT_ID || 'epic-think'
+      });
+      isFirebaseInitialized = true;
+      console.log('[FIREBASE:AUTH] Firebase Admin SDK initialized with default project ID.');
+    }
   }
 } catch (err) {
   console.warn('[FIREBASE:AUTH] Note on Admin SDK initialization:', err.message);
