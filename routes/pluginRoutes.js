@@ -16,6 +16,7 @@ import express from 'express';
 import { requireAuth } from '../services/firebaseAuthService.js';
 import { registry } from '../plugins/index.js';
 import { OAuthManager } from '../plugins/core/OAuthManager.js';
+import { TokenVault } from '../plugins/core/TokenVault.js';
 import { PermissionManager } from '../plugins/core/PermissionManager.js';
 import { SafeLogger } from '../plugins/core/SafeLogger.js';
 
@@ -136,7 +137,9 @@ router.get('/:id/oauth/authorize', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const uid = req.user.uid;
-    const redirectUri = req.query.redirectUri || `${req.protocol}://${req.get('host')}/api/plugins/${id}/oauth/callback`;
+    const isGooglePlugin = ['google', 'gmail', 'google-drive', 'google_drive', 'google-calendar', 'google_calendar'].includes(String(id).toLowerCase());
+    const configuredGoogleUri = isGooglePlugin ? process.env.GOOGLE_REDIRECT_URI : null;
+    const redirectUri = req.query.redirectUri || configuredGoogleUri || `${req.protocol}://${req.get('host')}/api/plugins/${id}/oauth/callback`;
 
     const authUrl = OAuthManager.getAuthorizationUrl({
       uid,
@@ -162,7 +165,7 @@ router.get('/:id/oauth/callback', async (req, res) => {
   const { code, state, error } = req.query;
 
   if (error) {
-    return res.redirect(`/chat?pluginError=${encodeURIComponent(error)}`);
+    return res.redirect(`/?plugin_oauth_error=${encodeURIComponent(error)}&pluginError=${encodeURIComponent(error)}`);
   }
 
   try {
@@ -173,13 +176,36 @@ router.get('/:id/oauth/callback', async (req, res) => {
       expectedPluginId: id
     });
 
-    // Auto-enable plugin after successful OAuth
-    await registry.enablePlugin(callbackResult.uid || OAuthManager.verifyState(state).uid, id);
+    const targetPluginId = callbackResult.pluginId || id;
+    const targetUid = callbackResult.uid;
 
-    res.redirect(`/chat?pluginConnected=${encodeURIComponent(id)}`);
+    // Auto-enable plugin after successful OAuth
+    if (targetUid) {
+      const isGoogleFamily = ['google', 'gmail', 'google-drive', 'google_drive', 'google-calendar', 'google_calendar'].includes(String(targetPluginId).toLowerCase());
+
+      if (isGoogleFamily) {
+        // Single Google OAuth grant covers Gmail, Google Drive, and Google Calendar
+        const creds = await TokenVault.getCredentials(targetUid, targetPluginId);
+        if (creds) {
+          const googlePlugins = ['gmail', 'google-calendar', 'google_calendar', 'google-drive', 'google_drive'];
+          for (const gPlugin of googlePlugins) {
+            try {
+              await TokenVault.saveCredentials(targetUid, gPlugin, creds);
+              if (registry.getPlugin(gPlugin)) {
+                await registry.enablePlugin(targetUid, gPlugin);
+              }
+            } catch (_) {}
+          }
+        }
+      } else if (registry.getPlugin(targetPluginId)) {
+        await registry.enablePlugin(targetUid, targetPluginId);
+      }
+    }
+
+    res.redirect(`/?plugin_oauth_success=${encodeURIComponent(targetPluginId)}&pluginConnected=${encodeURIComponent(targetPluginId)}`);
   } catch (err) {
     SafeLogger.error('OAuth callback failed', { plugin: id, error: err.message });
-    res.redirect(`/chat?pluginError=${encodeURIComponent(err.message)}`);
+    res.redirect(`/?plugin_oauth_error=${encodeURIComponent(err.message)}&pluginError=${encodeURIComponent(err.message)}`);
   }
 });
 

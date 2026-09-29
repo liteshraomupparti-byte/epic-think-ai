@@ -14,16 +14,19 @@ const getApiBase = () => {
 };
 
 async function fetchWithAuth(endpoint, options = {}) {
-  const token = await getIdToken();
-  if (!token) {
-    throw new Error('User is not authenticated with Firebase.');
-  }
+  let token = null;
+  try {
+    token = await getIdToken();
+  } catch (_) {}
 
   const headers = {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
     ...(options.headers || {})
   };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
 
   const response = await fetch(`${getApiBase()}${endpoint}`, {
     ...options,

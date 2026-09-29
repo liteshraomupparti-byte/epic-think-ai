@@ -91,13 +91,17 @@ export class GoogleWorkspaceClient {
     };
   }
 
-  async createDraft({ to, subject, body }) {
+  async createDraft({ to, recipient, email, subject, title, body, message, content }) {
+    const toAddress = to || recipient || email || '';
+    const emailSubject = subject || title || '(No Subject)';
+    const emailBody = body || message || content || '';
+
     const emailLines = [
-      `To: ${to}`,
-      `Subject: ${subject}`,
+      `To: ${toAddress}`,
+      `Subject: ${emailSubject}`,
       'Content-Type: text/plain; charset=utf-8',
       '',
-      body
+      emailBody
     ];
     const rawEmail = Buffer.from(emailLines.join('\r\n')).toString('base64url');
 
@@ -111,18 +115,26 @@ export class GoogleWorkspaceClient {
       draftId: data.id,
       messageId: data.message?.id,
       status: 'draft_created',
-      to,
-      subject
+      to: toAddress,
+      subject: emailSubject
     };
   }
 
-  async sendEmail({ to, subject, body }) {
+  async sendEmail({ to, recipient, email, subject, title, body, message, content }) {
+    const toAddress = to || recipient || email || '';
+    const emailSubject = subject || title || '(No Subject)';
+    const emailBody = body || message || content || '';
+
+    if (!toAddress) {
+      throw new Error('Recipient email address ("to") is required.');
+    }
+
     const emailLines = [
-      `To: ${to}`,
-      `Subject: ${subject}`,
+      `To: ${toAddress}`,
+      `Subject: ${emailSubject}`,
       'Content-Type: text/plain; charset=utf-8',
       '',
-      body
+      emailBody
     ];
     const rawEmail = Buffer.from(emailLines.join('\r\n')).toString('base64url');
 
@@ -136,8 +148,8 @@ export class GoogleWorkspaceClient {
       messageId: data.id,
       threadId: data.threadId,
       status: 'sent',
-      to,
-      subject
+      to: toAddress,
+      subject: emailSubject
     };
   }
 

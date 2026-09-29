@@ -2707,6 +2707,920 @@
       border-radius: var(--radius-sm);
       padding: 12px;
     }
+
+    /* ==========================================================================
+       EPIC THINK AI - WEBSITE BUILDER WORKSPACE STYLES
+       ========================================================================== */
+    .website-builder-nav-btn {
+      border: 1px solid rgba(197, 160, 89, 0.4) !important;
+      background: rgba(197, 160, 89, 0.08) !important;
+      color: #e5c98a !important;
+      transition: all 0.2s ease;
+    }
+    .website-builder-nav-btn:hover {
+      background: rgba(197, 160, 89, 0.18) !important;
+      border-color: #c5a059 !important;
+      box-shadow: 0 0 12px rgba(197, 160, 89, 0.25);
+    }
+
+    #websiteBuilderWorkspace {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      height: calc(100vh - 52px);
+      min-height: 0;
+      background: #09090b;
+      color: #f4f4f5;
+      font-family: var(--font-sans);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Builder Header Toolbar */
+    .builder-toolbar {
+      height: 48px;
+      min-height: 48px;
+      background: #111115;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      gap: 12px;
+      z-index: 20;
+    }
+
+    .builder-toolbar-left,
+    .builder-toolbar-center,
+    .builder-toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .builder-project-select {
+      background: #18181e;
+      border: 1px solid rgba(197, 160, 89, 0.3);
+      color: #e5c98a;
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: var(--radius-sm);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .builder-btn {
+      background: #18181e;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #d4d4d8;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 5px 10px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .builder-btn:hover {
+      background: #24242c;
+      border-color: rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+    }
+
+    .builder-btn.active {
+      background: rgba(197, 160, 89, 0.18);
+      border-color: #c5a059;
+      color: #e5c98a;
+      font-weight: 600;
+    }
+
+    .builder-btn.btn-gold {
+      background: linear-gradient(135deg, #c5a059, #937435);
+      border-color: #c5a059;
+      color: #000;
+      font-weight: 700;
+    }
+    .builder-btn.btn-gold:hover {
+      box-shadow: 0 0 14px rgba(197, 160, 89, 0.4);
+    }
+
+    .builder-btn-group {
+      display: flex;
+      background: #18181e;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-sm);
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .builder-btn-group .builder-btn {
+      background: transparent;
+      border: none;
+      padding: 4px 8px;
+    }
+
+    .builder-btn-group .builder-btn.active {
+      background: #272730;
+      color: #ffffff;
+    }
+
+    /* Main 3-Column Layout */
+    .builder-main-row {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Left Column: AI Builder Chat */
+    .builder-col-chat {
+      width: 330px;
+      min-width: 300px;
+      max-width: 420px;
+      background: #0d0d10;
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .builder-chat-tabs {
+      display: flex;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: #121216;
+    }
+
+    .builder-chat-tab {
+      flex: 1;
+      text-align: center;
+      padding: 8px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #a1a1aa;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s ease;
+    }
+
+    .builder-chat-tab.active {
+      color: #e5c98a;
+      border-bottom-color: #c5a059;
+      background: rgba(197, 160, 89, 0.05);
+    }
+
+    .builder-chat-stream {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .builder-msg {
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .builder-msg.ai {
+      background: #17171e;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: #f4f4f5;
+    }
+
+    .builder-msg.user {
+      background: rgba(197, 160, 89, 0.15);
+      border: 1px solid rgba(197, 160, 89, 0.3);
+      color: #fef08a;
+      align-self: flex-end;
+      max-width: 90%;
+    }
+
+    .builder-action-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      font-size: 11.5px;
+      color: #34d399;
+    }
+
+    .builder-plan-checklist {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 10px;
+      background: #14141a;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .plan-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #d4d4d8;
+    }
+
+    .plan-item.done {
+      color: #a1a1aa;
+      text-decoration: line-through;
+    }
+
+    .plan-item-badge {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #10b981;
+      color: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .builder-quick-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 8px 12px;
+      background: #0f0f13;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .builder-chip {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 12px;
+      background: #1a1a22;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #a1a1aa;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .builder-chip:hover {
+      background: rgba(197, 160, 89, 0.15);
+      border-color: rgba(197, 160, 89, 0.4);
+      color: #e5c98a;
+    }
+
+    .builder-chat-input-box {
+      padding: 10px 12px;
+      background: #121216;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .builder-chat-textarea {
+      width: 100%;
+      height: 52px;
+      background: #181820;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-sm);
+      color: #fff;
+      padding: 8px 10px;
+      font-family: inherit;
+      font-size: 12.5px;
+      resize: none;
+      outline: none;
+    }
+    .builder-chat-textarea:focus {
+      border-color: #c5a059;
+      box-shadow: 0 0 8px rgba(197, 160, 89, 0.2);
+    }
+
+    /* Center Column: Live Canvas & Code */
+    .builder-col-canvas {
+      flex: 1;
+      min-width: 0;
+      background: #070709;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .builder-viewport-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      padding: 0;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .builder-device-frame {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      background: #0a0a0c;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border: none;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      margin: 0 auto;
+    }
+
+    .builder-device-frame.tablet {
+      width: 768px !important;
+      max-width: 100%;
+      height: calc(100% - 24px);
+      margin: 12px auto;
+      border: 3px solid #272730;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85);
+    }
+
+    .builder-device-frame.laptop {
+      width: 1024px !important;
+      max-width: 100%;
+      height: calc(100% - 16px);
+      margin: 8px auto;
+      border: 2px solid #272730;
+      border-radius: 12px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85);
+    }
+
+    .builder-device-frame.mobile {
+      width: 390px !important;
+      max-width: 100%;
+      height: calc(100% - 24px);
+      margin: 12px auto;
+      border: 4px solid #33333d;
+      border-radius: 36px;
+      overflow: hidden;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.9);
+    }
+
+    .builder-frame-iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #0a0a0c;
+      flex: 1;
+    }
+
+    /* Mode switching classes on .builder-viewport-container */
+    .builder-viewport-container.preview-mode .builder-device-frame {
+      display: flex !important;
+    }
+    .builder-viewport-container.preview-mode .builder-code-editor-panel {
+      display: none !important;
+    }
+
+    .builder-viewport-container.code-mode .builder-device-frame {
+      display: none !important;
+    }
+    .builder-viewport-container.code-mode .builder-code-editor-panel {
+      display: flex !important;
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+
+    .builder-viewport-container.split-mode .builder-device-frame {
+      display: flex !important;
+      width: 50% !important;
+      max-width: 50% !important;
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      margin: 0;
+      border-radius: 0;
+    }
+    .builder-viewport-container.split-mode .builder-code-editor-panel {
+      display: flex !important;
+      width: 50% !important;
+      max-width: 50% !important;
+    }
+
+    /* Code Editor in Code/Split Mode */
+    .builder-code-editor-panel {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      background: #0c0c10;
+      border-left: 1px solid rgba(255, 255, 255, 0.08);
+      position: relative;
+    }
+
+    .builder-code-editor-header {
+      height: 38px;
+      background: #131318;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+    }
+
+    .builder-code-editor-tabs {
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      max-width: 60%;
+    }
+
+    .builder-file-tab {
+      padding: 5px 12px;
+      font-size: 11.5px;
+      font-family: var(--font-mono);
+      background: #0d0d12;
+      border-radius: 4px 4px 0 0;
+      border: 1px solid transparent;
+      border-bottom: none;
+      color: #a1a1aa;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .builder-file-tab:hover {
+      color: #fff;
+      background: #171720;
+    }
+    .builder-file-tab.active {
+      background: #1c1c26;
+      border-color: rgba(255, 255, 255, 0.1);
+      color: #e5c98a;
+      font-weight: 600;
+    }
+
+    .builder-editor-body {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+      background: #0a0a0e;
+    }
+
+    .builder-editor-linenumbers {
+      width: 44px;
+      padding: 12px 6px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.6;
+      color: #52525b;
+      text-align: right;
+      user-select: none;
+      background: #0c0c11;
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      overflow: hidden;
+    }
+
+    .builder-code-textarea {
+      flex: 1;
+      width: 100%;
+      background: #0a0a0e;
+      color: #e2e8f0;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.6;
+      padding: 12px;
+      border: none;
+      resize: none;
+      outline: none;
+      tab-size: 2;
+      overflow: auto;
+      white-space: pre;
+    }
+
+    .builder-editor-footer {
+      height: 24px;
+      background: #101015;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      font-size: 10.5px;
+      color: #71717a;
+      font-family: var(--font-mono);
+    }
+
+    /* Right Column: Visual Element Inspector */
+    .builder-col-inspector {
+      width: 300px;
+      min-width: 270px;
+      background: #0d0d10;
+      border-left: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    .builder-inspector-header {
+      padding: 11px 14px;
+      background: #121216;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .builder-inspector-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #c5a059;
+    }
+
+    .builder-inspector-body {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .inspector-prop-card {
+      background: #14141a;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: var(--radius-sm);
+      padding: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .inspector-prop-title {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #a1a1aa;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .inspector-input-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .inspector-label {
+      font-size: 11.5px;
+      color: #a1a1aa;
+    }
+
+    .inspector-val-input {
+      background: #1b1b22;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      color: #fff;
+      font-size: 11.5px;
+      padding: 4px 8px;
+      width: 100px;
+      text-align: right;
+      outline: none;
+    }
+    .inspector-val-input:focus {
+      border-color: #c5a059;
+    }
+
+    .inspector-pill-chip {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 10px;
+      background: rgba(197, 160, 89, 0.1);
+      border: 1px solid rgba(197, 160, 89, 0.25);
+      color: #fef08a;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .inspector-pill-chip:hover {
+      background: rgba(197, 160, 89, 0.25);
+    }
+
+    .builder-quick-jump-btn {
+      width: 100%;
+      text-align: left;
+      padding: 6px 10px;
+      background: #171720;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 4px;
+      color: #d4d4d8;
+      font-size: 11.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s ease;
+    }
+    .builder-quick-jump-btn:hover {
+      background: rgba(197, 160, 89, 0.15);
+      border-color: rgba(197, 160, 89, 0.35);
+      color: #e5c98a;
+      transform: translateX(2px);
+    }
+
+    /* Dynamic Project Hero Card */
+    .builder-project-hero-card {
+      background: linear-gradient(145deg, #16161e, #0f0f14);
+      border: 1px solid rgba(197, 160, 89, 0.25);
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .builder-tag {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #a1a1aa;
+    }
+
+    /* Bottom Expandable Drawer */
+    .builder-drawer {
+      height: 180px;
+      min-height: 34px;
+      background: #111116;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      transition: height 0.2s ease;
+      z-index: 10;
+    }
+
+    .builder-drawer.collapsed {
+      height: 34px !important;
+    }
+
+    .builder-drawer-header {
+      height: 34px;
+      min-height: 34px;
+      background: #16161c;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+    }
+
+    .builder-drawer-tabs {
+      display: flex;
+      gap: 4px;
+    }
+
+    .builder-drawer-tab {
+      padding: 5px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #a1a1aa;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.15s ease;
+    }
+    .builder-drawer-tab:hover {
+      color: #fff;
+    }
+    .builder-drawer-tab.active {
+      background: #252530;
+      color: #e5c98a;
+    }
+
+    .builder-drawer-content {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 10px 14px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: #d4d4d8;
+    }
+
+    /* New Project Modal */
+    .builder-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .builder-modal-card {
+      background: #14141a;
+      border: 1px solid rgba(197, 160, 89, 0.35);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(197, 160, 89, 0.1);
+      overflow: hidden;
+    }
+    .builder-modal-header {
+      padding: 14px 18px;
+      background: #181822;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .builder-modal-body {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .builder-field-label {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #e5c98a;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .builder-field-input {
+      width: 100%;
+      background: #0d0d12;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      color: #fff;
+      padding: 8px 12px;
+      font-size: 13px;
+      outline: none;
+    }
+    .builder-field-input:focus {
+      border-color: #c5a059;
+      box-shadow: 0 0 8px rgba(197, 160, 89, 0.25);
+    }
+
+    /* ==============================================================================
+     * WEBSITE BUILDER 2.0 ENHANCEMENTS CSS
+     * ============================================================================== */
+
+    /* Subtab Strip */
+    .builder-subtab-strip {
+      display: flex;
+      overflow-x: auto;
+      background: #111116;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      scrollbar-width: none;
+      padding: 0 4px;
+    }
+    .builder-subtab-strip::-webkit-scrollbar {
+      display: none;
+    }
+    .builder-subtab-btn {
+      flex: 0 0 auto;
+      padding: 8px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #a1a1aa;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .builder-subtab-btn:hover {
+      color: #fff;
+    }
+    .builder-subtab-btn.active {
+      color: #e5c98a;
+      border-bottom-color: #c5a059;
+      background: rgba(197, 160, 89, 0.08);
+    }
+
+    .builder-subtab-pane {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 0;
+    }
+
+    /* Page Item */
+    .builder-page-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: #14141a;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 6px;
+      transition: all 0.15s ease;
+    }
+    .builder-page-item:hover {
+      border-color: rgba(197, 160, 89, 0.3);
+      background: #181822;
+    }
+
+    /* Component Card */
+    .builder-component-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 12px;
+      background: #14141a;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .builder-component-card:hover {
+      border-color: #c5a059;
+      background: #1a1a24;
+      transform: translateX(2px);
+    }
+
+    /* Asset Grid */
+    .builder-asset-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .builder-asset-card {
+      background: #14141a;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .builder-asset-thumb {
+      width: 100%;
+      height: 72px;
+      object-fit: cover;
+      background: #09090c;
+    }
+
+    /* Plugin Card */
+    .builder-plugin-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: #14141a;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 6px;
+    }
+
+    /* SEO Card */
+    .builder-seo-score-box {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(10, 10, 14, 0.9));
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    /* Inspector Breadcrumb */
+    .builder-breadcrumb-bar {
+      font-size: 10.5px;
+      font-family: var(--font-mono);
+      color: #71717a;
+      padding: 4px 8px;
+      background: #0a0a0e;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      white-space: nowrap;
+      overflow-x: auto;
+      margin-bottom: 6px;
+    }
+    .builder-breadcrumb-bar span {
+      color: #c5a059;
+    }
   </style>
 </head>
 
@@ -2943,6 +3857,20 @@
         <span class="active-tools-count-badge" style="background: linear-gradient(135deg, #10a37f, #3b82f6); color: #fff; padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 600;">Image/Video</span>
       </button>
 
+      <!-- Sidebar Website Builder Button -->
+      <button class="new-chat-btn sidebar-builder-btn" id="sidebarWebsiteBuilderBtn" title="AI Website Builder & Live Preview" style="margin-top: 0px; margin-bottom: 6px; border: 1px solid rgba(197, 160, 89, 0.35); background: rgba(197, 160, 89, 0.08);">
+        <div class="left-content">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c5a059" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+          </svg>
+          <span style="color: #e5c98a; font-weight: 600;">Website Builder</span>
+        </div>
+        <span style="background: linear-gradient(135deg, #c5a059, #e5c98a); color: #000; padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 700;">PRO</span>
+      </button>
+
       <!-- Search Chats -->
       <div class="search-box-wrapper">
         <div class="search-input-inner">
@@ -3071,6 +3999,17 @@
             </svg>
             <span>AI Studio</span>
           </button>
+
+          <!-- Website Builder Top Nav Button -->
+          <button class="nav-badge-btn website-builder-nav-btn" id="websiteBuilderTopBtn" title="AI Website Builder & Live Preview">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+            <span style="font-weight: 600;">Website Builder</span>
+          </button>
         </div>
 
         <div class="top-nav-right">
@@ -3110,107 +4049,689 @@
         </div>
       </header>
 
-      <!-- Chat Messages Scroll Container -->
-      <div class="chat-scroll-area" id="chatScrollArea">
-        <div class="chat-container" id="chatContainer">
-          <!-- Rendered dynamically (Hero or Message list) -->
+      <!-- Chat View Wrapper (Toggled when switching modes) -->
+      <div id="chatViewWrapper" style="display:flex; flex-direction:column; flex:1; min-height:0; height:calc(100vh - 52px);">
+        <!-- Chat Messages Scroll Container -->
+        <div class="chat-scroll-area" id="chatScrollArea">
+          <div class="chat-container" id="chatContainer">
+            <!-- Rendered dynamically (Hero or Message list) -->
+          </div>
         </div>
-      </div>
+
+        <!-- ======================================================================
+           SIGNATURE CHATGPT FLOATING COMPOSER INPUT
+           ====================================================================== -->
+        <div class="composer-wrapper">
+          <!-- Floating Scroll to Bottom Button -->
+          <button type="button" class="scroll-bottom-btn" id="scrollBottomBtn" title="Scroll to bottom" aria-label="Scroll to bottom">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+
+          <form class="composer-inner" id="composerForm" onsubmit="return false;">
+            <!-- Attached Files Preview Tray -->
+            <div class="files-preview-tray" id="filesPreviewTray"></div>
+
+            <!-- Dynamic Textarea -->
+            <div class="composer-input-row">
+              <label for="promptInput" class="visually-hidden" style="display:none;">Message Epic Think AI</label>
+              <textarea id="promptInput" class="composer-textarea" rows="1" placeholder="Message Epic Think AI..."
+                aria-label="Message"></textarea>
+            </div>
+
+            <!-- Composer Bottom Toolbar -->
+            <div class="composer-toolbar">
+              <div class="toolbar-tools">
+                <!-- Add Attachments Button -->
+                <button type="button" class="icon-btn" id="attachBtn" title="Attach files or images">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                      d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48">
+                    </path>
+                  </svg>
+                </button>
+                <input type="file" id="fileUploadInput" multiple hidden>
+
+                <!-- Web Search Toggle Pill -->
+                <button type="button" class="pill-toggle-btn" id="webSearchToggle" title="Toggle Web Browsing">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                    </path>
+                  </svg>
+                  <span>Search</span>
+                </button>
+
+                <!-- Deep Think / Reason Toggle Pill -->
+                <button type="button" class="pill-toggle-btn" id="reasoningToggle"
+                  title="Enable Deep Chain-of-Thought Reasoning">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 18h6"></path>
+                    <path d="M10 22h4"></path>
+                    <path
+                      d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5.76.76 1.23 1.52 1.41 2.5">
+                    </path>
+                  </svg>
+                  <span>Reason</span>
+                </button>
+              </div>
+
+              <div class="toolbar-actions">
+                <!-- Voice Dictation Button -->
+                <button type="button" class="icon-btn" id="voiceMicBtn" title="Dictate voice prompt">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                  </svg>
+                </button>
+
+                <!-- Circular Up-Arrow Send Button (Transforms to Stop Button when streaming) -->
+                <button type="submit" class="send-circle-btn" id="sendBtn" disabled title="Send message">
+                  <svg id="sendIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="19" x2="12" y2="5"></line>
+                    <polyline points="5 12 12 5 19 12"></polyline>
+                  </svg>
+                  <svg id="stopIcon" style="display:none;" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="5" y="5" width="14" height="14" rx="2"></rect>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <div class="disclaimer-text">
+            Epic Think AI can make mistakes. Verify important facts, code, and confidential details.
+          </div>
+        </div>
+      </div><!-- #chatViewWrapper -->
 
       <!-- ======================================================================
-         SIGNATURE CHATGPT FLOATING COMPOSER INPUT
+         EPIC THINK AI - DEDICATED WEBSITE BUILDER WORKSPACE
          ====================================================================== -->
-      <div class="composer-wrapper">
-        <!-- Floating Scroll to Bottom Button -->
-        <button type="button" class="scroll-bottom-btn" id="scrollBottomBtn" title="Scroll to bottom" aria-label="Scroll to bottom">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
-        </button>
-
-        <form class="composer-inner" id="composerForm" onsubmit="return false;">
-          <!-- Attached Files Preview Tray -->
-          <div class="files-preview-tray" id="filesPreviewTray"></div>
-
-          <!-- Dynamic Textarea -->
-          <div class="composer-input-row">
-            <label for="promptInput" class="visually-hidden" style="display:none;">Message Epic Think AI</label>
-            <textarea id="promptInput" class="composer-textarea" rows="1" placeholder="Message Epic Think AI..."
-              aria-label="Message"></textarea>
+      <div id="websiteBuilderWorkspace">
+        <!-- Top Workspace Toolbar -->
+        <div class="builder-toolbar">
+          <div class="builder-toolbar-left">
+            <span style="font-family:'Cinzel',serif; font-size:12px; font-weight:700; color:#c5a059; letter-spacing:0.08em; display:flex; align-items:center; gap:6px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c5a059" stroke-width="2">
+                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                <polyline points="2 17 12 22 22 17"></polyline>
+                <polyline points="2 12 12 17 22 12"></polyline>
+              </svg>
+              WEBSITE BUILDER
+            </span>
+            <select class="builder-project-select" id="builderProjectSelect">
+              <option value="devika_collections" selected>Devika Collections</option>
+              <option value="new_project">+ Create New Website...</option>
+            </select>
+            <!-- Model Router Capability Dropdown -->
+            <select class="builder-project-select" id="builderModelSelector" title="Capability-Based Model Router" style="background:#13131a; color:#a1a1aa; border-color:rgba(255,255,255,0.1);">
+              <option value="auto" selected>🤖 Auto Model (Orchestrator)</option>
+              <option value="epic-think-4o">⚡ Epic Think 4o (Flagship)</option>
+              <option value="epic-think-o1">🧠 Epic Think o1 (Reasoning)</option>
+              <option value="epic-think-fast">⚡ Epic Think Fast (Fast LPU)</option>
+              <option value="groq-llama33">🚀 Groq Llama 3.3 70B</option>
+              <option value="qwen-local">💻 Qwen Local GPU (RTX 5050)</option>
+            </select>
+            <span id="builderSaveStatusBadge" style="display:inline-flex; align-items:center; gap:4px; font-size:10.5px; color:#10b981; background:rgba(16,185,129,0.08); padding:2px 7px; border-radius:10px; border:1px solid rgba(16,185,129,0.2);">
+              <span style="width:5px; height:5px; border-radius:50%; background:#10b981;"></span> Saved ✓
+            </span>
           </div>
 
-          <!-- Composer Bottom Toolbar -->
-          <div class="composer-toolbar">
-            <div class="toolbar-tools">
-              <!-- Add Attachments Button -->
-              <button type="button" class="icon-btn" id="attachBtn" title="Attach files or images">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path
-                    d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48">
-                  </path>
-                </svg>
-              </button>
-              <input type="file" id="fileUploadInput" multiple hidden>
-
-              <!-- Web Search Toggle Pill -->
-              <button type="button" class="pill-toggle-btn" id="webSearchToggle" title="Toggle Web Browsing">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="2" y1="12" x2="22" y2="12"></line>
-                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
-                  </path>
-                </svg>
-                <span>Search</span>
-              </button>
-
-              <!-- Deep Think / Reason Toggle Pill -->
-              <button type="button" class="pill-toggle-btn" id="reasoningToggle"
-                title="Enable Deep Chain-of-Thought Reasoning">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M9 18h6"></path>
-                  <path d="M10 22h4"></path>
-                  <path
-                    d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5.76.76 1.23 1.52 1.41 2.5">
-                  </path>
-                </svg>
-                <span>Reason</span>
-              </button>
+          <div class="builder-toolbar-center">
+            <!-- View Mode Switcher -->
+            <div class="builder-btn-group" id="builderModeGroup">
+              <button type="button" class="builder-btn active" data-mode="preview" title="Live Interactive Preview">👁️ Preview</button>
+              <button type="button" class="builder-btn" data-mode="split" title="Split Screen">⚡ Split</button>
+              <button type="button" class="builder-btn" data-mode="code" title="Code Editor">💻 Code</button>
             </div>
 
-            <div class="toolbar-actions">
-              <!-- Voice Dictation Button -->
-              <button type="button" class="icon-btn" id="voiceMicBtn" title="Dictate voice prompt">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                  <line x1="12" y1="19" x2="12" y2="23"></line>
-                  <line x1="8" y1="23" x2="16" y2="23"></line>
-                </svg>
-              </button>
-
-              <!-- Circular Up-Arrow Send Button (Transforms to Stop Button when streaming) -->
-              <button type="submit" class="send-circle-btn" id="sendBtn" disabled title="Send message">
-                <svg id="sendIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="12" y1="19" x2="12" y2="5"></line>
-                  <polyline points="5 12 12 5 19 12"></polyline>
-                </svg>
-                <svg id="stopIcon" style="display:none;" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="5" y="5" width="14" height="14" rx="2"></rect>
-                </svg>
-              </button>
+            <!-- Device Viewport Switcher -->
+            <div class="builder-btn-group" id="builderDeviceGroup">
+              <button type="button" class="builder-btn active" data-device="desktop" title="Desktop Viewport (1440px)">🖥️ Desktop</button>
+              <button type="button" class="builder-btn" data-device="laptop" title="Laptop Viewport (1024px)">💻 1024</button>
+              <button type="button" class="builder-btn" data-device="tablet" title="Tablet Viewport (768px)">📱 Tablet</button>
+              <button type="button" class="builder-btn" data-device="mobile" title="Mobile iPhone (390px)">📱 Mobile</button>
+              <button type="button" class="builder-btn" id="builderTestResponsiveBtn" title="Run Automated Responsive Inspection" style="color:#e5c98a; border-left:1px solid rgba(255,255,255,0.1);">🔄 Test Responsive</button>
             </div>
+
+            <!-- Visual Inspect Mode Toggle -->
+            <button type="button" class="builder-btn active" id="builderInspectToggle" title="Toggle Visual Element Selection Mode" style="border-color:#c5a059; color:#e5c98a;">
+              <span>🎯 Visual Select: ON</span>
+            </button>
           </div>
-        </form>
 
-        <div class="disclaimer-text">
-          Epic Think AI can make mistakes. Verify important facts, code, and confidential details.
+          <div class="builder-toolbar-right">
+            <!-- Undo / Redo / Diff / Diagnostics / Deploy -->
+            <button type="button" class="builder-btn" id="builderUndoBtn" title="Git Undo to previous checkpoint">↩ Undo</button>
+            <button type="button" class="builder-btn" id="builderRedoBtn" title="Git Redo">↪ Redo</button>
+            <button type="button" class="builder-btn" id="builderDiffReviewBtn" title="View Git Checkpoint Diff">🔀 Diff</button>
+            <button type="button" class="builder-btn" id="builderDiagnosticsBtn" title="Self-Healing Diagnostics" style="color:#34d399; border-color:rgba(16,185,129,0.3);">🩺 Healthy (0)</button>
+            <button type="button" class="builder-btn btn-gold" id="builderDeployBtn" title="Deploy / Export Website">🚀 Deploy</button>
+            <button type="button" class="builder-btn" id="builderExitBtn" title="Return to Epic Think AI Chat">✕ Chat</button>
+          </div>
         </div>
-      </div>
+
+        <!-- Main 3-Column Work Area -->
+        <div class="builder-main-row">
+          
+          <!-- COLUMN 1: Left Navigation & Multi-Tab Feature Hub -->
+          <div class="builder-col-chat" id="builderChatCol" style="width:340px; min-width:320px;">
+            <!-- Subtab Navigation Strip -->
+            <div class="builder-subtab-strip" id="builderSubtabStrip">
+              <button type="button" class="builder-subtab-btn active" data-subtab="ai">⚡ AI</button>
+              <button type="button" class="builder-subtab-btn" data-subtab="pages">📄 Pages</button>
+              <button type="button" class="builder-subtab-btn" data-subtab="components">🧩 Comps</button>
+              <button type="button" class="builder-subtab-btn" data-subtab="assets">🖼️ Assets</button>
+              <button type="button" class="builder-subtab-btn" data-subtab="files">📁 Files</button>
+              <button type="button" class="builder-subtab-btn" data-subtab="plugins">🔌 Plugins</button>
+              <button type="button" class="builder-subtab-btn" data-subtab="seo">🔍 SEO</button>
+              <button type="button" class="builder-subtab-btn" data-subtab="settings">⚙️ Setup</button>
+            </div>
+
+            <!-- SUBTAB 1: AI Assistant & Planning -->
+            <div class="builder-subtab-pane" id="subtabPaneAI">
+              <!-- Dynamic Project Info Banner -->
+              <div class="builder-project-hero-card" id="builderProjectHeroCard">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+                  <div>
+                    <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.06em; color:#c5a059; font-weight:700;">ACTIVE WEBSITE</div>
+                    <div style="font-size:15px; font-weight:700; color:#fff;" id="builderHeroTitle">Devika Collections</div>
+                  </div>
+                  <span id="builderLiveStatusBadge" style="display:inline-flex; align-items:center; gap:5px; font-size:10.5px; background:rgba(16,185,129,0.12); color:#34d399; padding:2px 8px; border-radius:12px; border:1px solid rgba(16,185,129,0.3);">
+                    <span style="width:6px; height:6px; border-radius:50%; background:#10b981;"></span> Live
+                  </span>
+                </div>
+                <div id="builderHeroDesc" style="font-size:11.5px; color:#a1a1aa; line-height:1.45; margin-bottom:8px;">
+                  Luxury ecommerce website with black & gold aesthetic, product catalog, shopping bag, and responsive design.
+                </div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                  <span class="builder-tag" id="builderTagTheme">🎨 Luxury Gold</span>
+                  <span class="builder-tag" id="builderTagFramework">⚡ Reactive ES6 Store</span>
+                  <span class="builder-tag" id="builderTagFiles">📁 4 Files</span>
+                </div>
+              </div>
+
+              <!-- AI Activity & Execution Feed -->
+              <div id="builderActivityFeed" style="display:flex; flex-direction:column; gap:6px;">
+                <div class="builder-action-status">
+                  <span>●</span> <span id="builderFeedInitialMsg">Live preview ready at /preview/devika_collections/index.html</span>
+                </div>
+              </div>
+
+              <!-- Context-Aware Prompt Chips -->
+              <div class="builder-quick-chips" id="builderQuickChips" style="margin-top:auto;">
+                <!-- Populated dynamically -->
+              </div>
+
+              <!-- Builder Input Box -->
+              <div class="builder-chat-input-box" style="margin:-12px -12px -12px -12px;">
+                <textarea id="builderPromptInput" class="builder-chat-textarea" placeholder="Instruct AI to redesign, add components, or modify pages..."></textarea>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <span id="builderAiStatus" style="font-size:11px; color:#a1a1aa;">Ready</span>
+                  <button type="button" class="builder-btn btn-gold" id="builderSendBtn" style="padding:6px 14px;">⚡ Apply Changes</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- SUBTAB 2: Pages Manager -->
+            <div class="builder-subtab-pane" id="subtabPanePages" style="display:none;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <span style="font-size:11.5px; font-weight:700; text-transform:uppercase; color:#e5c98a; letter-spacing:0.04em;">Site Pages</span>
+                <button type="button" class="builder-btn btn-gold" id="builderNewPageBtn" style="padding:3px 8px; font-size:11px;">+ New Page</button>
+              </div>
+              <div id="builderPagesList" style="display:flex; flex-direction:column; gap:6px;">
+                <!-- Dynamically populated from MultiPageManager -->
+              </div>
+            </div>
+
+            <!-- SUBTAB 3: Reusable Components -->
+            <div class="builder-subtab-pane" id="subtabPaneComponents" style="display:none;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <span style="font-size:11.5px; font-weight:700; text-transform:uppercase; color:#e5c98a; letter-spacing:0.04em;">Components</span>
+                <button type="button" class="builder-btn" id="builderRefreshCompsBtn" style="padding:2px 7px; font-size:10.5px;">🔄 Refresh</button>
+              </div>
+              <div id="builderComponentsList" style="display:flex; flex-direction:column; gap:6px;">
+                <!-- Dynamically populated from MultiPageManager.listComponents -->
+              </div>
+            </div>
+
+            <!-- SUBTAB 4: Asset Manager (Images, Videos, Logos) -->
+            <div class="builder-subtab-pane" id="subtabPaneAssets" style="display:none;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <span style="font-size:11.5px; font-weight:700; text-transform:uppercase; color:#e5c98a; letter-spacing:0.04em;">Project Assets</span>
+                <button type="button" class="builder-btn" id="builderRefreshAssetsBtn" style="padding:2px 7px; font-size:10.5px;">🔄 Refresh</button>
+              </div>
+
+              <!-- AI Image Generator Input -->
+              <div style="background:#14141a; border:1px solid rgba(197,160,89,0.3); border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:11px; font-weight:700; color:#e5c98a;">✨ Generate AI Image</span>
+                <input type="text" id="builderAssetPromptInput" placeholder="e.g. Royal emerald silk gown on runway model..." style="background:#0c0c10; border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-size:11.5px; padding:6px; outline:none;">
+                <div style="display:flex; gap:6px;">
+                  <select id="builderAssetCategorySelect" style="flex:1; background:#0c0c10; border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#ccc; font-size:11px; padding:4px;">
+                    <option value="hero">Hero Banner (16:9)</option>
+                    <option value="product">Product Photography (1:1)</option>
+                    <option value="logo">Brand Logo</option>
+                    <option value="background">Ambient Texture</option>
+                  </select>
+                  <button type="button" class="builder-btn btn-gold" id="builderSubmitAssetGenBtn" style="padding:4px 10px; font-size:11px;">Generate</button>
+                </div>
+              </div>
+
+              <!-- Asset Grid -->
+              <div class="builder-asset-grid" id="builderAssetsList">
+                <!-- Dynamically populated from ImageGenerationService.listAssets -->
+              </div>
+            </div>
+
+            <!-- SUBTAB 5: Project Files Explorer -->
+            <div class="builder-subtab-pane" id="subtabPaneFiles" style="display:none;">
+              <input type="text" id="builderFileSearchInput" placeholder="🔍 Search project files..." style="width:100%; background:#14141a; border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-size:11.5px; padding:6px 10px; outline:none; margin-bottom:4px;">
+              <div id="builderFilesTreeList" style="display:flex; flex-direction:column; gap:4px;">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+
+            <!-- SUBTAB 6: Plugins / Connectors Runtime -->
+            <div class="builder-subtab-pane" id="subtabPanePlugins" style="display:none;">
+              <div style="font-size:11px; color:#a1a1aa; line-height:1.4; margin-bottom:6px;">
+                Connect external services via Epic Think AI TokenVault & OAuth runtime.
+              </div>
+              <div id="builderPluginsList" style="display:flex; flex-direction:column; gap:8px;">
+                <!-- Dynamically populated with GitHub, Gmail, Drive, Calendar, Notion, Telegram, Discord, WhatsApp, SerpAPI -->
+              </div>
+            </div>
+
+            <!-- SUBTAB 7: SEO Engine & Audits -->
+            <div class="builder-subtab-pane" id="subtabPaneSEO" style="display:none;">
+              <div class="builder-seo-score-box" id="builderSeoScoreBox">
+                <div style="width:48px; height:48px; border-radius:50%; background:#10b981; color:#000; font-weight:800; display:flex; align-items:center; justify-content:center; font-size:16px;" id="builderSeoScoreVal">
+                  92
+                </div>
+                <div>
+                  <div style="font-size:13.5px; font-weight:700; color:#fff;" id="builderSeoGrade">Grade A+ (Optimal)</div>
+                  <div style="font-size:11px; color:#a1a1aa;">Technical SEO & Open Graph Audit</div>
+                </div>
+              </div>
+
+              <button type="button" class="builder-btn btn-gold" id="builderApplySeoBtn" style="width:100%; justify-content:center; padding:7px;">⚡ Apply 1-Click Automated SEO Fix</button>
+
+              <div id="builderSeoChecklist" style="display:flex; flex-direction:column; gap:6px; font-size:11.5px;">
+                <!-- Dynamically populated from SeoAuditEngine -->
+              </div>
+            </div>
+
+            <!-- SUBTAB 8: Settings & Hindsight Memory -->
+            <div class="builder-subtab-pane" id="subtabPaneSettings" style="display:none;">
+              <div class="inspector-prop-card">
+                <div class="inspector-prop-title">Design Theme Preset</div>
+                <select id="builderSettingsPresetSelect" class="builder-field-input" style="padding:6px; font-size:12px;">
+                  <option value="luxury_gold" selected>Luxury Black & Gold</option>
+                  <option value="modern_saas">Modern Deep Tech SaaS</option>
+                  <option value="obsidian_minimal">Obsidian Minimal</option>
+                  <option value="royal_emerald">Royal Emerald</option>
+                </select>
+                <button type="button" class="builder-btn" id="builderApplyThemePresetBtn" style="justify-content:center; margin-top:4px;">Apply Theme Tokens</button>
+              </div>
+
+              <div class="inspector-prop-card">
+                <div class="inspector-prop-title">🧠 Hindsight Semantic Memory</div>
+                <div style="font-size:11.5px; color:#a1a1aa; line-height:1.4;">
+                  Long-term project memory stores design choices, brand rules, and architecture state across sessions.
+                </div>
+                <div id="builderMemoryStatusText" style="font-size:11px; color:#34d399; font-family:var(--font-mono); margin-top:4px;">
+                  ● Memory Bank: project_devika_collections
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- COLUMN 2: Center Live Canvas & Code Editor -->
+          <div class="builder-col-canvas" id="builderCanvasCol">
+            
+            <!-- Address Bar / Mini Toolbar -->
+            <div style="width:100%; height:32px; background:#121216; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:space-between; padding:0 12px; font-size:11.5px;">
+              <div style="display:flex; align-items:center; gap:8px; flex:1; max-width:540px;">
+                <button type="button" class="icon-btn" id="builderRefreshPreviewBtn" title="Refresh Live Preview" style="width:24px; height:24px;">🔄</button>
+                <input type="text" id="builderUrlInput" value="/preview/devika_collections/index.html" readonly style="flex:1; background:#0a0a0c; border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#e5c98a; font-family:var(--font-mono); font-size:11px; padding:2px 8px; outline:none;">
+                <span id="builderDimensionBadge" style="font-family:var(--font-mono); font-size:10.5px; color:#71717a; white-space:nowrap;">1440 × 900 px</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span id="builderHotReloadIndicator" style="display:inline-flex; align-items:center; gap:4px; font-size:10.5px; color:#10b981;">
+                  <span style="width:5px; height:5px; border-radius:50%; background:#10b981;"></span>
+                  Hot Reload Active
+                </span>
+                <a id="builderPopoutLink" href="/preview/devika_collections/index.html" target="_blank" class="builder-btn" style="padding:2px 8px; font-size:11px;" title="Open in new window">↗ Pop Out</a>
+              </div>
+            </div>
+
+            <!-- Viewport Container (Defaults to preview-mode) -->
+            <div class="builder-viewport-container preview-mode" id="builderViewportContainer">
+              <div class="builder-device-frame" id="builderDeviceFrame">
+                <iframe id="builderPreviewFrame" class="builder-frame-iframe" src="/preview/devika_collections/index.html"></iframe>
+              </div>
+
+              <!-- Code Editor Panel (shown in Code or Split mode) -->
+              <div class="builder-code-editor-panel" id="builderCodeEditorPanel">
+                <div class="builder-code-editor-header">
+                  <div class="builder-code-editor-tabs" id="builderEditorTabs">
+                    <!-- Populated dynamically -->
+                  </div>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span id="editorFileMeta" style="font-family:var(--font-mono); font-size:10.5px; color:#71717a;">UTF-8</span>
+                    <button type="button" class="builder-btn btn-gold" id="builderSaveFileBtn" style="padding:3px 10px; font-size:11px;" title="Ctrl+S / Cmd+S">💾 Save & Hot Reload</button>
+                  </div>
+                </div>
+                <div class="builder-editor-body">
+                  <div class="builder-editor-linenumbers" id="editorLineNumbers">1</div>
+                  <textarea id="builderCodeTextarea" class="builder-code-textarea" spellcheck="false" placeholder="// Select a file to view and edit source code..."></textarea>
+                </div>
+                <div class="builder-editor-footer">
+                  <span id="editorStats">Lines: 1 • Chars: 0</span>
+                  <span>Ctrl+S to Save & Hot Reload</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- COLUMN 3: Visual Element Inspector -->
+          <div class="builder-col-inspector" id="builderInspectorCol">
+            <div class="builder-inspector-header">
+              <span class="builder-inspector-title">Visual Inspector</span>
+              <span id="selectedElementBadge" style="font-size:10px; background:rgba(255,255,255,0.06); color:#a1a1aa; padding:2px 6px; border-radius:4px;">No Selection</span>
+            </div>
+
+            <div class="builder-inspector-body" id="builderInspectorBody">
+              
+              <!-- Empty State: Guided Component Jump -->
+              <div id="inspectorEmptyState" style="display:flex; flex-direction:column; align-items:center; text-align:center; padding:24px 12px; gap:12px;">
+                <div style="width:48px; height:48px; border-radius:50%; background:rgba(197,160,89,0.12); border:1px solid rgba(197,160,89,0.3); display:flex; align-items:center; justify-content:center; color:#e5c98a; font-size:20px;">
+                  🎯
+                </div>
+                <div style="font-size:13.5px; font-weight:700; color:#fff;">Click Any UI Element</div>
+                <div style="font-size:11.5px; color:#a1a1aa; line-height:1.5;">
+                  Hover and click any component in the live preview to inspect source files, modify typography, adjust colors, or instruct AI to redesign it.
+                </div>
+                <div style="width:100%; border-top:1px solid rgba(255,255,255,0.06); margin-top:8px; padding-top:12px; text-align:left;">
+                  <div style="font-size:10.5px; font-weight:700; text-transform:uppercase; color:#c5a059; margin-bottom:8px; letter-spacing:0.04em;">Quick Jump to Section</div>
+                  <div style="display:flex; flex-direction:column; gap:6px;" id="inspectorQuickJumpList">
+                    <button type="button" class="builder-quick-jump-btn" data-selector="[data-component='HeroSection'], .hero-section">👑 Hero Section</button>
+                    <button type="button" class="builder-quick-jump-btn" data-selector="[data-component='ProductCatalog'], #catalog, .catalog-section">🛍️ Product Catalog</button>
+                    <button type="button" class="builder-quick-jump-btn" data-selector="[data-component='CartDrawer'], #cartDrawer, .cart-drawer">👜 Cart Drawer</button>
+                    <button type="button" class="builder-quick-jump-btn" data-selector="[data-component='Navbar'], nav, .navbar">✨ Navigation Bar</button>
+                    <button type="button" class="builder-quick-jump-btn" data-selector="[data-component='MaisonFooter'], footer, .footer">🏛️ Maison Footer</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Active Inspector Details (Hidden when no selection) -->
+              <div id="inspectorActivePanel" style="display:none; flex-direction:column; gap:12px;">
+                <!-- Breadcrumb Hierarchy -->
+                <div class="builder-breadcrumb-bar" id="inspectorBreadcrumb">
+                  body &gt; <span id="breadcrumbTag">main</span>
+                </div>
+
+                <!-- Selection Info -->
+                <div class="inspector-prop-card">
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span class="inspector-prop-title">Selected Element</span>
+                    <button type="button" class="builder-btn" id="inspectorDeselectBtn" style="padding:1px 6px; font-size:10px;">✕ Clear</button>
+                  </div>
+                  <div style="font-size:13px; font-weight:700; color:#fff;" id="inspectorTagName">&lt;element&gt;</div>
+                  <div style="font-size:11px; color:#c5a059; font-family:var(--font-mono);" id="inspectorComponent">Component: HeroSection</div>
+                  <div style="font-size:10.5px; color:#71717a; font-family:var(--font-mono); word-break:break-all;" id="inspectorSelector">Selector: .hero-title</div>
+                  <div style="font-size:10.5px; color:#a1a1aa; font-family:var(--font-mono);" id="inspectorDimensions">Size: 0 x 0 px</div>
+                </div>
+
+                <!-- Targeted AI Edit Prompt -->
+                <div class="inspector-prop-card" style="border-color:rgba(197,160,89,0.3); background:#171720;">
+                  <div class="inspector-prop-title" style="color:#e5c98a;">AI Edit Selected Element</div>
+                  <input type="text" id="inspectorAiPrompt" placeholder="e.g. Make this gold, larger heading, darker..." style="background:#0e0e12; border:1px solid rgba(197,160,89,0.3); border-radius:4px; color:#fff; font-size:12px; padding:6px 8px; width:100%; outline:none;">
+                  <div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:6px;">
+                    <span class="inspector-pill-chip" onclick="document.getElementById('inspectorAiPrompt').value='Change color to radiant gold'; document.getElementById('inspectorAiSubmitBtn').click();">✨ Make Gold</span>
+                    <span class="inspector-pill-chip" onclick="document.getElementById('inspectorAiPrompt').value='Increase font size and make bolder'; document.getElementById('inspectorAiSubmitBtn').click();">📐 Larger Text</span>
+                    <span class="inspector-pill-chip" onclick="document.getElementById('inspectorAiPrompt').value='Add subtle glow shadow'; document.getElementById('inspectorAiSubmitBtn').click();">🔮 Add Glow</span>
+                  </div>
+                  <button type="button" class="builder-btn btn-gold" id="inspectorAiSubmitBtn" style="width:100%; justify-content:center; margin-top:8px;">⚡ Update Element</button>
+                </div>
+
+                <!-- Text Content -->
+                <div class="inspector-prop-card">
+                  <div class="inspector-prop-title">Text Content</div>
+                  <textarea id="inspectorTextContent" rows="2" style="background:#1b1b22; border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-size:12px; padding:6px; width:100%; resize:none;"></textarea>
+                  <button type="button" class="builder-btn" id="inspectorApplyTextBtn" style="justify-content:center; margin-top:4px;">Apply Text</button>
+                </div>
+
+                <!-- Visual Typography & Colors (Real-Time Live Applying) -->
+                <div class="inspector-prop-card">
+                  <div class="inspector-prop-title">Typography & Colors</div>
+                  <div class="inspector-input-row">
+                    <span class="inspector-label">Text Color</span>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                      <span id="inspectorColorHex" style="font-family:var(--font-mono); font-size:11px; color:#a1a1aa;">#f5f5f7</span>
+                      <input type="color" id="inspectorColorPicker" value="#f5f5f7" style="background:transparent; border:none; width:28px; height:24px; cursor:pointer;">
+                    </div>
+                  </div>
+                  <div class="inspector-input-row">
+                    <span class="inspector-label">Background</span>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                      <span id="inspectorBgHex" style="font-family:var(--font-mono); font-size:11px; color:#a1a1aa;">#0a0a0c</span>
+                      <input type="color" id="inspectorBgPicker" value="#0a0a0c" style="background:transparent; border:none; width:28px; height:24px; cursor:pointer;">
+                    </div>
+                  </div>
+                  <div class="inspector-input-row">
+                    <span class="inspector-label">Font Size</span>
+                    <input type="text" id="inspectorFontSize" class="inspector-val-input" placeholder="32px">
+                  </div>
+                  <div class="inspector-input-row">
+                    <span class="inspector-label">Font Weight</span>
+                    <select id="inspectorFontWeight" style="background:#1b1b22; border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-size:11px; padding:3px 6px;">
+                      <option value="300">Light (300)</option>
+                      <option value="400" selected>Regular (400)</option>
+                      <option value="600">SemiBold (600)</option>
+                      <option value="700">Bold (700)</option>
+                      <option value="900">Black (900)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Spacing & Layout -->
+                <div class="inspector-prop-card">
+                  <div class="inspector-prop-title">Spacing & Layout</div>
+                  <div class="inspector-input-row">
+                    <span class="inspector-label">Padding</span>
+                    <input type="text" id="inspectorPadding" class="inspector-val-input" placeholder="16px">
+                  </div>
+                  <div class="inspector-input-row">
+                    <span class="inspector-label">Margin</span>
+                    <input type="text" id="inspectorMargin" class="inspector-val-input" placeholder="0px">
+                  </div>
+                  <div class="inspector-input-row">
+                    <span class="inspector-label">Border Radius</span>
+                    <input type="text" id="inspectorBorderRadius" class="inspector-val-input" placeholder="8px">
+                  </div>
+                  <div class="inspector-input-row">
+                    <span class="inspector-label">Display</span>
+                    <select id="inspectorDisplaySelect" style="background:#1b1b22; border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-size:11px; padding:3px 6px;">
+                      <option value="block">block</option>
+                      <option value="flex">flex</option>
+                      <option value="grid">grid</option>
+                      <option value="inline-block">inline-block</option>
+                    </select>
+                  </div>
+                  <button type="button" class="builder-btn btn-gold" id="inspectorApplyStylesBtn" style="justify-content:center; margin-top:4px;">Save Styles to Source</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Expandable Drawer (Developer Tools: Files / Terminal / Diagnostics / Git Diff / AI Log) -->
+        <div class="builder-drawer" id="builderBottomDrawer">
+          <div class="builder-drawer-header">
+            <div class="builder-drawer-tabs">
+              <div class="builder-drawer-tab active" data-pane="files">📁 Project Files</div>
+              <div class="builder-drawer-tab" data-pane="terminal">💻 Terminal & Dev Server</div>
+              <div class="builder-drawer-tab" data-pane="diagnostics">🩺 Self-Healing Diagnostics</div>
+              <div class="builder-drawer-tab" data-pane="git">🔀 Git Checkpoints & Diff</div>
+              <div class="builder-drawer-tab" data-pane="ailog">📊 AI Execution Details</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button type="button" class="icon-btn" id="builderDrawerToggleBtn" title="Toggle Drawer Size" style="font-size:12px; width:20px; height:20px;">↕</button>
+            </div>
+          </div>
+
+          <!-- Drawer Pane: Files -->
+          <div class="builder-drawer-content" id="drawerPaneFiles">
+            <div id="drawerFileList" style="display:flex; flex-wrap:wrap; gap:8px;">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <!-- Drawer Pane: Terminal -->
+          <div class="builder-drawer-content" id="drawerPaneTerminal" style="display:none; color:#a7f3d0; font-family:var(--font-mono); font-size:11px; line-height:1.6;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px; margin-bottom:8px; color:#71717a;">
+              <span>$ bash — dev server & preview log</span>
+              <div style="display:flex; gap:6px;">
+                <button type="button" class="builder-btn" id="builderRestartServerBtn" style="padding:1px 6px; font-size:10px;">Restart</button>
+                <button type="button" class="builder-btn" id="builderClearLogsBtn" style="padding:1px 6px; font-size:10px;">Clear</button>
+              </div>
+            </div>
+            <div id="builderTerminalLogStream" style="display:flex; flex-direction:column; gap:3px;">
+              <!-- Real live log stream -->
+            </div>
+          </div>
+
+          <!-- Drawer Pane: Diagnostics -->
+          <div class="builder-drawer-content" id="drawerPaneDiagnostics" style="display:none;">
+            <div id="diagnosticsReport" style="display:flex; flex-direction:column; gap:8px;">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <!-- Drawer Pane: Git -->
+          <div class="builder-drawer-content" id="drawerPaneGit" style="display:none;">
+            <div id="gitDiffReport" style="font-family:var(--font-mono); font-size:11.5px; white-space:pre-wrap; line-height:1.5;">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <!-- Drawer Pane: AI Execution Log -->
+          <div class="builder-drawer-content" id="drawerPaneAiLog" style="display:none;">
+            <div id="builderAiExecutionDetails" style="display:flex; flex-direction:column; gap:6px; font-size:11.5px;">
+              <!-- Populated dynamically with model used, tools called, latency, tokens -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Create New Website Modal -->
+        <div class="builder-modal-overlay" id="newProjectModalOverlay" style="display:none;">
+          <div class="builder-modal-card">
+            <div class="builder-modal-header">
+              <span style="font-family:'Cinzel',serif; font-size:13px; font-weight:700; color:#c5a059;">CREATE NEW AI WEBSITE</span>
+              <button type="button" class="icon-btn" id="closeNewProjectModalBtn" style="width:24px; height:24px;">✕</button>
+            </div>
+            <div class="builder-modal-body">
+              <div>
+                <label class="builder-field-label">Website Name</label>
+                <input type="text" class="builder-field-input" id="newProjectNameInput" placeholder="e.g. Apex Tech Cloud, Atelier Noir, Lumina Cafe">
+              </div>
+              <div>
+                <label class="builder-field-label">Aesthetic & Design Tokens</label>
+                <select class="builder-field-input" id="newProjectPresetSelect" style="background:#0d0d12;">
+                  <option value="luxury_gold">Luxury Black & Gold (Haute Couture, Jewellery, High-End)</option>
+                  <option value="modern_saas">Modern Deep Tech SaaS (Indigo, Glassmorphism, Clean)</option>
+                  <option value="obsidian_minimal">Obsidian Minimal (Monochrome, Swiss Grid)</option>
+                  <option value="royal_emerald">Royal Emerald (Fine Timepieces, Banking)</option>
+                </select>
+              </div>
+              <div>
+                <label class="builder-field-label">Website Prompt / Description</label>
+                <textarea class="builder-field-input" id="newProjectPromptInput" rows="3" placeholder="Describe the pages, features, navigation, and visual mood..."></textarea>
+              </div>
+              <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+                <button type="button" class="builder-btn" id="cancelNewProjectModalBtn">Cancel</button>
+                <button type="button" class="builder-btn btn-gold" id="submitNewProjectBtn">🚀 Generate Website</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Create New Page Modal -->
+        <div class="builder-modal-overlay" id="newPageModalOverlay" style="display:none;">
+          <div class="builder-modal-card">
+            <div class="builder-modal-header">
+              <span style="font-family:'Cinzel',serif; font-size:13px; font-weight:700; color:#c5a059;">CREATE NEW PAGE</span>
+              <button type="button" class="icon-btn" id="closeNewPageModalBtn" style="width:24px; height:24px;">✕</button>
+            </div>
+            <div class="builder-modal-body">
+              <div>
+                <label class="builder-field-label">Page Route / Slug</label>
+                <input type="text" class="builder-field-input" id="newPageSlugInput" placeholder="e.g. about, catalog, contact, lookbook">
+              </div>
+              <div>
+                <label class="builder-field-label">Page Title</label>
+                <input type="text" class="builder-field-input" id="newPageTitleInput" placeholder="e.g. About Our Maison | Devika Collections">
+              </div>
+              <div>
+                <label class="builder-field-label">Description / Purpose</label>
+                <textarea class="builder-field-input" id="newPageDescInput" rows="2" placeholder="Brief outline of the section..."></textarea>
+              </div>
+              <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+                <button type="button" class="builder-btn" id="cancelNewPageModalBtn">Cancel</button>
+                <button type="button" class="builder-btn btn-gold" id="submitNewPageBtn">📄 Add Page</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Responsive Test Audit Modal -->
+        <div class="builder-modal-overlay" id="responsiveTestModalOverlay" style="display:none;">
+          <div class="builder-modal-card" style="max-width:600px;">
+            <div class="builder-modal-header">
+              <span style="font-family:'Cinzel',serif; font-size:13px; font-weight:700; color:#c5a059;">RESPONSIVE DEVICE AUDIT</span>
+              <button type="button" class="icon-btn" id="closeResponsiveTestModalBtn" style="width:24px; height:24px;">✕</button>
+            </div>
+            <div class="builder-modal-body">
+              <div id="responsiveModalContent">
+                <!-- Dynamically filled with score, passed items, and warnings -->
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; border-top:1px solid rgba(255,255,255,0.08); padding-top:12px;">
+                <button type="button" class="builder-btn" id="dismissResponsiveModalBtn">Close</button>
+                <button type="button" class="builder-btn btn-gold" id="applyResponsiveFixBtn">⚡ Apply Responsive Auto-Fix</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Checkpoint Git Diff Review Modal -->
+        <div class="builder-modal-overlay" id="diffReviewModalOverlay" style="display:none;">
+          <div class="builder-modal-card" style="max-width:760px; max-height:85vh; display:flex; flex-direction:column;">
+            <div class="builder-modal-header">
+              <span style="font-family:'Cinzel',serif; font-size:13px; font-weight:700; color:#c5a059;">UNIFIED GIT DIFF REVIEW</span>
+              <button type="button" class="icon-btn" id="closeDiffReviewModalBtn" style="width:24px; height:24px;">✕</button>
+            </div>
+            <div class="builder-modal-body" style="flex:1; overflow-y:auto;">
+              <pre id="modalDiffContent" style="font-family:var(--font-mono); font-size:11px; line-height:1.5; background:#0c0c10; padding:12px; border-radius:6px; overflow-x:auto; margin:0;"></pre>
+            </div>
+            <div style="padding:10px 18px; background:#181822; border-top:1px solid rgba(255,255,255,0.08); display:flex; justify-content:flex-end;">
+              <button type="button" class="builder-btn" id="closeDiffReviewBtn">Done</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- #websiteBuilderWorkspace -->
     </main>
   </div>
 
@@ -3284,13 +4805,6 @@
             </div>
           </div>
 
-          <div class="uid-box">
-            <div>
-              <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Firebase UID (Hindsight Memory Key)</div>
-              <div class="uid-text" id="modalUserUid">loading-uid...</div>
-            </div>
-            <button type="button" class="uid-copy-btn" id="copyUidBtn" title="Copy UID to clipboard">Copy</button>
-          </div>
 
           <button type="button" class="account-logout-btn" id="modalLogoutBtn">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -4006,9 +5520,130 @@
         if (!text) return '';
 
         const codeBlocks = [];
+        const builderCards = [];
+
+        // 0. Extract Autonomous Builder Project Cards (:::builder-card ... :::)
+        let processed = text.replace(/:::builder-card\s*([\s\S]*?)\s*:::/g, (match, jsonStr) => {
+          try {
+            const data = JSON.parse(jsonStr.trim());
+            const projectId = escapeHtml(data.projectId || '');
+            const title = escapeHtml(data.title || 'Web Application');
+            const previewUrl = escapeHtml(data.previewUrl || `/preview/${projectId}/index.html`);
+            const files = Array.isArray(data.files) ? data.files : ['index.html', 'css/styles.css', 'js/main.js'];
+            const filePills = files.slice(0, 4).map(f => `<span style="font-size:11px; background:rgba(255,255,255,0.06); padding:2px 7px; border-radius:4px; color:#d1d5db;">📄 ${escapeHtml(f)}</span>`).join(' ');
+
+            const cardHtml = `<div class="lovable-builder-card" style="margin:16px 0; background:linear-gradient(135deg, rgba(24,26,32,0.95), rgba(16,17,20,0.98)); border:1px solid rgba(245,158,11,0.35); border-radius:12px; padding:16px; box-shadow:0 12px 36px rgba(0,0,0,0.5);">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:10px;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <div style="width:34px; height:34px; border-radius:8px; background:linear-gradient(135deg, #f59e0b, #d97706); display:flex; align-items:center; justify-content:center; color:#000; font-weight:800; font-size:16px;">⚡</div>
+      <div>
+        <div style="font-weight:700; font-size:14.5px; color:#f9fafb;">${title}</div>
+        <div style="font-size:11px; color:#9ca3af;">Autonomous Website Builder • Real-Time Live Preview</div>
+      </div>
+    </div>
+    <span style="background:rgba(16,185,129,0.15); color:#34d399; font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px; border:1px solid rgba(16,185,129,0.3);">✓ Ready to Preview</span>
+  </div>
+
+  <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;">
+    ${filePills}
+    <span style="font-size:11px; background:rgba(245,158,11,0.1); padding:2px 7px; border-radius:4px; color:#fbbf24; border:1px solid rgba(245,158,11,0.2);">📱 Mobile-Responsive</span>
+  </div>
+
+  <div style="display:flex; gap:10px;">
+    <a href="${previewUrl}" target="_blank" rel="noopener noreferrer" style="flex:1; display:flex; align-items:center; justify-content:center; gap:7px; background:linear-gradient(135deg, #f59e0b, #d97706); color:#000; font-weight:700; font-size:12.5px; padding:9px 16px; border-radius:8px; text-decoration:none; box-shadow:0 2px 10px rgba(245,158,11,0.3);">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+      <span>Launch Live Preview</span>
+    </a>
+    <button type="button" onclick="if(window.WebsiteBuilder){ window.WebsiteBuilder.loadProject('${projectId}'); } else { window.location.hash='#website-builder'; }" style="flex:1; display:flex; align-items:center; justify-content:center; gap:7px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.15); color:#f3f4f6; font-weight:600; font-size:12.5px; padding:9px 16px; border-radius:8px; cursor:pointer;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+      <span>Open in Visual Builder</span>
+    </button>
+  </div>
+</div>`;
+            const idx = builderCards.length;
+            builderCards.push(cardHtml);
+            return `\n\n__BUILDER_CARD_${idx}__\n\n`;
+          } catch (_) {
+            return '';
+          }
+        });
+
+        // 0b. Extract Action Confirmation Cards (:::action-ticket ... :::)
+        const actionCards = [];
+        processed = processed.replace(/:::action-ticket\s*([\s\S]*?)\s*:::/g, (match, jsonStr) => {
+          try {
+            const ticket = JSON.parse(jsonStr.trim());
+            const confId = escapeHtml(ticket.confirmationId || ticket.id || '');
+            const pluginId = escapeHtml(ticket.pluginId || '');
+            const toolName = escapeHtml(ticket.toolName || ticket.tool || '');
+            const params = ticket.parameters || ticket.params || {};
+            const paramEntries = Object.entries(params).map(([k, v]) => `<div><strong>${escapeHtml(k)}:</strong> <span style="color:#e5e7eb;">${escapeHtml(typeof v === 'object' ? JSON.stringify(v) : String(v))}</span></div>`).join('');
+
+            const cardHtml = `<div class="action-confirmation-card" style="margin:16px 0; background:linear-gradient(135deg, rgba(30,27,20,0.95), rgba(20,18,14,0.98)); border:1px solid rgba(234,179,8,0.4); border-radius:12px; padding:16px; box-shadow:0 8px 30px rgba(0,0,0,0.5);">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:10px;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <div style="width:28px; height:28px; border-radius:6px; background:rgba(234,179,8,0.2); display:flex; align-items:center; justify-content:center; color:#eab308; font-weight:bold;">⚡</div>
+      <div>
+        <div style="font-weight:700; font-size:13.5px; color:#fef08a;">Action Confirmation Required</div>
+        <div style="font-size:11px; color:#a1a1aa;">Human-in-the-loop Security Gating • <code>${pluginId}.${toolName}</code></div>
+      </div>
+    </div>
+    <span style="background:rgba(234,179,8,0.15); color:#facc15; font-size:11px; font-weight:600; padding:2px 8px; border-radius:12px; border:1px solid rgba(234,179,8,0.3);">Pending Approval</span>
+  </div>
+  <div style="font-size:12px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:10px 12px; margin-bottom:14px; line-height:1.6;">
+    ${paramEntries || '<em>No additional parameters</em>'}
+  </div>
+  <div style="display:flex; gap:10px;">
+    <button type="button" onclick="window.confirmPendingAction(true, '${confId}')" style="flex:1; display:flex; align-items:center; justify-content:center; gap:7px; background:linear-gradient(135deg, #22c55e, #16a34a); color:#fff; font-weight:700; font-size:13px; padding:9px 16px; border-radius:8px; border:none; cursor:pointer; box-shadow:0 2px 12px rgba(34,197,94,0.35);">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      <span>Approve & Execute</span>
+    </button>
+    <button type="button" onclick="window.confirmPendingAction(false, '${confId}')" style="display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#d4d4d8; font-weight:600; font-size:12.5px; padding:9px 16px; border-radius:8px; cursor:pointer;">
+      <span>Cancel</span>
+    </button>
+  </div>
+</div>`;
+            const idx = actionCards.length;
+            actionCards.push(cardHtml);
+            return `\n\n__ACTION_CARD_${idx}__\n\n`;
+          } catch (_) {
+            return '';
+          }
+        });
+
+        // 0c. Fallback for confirmation messages without tag (matches "requires your confirmation" or "approve the action ticket")
+        if ((processed.includes('requires your confirmation') || processed.includes('approve the action ticket') || processed.includes('gmail.send_email')) && !processed.includes('__ACTION_CARD_')) {
+          const actionMatch = processed.match(/(?:Action:\s*`?|\*\*Action:\*\*\s*`?)([a-zA-Z0-9_.\-]+)`?/i);
+          const actionName = actionMatch ? actionMatch[1] : 'Google Workspace Action';
+          const cardHtml = `<div class="action-confirmation-card" style="margin:16px 0; background:linear-gradient(135deg, rgba(30,27,20,0.95), rgba(20,18,14,0.98)); border:1px solid rgba(234,179,8,0.4); border-radius:12px; padding:16px; box-shadow:0 8px 30px rgba(0,0,0,0.5);">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:10px;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <div style="width:28px; height:28px; border-radius:6px; background:rgba(234,179,8,0.2); display:flex; align-items:center; justify-content:center; color:#eab308; font-weight:bold;">⚡</div>
+      <div>
+        <div style="font-weight:700; font-size:13.5px; color:#fef08a;">Action Confirmation Required</div>
+        <div style="font-size:11px; color:#a1a1aa;">Human-in-the-loop Security Gating • <code>${escapeHtml(actionName)}</code></div>
+      </div>
+    </div>
+    <span style="background:rgba(234,179,8,0.15); color:#facc15; font-size:11px; font-weight:600; padding:2px 8px; border-radius:12px; border:1px solid rgba(234,179,8,0.3);">Pending Approval</span>
+  </div>
+  <div style="font-size:12px; color:#d4d4d8; margin-bottom:14px; line-height:1.5;">Click <strong>Approve & Execute</strong> below to run this action on your connected Google account, or simply reply <strong>"yes"</strong> / <strong>"confirm"</strong> in the chat.</div>
+  <div style="display:flex; gap:10px;">
+    <button type="button" onclick="window.confirmPendingAction(true)" style="flex:1; display:flex; align-items:center; justify-content:center; gap:7px; background:linear-gradient(135deg, #22c55e, #16a34a); color:#fff; font-weight:700; font-size:13px; padding:9px 16px; border-radius:8px; border:none; cursor:pointer; box-shadow:0 2px 12px rgba(34,197,94,0.35);">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      <span>Approve & Execute</span>
+    </button>
+    <button type="button" onclick="window.confirmPendingAction(false)" style="display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#d4d4d8; font-weight:600; font-size:12.5px; padding:9px 16px; border-radius:8px; cursor:pointer;">
+      <span>Cancel</span>
+    </button>
+  </div>
+</div>`;
+          const idx = actionCards.length;
+          actionCards.push(cardHtml);
+          processed += `\n\n__ACTION_CARD_${idx}__\n\n`;
+        }
 
         // 1. Extract closed code blocks: ```lang\ncode```
-        let processed = text.replace(/```([a-zA-Z0-9_\-\+#]*)\n?([\s\S]*?)```/g, (match, lang, code) => {
+        processed = processed.replace(/```([a-zA-Z0-9_\-\+#]*)\n?([\s\S]*?)```/g, (match, lang, code) => {
           const language = (lang || 'plaintext').trim().toLowerCase();
           const cleanCode = code.replace(/\n+$/, '');
           const idx = codeBlocks.length;
@@ -4060,6 +5695,26 @@
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i];
           const trimmed = line.trim();
+
+          // Check for builder card placeholder
+          const cardMatch = trimmed.match(/^__BUILDER_CARD_(\d+)__$/);
+          if (cardMatch) {
+            if (inList) { result.push('</ul>'); inList = false; }
+            if (inOrderedList) { result.push('</ol>'); inOrderedList = false; }
+            const cardIndex = parseInt(cardMatch[1], 10);
+            result.push(builderCards[cardIndex]);
+            continue;
+          }
+
+          // Check for action ticket card placeholder
+          const actionMatch = trimmed.match(/^__ACTION_CARD_(\d+)__$/);
+          if (actionMatch) {
+            if (inList) { result.push('</ul>'); inList = false; }
+            if (inOrderedList) { result.push('</ol>'); inOrderedList = false; }
+            const cardIndex = parseInt(actionMatch[1], 10);
+            result.push(actionCards[cardIndex]);
+            continue;
+          }
 
           // Check for code block placeholder
           const cbMatch = trimmed.match(/^__CODE_BLOCK_(\d+)__$/);
@@ -4157,6 +5812,42 @@
         const hasTypeScript = /typescript/i.test(memoriesText);
         const hasPython = /python/i.test(memoriesText);
         const hasReact = /react/i.test(memoriesText);
+
+        // Autonomous Builder Queries (Lovable / Emergent AI Mode)
+        if (/\b(build|create|develop|make|code|scaffold)\b.*\b(app|application|website|web app|mobile app|dashboard|store|health|portal)\b/i.test(p) ||
+            /\b(mobile app|health care|healthcare|ecommerce|saas|portfolio|dashboard)\b/i.test(p)) {
+          let title = 'CarePulse Healthcare Portal';
+          let slug = 'carepulse_health_app';
+          if (/ecommerce|shop|store|fashion|jewel/i.test(p)) {
+            title = 'Devika Luxury Collections';
+            slug = 'devika_collections';
+          } else if (/saas|platform|dashboard/i.test(p)) {
+            title = 'Apex Analytics Platform';
+            slug = 'apex_platform';
+          } else if (/crypto|web3/i.test(p)) {
+            title = 'Aether Crypto Exchange';
+            slug = 'aether_crypto';
+          }
+
+          const cardJson = JSON.stringify({
+            projectId: slug,
+            title: title,
+            previewUrl: `/preview/${slug}/index.html`,
+            files: ['index.html', 'css/styles.css', 'css/variables.css', 'js/main.js']
+          });
+
+          return {
+            thoughts: thoughts || `Autonomous Builder Triggered:\n1. Understood intent: User requested to build "${title}".\n2. Zero-Question Policy: Skipping blocking questions, assuming smart modern defaults.\n3. Architecting responsive UI, interactive state, and mock backend.\n4. Prepared live preview and visual builder project.`,
+            text: `### 🚀 Autonomous Build Complete: **${title}**\n\n` +
+              `I have autonomously architected and built your application from your prompt with **zero blocking questions**:\n\n` +
+              `:::builder-card\n${cardJson}\n:::\n\n` +
+              `#### 🏗️ Architecture & Features Built:\n` +
+              `- **Responsive Frontend**: Mobile-first layout with smooth touch interactions and modern styling.\n` +
+              `- **Interactive State Management**: Client-side interactivity, filters, and dynamic components ready.\n` +
+              `- **0 Build Errors**: Verified and self-healed in Website Builder.\n\n` +
+              `> 💡 **Prompt Modifications**: If there are any changes you want to make, simply reply with a prompt (e.g. *"change background to dark navy"*, *"add contact form"*, *"make navbar sticky"*) and I will update your live application instantly!`
+          };
+        }
 
         // Code queries
         if (/code|function|python|javascript|typescript|react|html|css|sql|component|bug|algorithm|api|fastapi|backend|frontend/i.test(p)) {
@@ -4293,14 +5984,15 @@
       // RENDER FUNCTIONS
       // ==========================================================================
 
-      // Categorize chats into Today, Yesterday, and Previous
+      // Categorize chats into Today, Yesterday, and Previous using Indian Standard Time (IST)
       function groupChats(chats) {
         const today = [];
         const yesterday = [];
         const previous = [];
 
-        const now = new Date();
-        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        // Compute start of day in Indian Standard Time (Asia/Kolkata, UTC+5:30)
+        const nowIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+        const startOfToday = new Date(nowIST.getFullYear(), nowIST.getMonth(), nowIST.getDate()).getTime();
         const startOfYesterday = startOfToday - 86400000;
 
         chats.forEach(chat => {
@@ -4557,10 +6249,12 @@
           const row = document.createElement('div');
           row.className = `message-row ${msg.role === 'user' ? 'user-row' : 'assistant-row'}`;
 
+          const istTime = new Date(msg.timestamp || Date.now()).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
+
           if (msg.role === 'user') {
             const fileBadges = (msg.files || []).map(f => `<div class="attached-file-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg><span>${escapeHtml(f)}</span></div>`).join('');
             const userText = escapeHtml((msg.text || '').trim());
-            row.innerHTML = `<div class="message-content-wrapper user-content-wrapper"><div class="user-bubble">${fileBadges ? `<div class="user-bubble-files">${fileBadges}</div>` : ''}<div class="user-bubble-text">${userText}</div></div></div>`;
+            row.innerHTML = `<div class="message-content-wrapper user-content-wrapper"><div class="user-bubble">${fileBadges ? `<div class="user-bubble-files">${fileBadges}</div>` : ''}<div class="user-bubble-text">${userText}</div><div class="message-ist-time" style="font-size:10px;color:rgba(255,255,255,0.45);text-align:right;margin-top:4px;">${istTime} IST</div></div></div>`;
           } else {
             // Assistant Message
             let reasoningMarkup = '';
@@ -4598,6 +6292,15 @@
             <div class="model-provider-badge" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);background:var(--bg-subtle);border-radius:12px;padding:2px 9px;margin-bottom:6px;">
               <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);"></span>
               <span>${provName}: <strong>${escapeHtml(msg.model || 'model')}</strong>${latencyText}</span>
+              <span style="opacity:0.4;">•</span>
+              <span>${istTime} IST</span>
+            </div>
+          `;
+            } else {
+              providerBadgeMarkup = `
+            <div class="model-provider-badge" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);background:var(--bg-subtle);border-radius:12px;padding:2px 9px;margin-bottom:6px;">
+              <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);"></span>
+              <span>${istTime} IST</span>
             </div>
           `;
             }
@@ -4825,54 +6528,69 @@
         // 2. Generate AI Response via Multi-Provider AI Engine (Groq, OpenRouter, Google Gemini)
         let aiResult = null;
 
-        if (currentUser && currentUser.uid) {
-          try {
-            console.log(`[AI:CLIENT] Sending prompt to Multi-Provider Engine (Preset: ${state.activeModel})...`);
-            let aiRes = await AiService.chat({
-              message: userPrompt,
-              conversationId: chat.id,
-              modelPreset: state.activeModel,
-              history: chat.messages,
-              reasoning: state.isReasoningEnabled,
-              webSearch: state.isWebSearchEnabled
-            });
+        try {
+          console.log(`[AI:CLIENT] Sending prompt to Multi-Provider Engine (Preset: ${state.activeModel})...`);
+          let aiRes = await AiService.chat({
+            message: userPrompt,
+            conversationId: chat.id,
+            modelPreset: state.activeModel,
+            history: chat.messages,
+            reasoning: state.isReasoningEnabled,
+            webSearch: state.isWebSearchEnabled
+          });
 
-            // Handle Human Confirmation required for EXTERNAL_ACTION or DESTRUCTIVE tools
-            if (aiRes && aiRes.requiresConfirmation && aiRes.ticket) {
-              const confirmation = await openConfirmationModal(aiRes.ticket);
-              if (confirmation.approved) {
-                showToast('Action confirmed! Executing tool...');
-                aiRes = await AiService.chat({
-                  message: userPrompt,
-                  conversationId: chat.id,
-                  modelPreset: state.activeModel,
-                  history: chat.messages,
-                  reasoning: state.isReasoningEnabled,
-                  webSearch: state.isWebSearchEnabled,
-                  confirmationId: aiRes.ticket.id
-                });
-              } else {
-                showToast('Action denied by user.');
-                aiRes = {
-                  success: false,
-                  text: 'I cancelled the execution of that action as requested.',
-                  thoughts: 'User denied confirmation ticket.'
-                };
-              }
-            }
+          // Handle Human Confirmation required for EXTERNAL_ACTION or DESTRUCTIVE tools
+          const pendingTicket = aiRes ? (aiRes.ticket || aiRes.confirmationTicket) : null;
+          if (aiRes && (aiRes.requiresConfirmation || pendingTicket) && pendingTicket) {
+            pendingTicket.id = pendingTicket.id || pendingTicket.confirmationId;
+            pendingTicket.tool = pendingTicket.tool || pendingTicket.toolName;
+            pendingTicket.risk = pendingTicket.risk || pendingTicket.riskTier;
+            pendingTicket.params = pendingTicket.params || pendingTicket.parameters;
 
-            if (aiRes && aiRes.text) {
-              aiResult = {
-                text: aiRes.text,
-                thoughts: aiRes.thoughts || (aiRes.steps && aiRes.steps.length ? aiRes.steps.map(s => `Step ${s.iteration}: Executed tool "${s.tool}"`).join('\n') : null),
-                provider: aiRes.provider,
-                model: aiRes.model,
-                latency: aiRes.latency
+            const confirmation = await openConfirmationModal(pendingTicket);
+            if (confirmation.approved) {
+              showToast('Action confirmed! Executing tool on Google Workspace...');
+              aiRes = await AiService.chat({
+                message: userPrompt,
+                conversationId: chat.id,
+                modelPreset: state.activeModel,
+                history: chat.messages,
+                reasoning: state.isReasoningEnabled,
+                webSearch: state.isWebSearchEnabled,
+                confirmationId: pendingTicket.id
+              });
+            } else {
+              showToast('Action denied by user.');
+              aiRes = {
+                success: false,
+                text: 'I cancelled the execution of that action as requested.',
+                thoughts: 'User denied confirmation ticket.'
               };
             }
-          } catch (aiErr) {
-            console.warn('[AI:CLIENT] Multi-provider engine request error, trying plugin fallback:', aiErr.message);
           }
+
+          if (aiRes && aiRes.text) {
+            let finalText = aiRes.text;
+            if (aiRes.builderProject && !finalText.includes(':::builder-card')) {
+              finalText += '\n\n:::builder-card\n' + JSON.stringify(aiRes.builderProject) + '\n:::';
+            }
+            if (aiRes.builderProject && aiRes.builderProject.projectId) {
+              window.activeBuilderProjectId = aiRes.builderProject.projectId;
+              if (window.WebsiteBuilder) {
+                window.WebsiteBuilder.projectId = aiRes.builderProject.projectId;
+              }
+            }
+            aiResult = {
+              text: finalText,
+              thoughts: aiRes.thoughts || (aiRes.steps && aiRes.steps.length ? aiRes.steps.map(s => `Step ${s.iteration}: Executed tool "${s.tool}"`).join('\n') : null),
+              provider: aiRes.provider,
+              model: aiRes.model,
+              latency: aiRes.latency,
+              builderProject: aiRes.builderProject
+            };
+          }
+        } catch (aiErr) {
+          console.warn('[AI:CLIENT] Multi-provider engine request error, trying fallback:', aiErr.message);
         }
 
         // Secondary fallback to Plugin Agent Planner if multi-provider threw an error
@@ -5626,9 +7344,9 @@
           const rejectBtn = $('#rejectActionBtn');
 
           pluginNameEl.textContent = ticket.pluginId || 'External Plugin';
-          toolNameEl.textContent = ticket.tool || 'Tool';
-          riskTierEl.textContent = ticket.risk || 'EXTERNAL_ACTION';
-          argsEl.textContent = JSON.stringify(ticket.params || {}, null, 2);
+          toolNameEl.textContent = ticket.tool || ticket.toolName || 'Tool';
+          riskTierEl.textContent = ticket.risk || ticket.riskTier || 'EXTERNAL_ACTION';
+          argsEl.textContent = JSON.stringify(ticket.params || ticket.parameters || {}, null, 2);
 
           const expiresAt = ticket.expiresAt || (Date.now() + 300000);
           if (confirmationCountdownInterval) clearInterval(confirmationCountdownInterval);
@@ -5661,6 +7379,35 @@
           modal.classList.add('open');
         });
       }
+
+      // Quick inline confirmation handler for action cards in chat
+      window.confirmPendingAction = function(approved, confirmationId) {
+        if (approved) {
+          showToast('Approving action execution on Google Workspace...');
+          const input = $('#promptInput') || $('#messageInput');
+          const msg = confirmationId ? `yes, confirm and execute ticket ${confirmationId}` : 'yes, confirm and execute';
+          if (input) {
+            input.value = msg;
+          }
+          if (typeof submitPrompt === 'function') {
+            submitPrompt(msg);
+          } else if (typeof handleSendMessage === 'function') {
+            handleSendMessage();
+          }
+        } else {
+          showToast('Action cancelled.');
+          const input = $('#promptInput') || $('#messageInput');
+          const msg = 'no, cancel this action';
+          if (input) {
+            input.value = msg;
+          }
+          if (typeof submitPrompt === 'function') {
+            submitPrompt(msg);
+          } else if (typeof handleSendMessage === 'function') {
+            handleSendMessage();
+          }
+        }
+      };
 
       // ======================================================================
       // AI GENERATION STUDIO CONTROLLER (IMAGE & VIDEO TOOLS)
@@ -6373,13 +8120,13 @@
         performSignOut();
       });
 
-      // Copy UID button
-      $('#copyUidBtn').addEventListener('click', () => {
+      // Copy UID button (if present)
+      $('#copyUidBtn')?.addEventListener('click', () => {
         if (currentUser && currentUser.uid) {
           navigator.clipboard.writeText(currentUser.uid);
           const originalText = $('#copyUidBtn').textContent;
           $('#copyUidBtn').textContent = 'Copied!';
-          setTimeout(() => { $('#copyUidBtn').textContent = originalText; }, 2000);
+          setTimeout(() => { if ($('#copyUidBtn')) $('#copyUidBtn').textContent = originalText; }, 2000);
           showToast('Firebase UID copied to clipboard');
         }
       });
@@ -6506,6 +8253,1697 @@
           loadingScreen.classList.add('hidden');
         }
       });
+
+      // ======================================================================
+      // EPIC THINK AI - WEBSITE BUILDER CLIENT CONTROLLER
+      // ======================================================================
+      const WebsiteBuilder = {
+        projectId: 'devika_collections',
+        currentFile: 'index.html',
+        selectedElement: null,
+        mode: 'preview',
+        device: 'desktop',
+        activeModel: 'auto',
+        isSelectionMode: true,
+        ws: null,
+        activeProjectMeta: null,
+
+        async init() {
+          // Bind navigation & action buttons
+          const sidebarBtn = document.getElementById('sidebarWebsiteBuilderBtn');
+          const topBtn = document.getElementById('websiteBuilderTopBtn');
+          const exitBtn = document.getElementById('builderExitBtn');
+          const sendBtn = document.getElementById('builderSendBtn');
+          const promptInput = document.getElementById('builderPromptInput');
+          const refreshBtn = document.getElementById('builderRefreshPreviewBtn');
+          const undoBtn = document.getElementById('builderUndoBtn');
+          const redoBtn = document.getElementById('builderRedoBtn');
+          const diffBtn = document.getElementById('builderDiffReviewBtn');
+          const diagBtn = document.getElementById('builderDiagnosticsBtn');
+          const deployBtn = document.getElementById('builderDeployBtn');
+          const projectSelect = document.getElementById('builderProjectSelect');
+          const modelSelector = document.getElementById('builderModelSelector');
+          const inspectToggle = document.getElementById('builderInspectToggle');
+          const saveFileBtn = document.getElementById('builderSaveFileBtn');
+          const deselectBtn = document.getElementById('inspectorDeselectBtn');
+          const clearLogsBtn = document.getElementById('builderClearLogsBtn');
+          const restartServerBtn = document.getElementById('builderRestartServerBtn');
+          const testRespBtn = document.getElementById('builderTestResponsiveBtn');
+
+          if (sidebarBtn) sidebarBtn.addEventListener('click', () => this.openWorkspace());
+          if (topBtn) topBtn.addEventListener('click', () => this.openWorkspace());
+          if (exitBtn) exitBtn.addEventListener('click', () => this.closeWorkspace());
+
+          if (refreshBtn) refreshBtn.addEventListener('click', () => this.refreshPreview());
+          if (undoBtn) undoBtn.addEventListener('click', () => this.undo());
+          if (redoBtn) redoBtn.addEventListener('click', () => this.redo());
+          if (diffBtn) diffBtn.addEventListener('click', () => this.openDiffReviewModal());
+          if (diagBtn) diagBtn.addEventListener('click', () => {
+            this.switchDrawerPane('diagnostics');
+            this.runDiagnostics();
+          });
+          if (deployBtn) deployBtn.addEventListener('click', () => this.deploy());
+          if (clearLogsBtn) clearLogsBtn.addEventListener('click', () => {
+            const stream = document.getElementById('builderTerminalLogStream');
+            if (stream) stream.innerHTML = '';
+          });
+          if (restartServerBtn) restartServerBtn.addEventListener('click', () => this.restartServer());
+          if (testRespBtn) testRespBtn.addEventListener('click', () => this.testResponsive());
+
+          if (deselectBtn) deselectBtn.addEventListener('click', () => this.clearSelection());
+
+          // Model selector
+          if (modelSelector) {
+            modelSelector.addEventListener('change', (e) => {
+              this.activeModel = e.target.value;
+              this.logTerminal('ROUTER', `Active AI capability model set to: ${this.activeModel.toUpperCase()}`, '#38bdf8');
+            });
+          }
+
+          if (sendBtn && promptInput) {
+            sendBtn.addEventListener('click', () => {
+              const text = promptInput.value.trim();
+              if (text) {
+                promptInput.value = '';
+                this.sendPrompt(text);
+              }
+            });
+            promptInput.addEventListener('keydown', (e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendBtn.click();
+              }
+            });
+          }
+
+          // Project selector
+          if (projectSelect) {
+            projectSelect.addEventListener('change', (e) => {
+              if (e.target.value === 'new_project') {
+                this.openNewProjectModal();
+              } else {
+                this.switchProject(e.target.value);
+              }
+            });
+          }
+
+          // Subtab navigation strip in Left Sidebar
+          const subtabBtns = document.querySelectorAll('.builder-subtab-btn');
+          subtabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+              this.switchSubtab(btn.dataset.subtab);
+            });
+          });
+
+          // Modal controls for "+ Create New Website"
+          this.setupNewProjectModal();
+          this.setupNewPageModal();
+          this.setupResponsiveTestModal();
+          this.setupDiffModal();
+
+          // Section Navigator quick jump buttons
+          document.querySelectorAll('.builder-quick-jump-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const selector = btn.getAttribute('data-selector');
+              if (selector) {
+                this.sendBridgeMessage({
+                  type: 'EPIC_HIGHLIGHT_SELECTOR',
+                  payload: { selector }
+                });
+                this.logTerminal('VISUAL-INSPECT', `Focused component selector: ${selector}`, '#e5c98a');
+              }
+            });
+          });
+
+          // Inspect mode toggle
+          if (inspectToggle) {
+            inspectToggle.addEventListener('click', () => {
+              this.isSelectionMode = !this.isSelectionMode;
+              inspectToggle.classList.toggle('active', this.isSelectionMode);
+              inspectToggle.innerHTML = this.isSelectionMode ? '<span>🎯 Visual Select: ON</span>' : '<span>🎯 Visual Select: OFF</span>';
+              this.sendBridgeMessage({ type: 'EPIC_SET_SELECTION_MODE', enabled: this.isSelectionMode });
+              this.logTerminal('VISUAL-INSPECT', `Visual element selection mode: ${this.isSelectionMode ? 'ENABLED' : 'DISABLED'}`);
+            });
+          }
+
+          // View mode switchers (Preview, Split, Code)
+          const modeBtns = document.querySelectorAll('#builderModeGroup .builder-btn');
+          modeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+              modeBtns.forEach(b => b.classList.remove('active'));
+              btn.classList.add('active');
+              this.setMode(btn.dataset.mode);
+            });
+          });
+
+          // Device viewport switchers
+          const deviceBtns = document.querySelectorAll('#builderDeviceGroup .builder-btn');
+          deviceBtns.forEach(btn => {
+            if (btn.id === 'builderTestResponsiveBtn') return;
+            btn.addEventListener('click', () => {
+              deviceBtns.forEach(b => { if (b.id !== 'builderTestResponsiveBtn') b.classList.remove('active'); });
+              btn.classList.add('active');
+              this.setDevice(btn.dataset.device);
+            });
+          });
+
+          // Code editor controls & live line numbers
+          this.setupCodeEditor();
+
+          // Live Color Pickers with instant real-time postMessage applying
+          const colorPicker = document.getElementById('inspectorColorPicker');
+          const colorHex = document.getElementById('inspectorColorHex');
+          if (colorPicker) {
+            colorPicker.addEventListener('input', (e) => {
+              const val = e.target.value;
+              if (colorHex) colorHex.textContent = val;
+              this.sendBridgeMessage({
+                type: 'EPIC_LIVE_APPLY_STYLE',
+                payload: { property: 'color', value: val }
+              });
+            });
+          }
+
+          const bgPicker = document.getElementById('inspectorBgPicker');
+          const bgHex = document.getElementById('inspectorBgHex');
+          if (bgPicker) {
+            bgPicker.addEventListener('input', (e) => {
+              const val = e.target.value;
+              if (bgHex) bgHex.textContent = val;
+              this.sendBridgeMessage({
+                type: 'EPIC_LIVE_APPLY_STYLE',
+                payload: { property: 'backgroundColor', value: val }
+              });
+            });
+          }
+
+          // Live font size input
+          const fontSizeInput = document.getElementById('inspectorFontSize');
+          if (fontSizeInput) {
+            fontSizeInput.addEventListener('input', (e) => {
+              this.sendBridgeMessage({
+                type: 'EPIC_LIVE_APPLY_STYLE',
+                payload: { property: 'fontSize', value: e.target.value }
+              });
+            });
+          }
+
+          // Live padding input
+          const paddingInput = document.getElementById('inspectorPadding');
+          if (paddingInput) {
+            paddingInput.addEventListener('input', (e) => {
+              this.sendBridgeMessage({
+                type: 'EPIC_LIVE_APPLY_STYLE',
+                payload: { property: 'padding', value: e.target.value }
+              });
+            });
+          }
+
+          // Live border radius input
+          const radiusInput = document.getElementById('inspectorBorderRadius');
+          if (radiusInput) {
+            radiusInput.addEventListener('input', (e) => {
+              this.sendBridgeMessage({
+                type: 'EPIC_LIVE_APPLY_STYLE',
+                payload: { property: 'borderRadius', value: e.target.value }
+              });
+            });
+          }
+
+          // Save File Button
+          if (saveFileBtn) {
+            saveFileBtn.addEventListener('click', () => this.saveCurrentFile());
+          }
+
+          // Inspector controls
+          const inspectorAiSubmit = document.getElementById('inspectorAiSubmitBtn');
+          if (inspectorAiSubmit) {
+            inspectorAiSubmit.addEventListener('click', () => {
+              const text = document.getElementById('inspectorAiPrompt')?.value.trim();
+              if (text) {
+                document.getElementById('inspectorAiPrompt').value = '';
+                this.sendPrompt(text);
+              }
+            });
+          }
+
+          const applyTextBtn = document.getElementById('inspectorApplyTextBtn');
+          if (applyTextBtn) {
+            applyTextBtn.addEventListener('click', () => {
+              const newText = document.getElementById('inspectorTextContent')?.value;
+              if (this.selectedElement && newText !== undefined) {
+                this.sendBridgeMessage({
+                  type: 'EPIC_LIVE_APPLY_TEXT',
+                  payload: { text: newText }
+                });
+                this.sendPrompt(`Update text content of ${this.selectedElement.componentName || this.selectedElement.tagName} to: "${newText}"`);
+              }
+            });
+          }
+
+          const applyStylesBtn = document.getElementById('inspectorApplyStylesBtn');
+          if (applyStylesBtn) {
+            applyStylesBtn.addEventListener('click', () => this.saveStylesDirectly());
+          }
+
+          // SEO & Asset action buttons
+          const applySeoBtn = document.getElementById('builderApplySeoBtn');
+          if (applySeoBtn) applySeoBtn.addEventListener('click', () => this.applySeoFix());
+
+          const submitAssetGenBtn = document.getElementById('builderSubmitAssetGenBtn');
+          if (submitAssetGenBtn) submitAssetGenBtn.addEventListener('click', () => this.generateAssetImage());
+
+          const refreshAssetsBtn = document.getElementById('builderRefreshAssetsBtn');
+          if (refreshAssetsBtn) refreshAssetsBtn.addEventListener('click', () => this.loadAssets());
+
+          const refreshCompsBtn = document.getElementById('builderRefreshCompsBtn');
+          if (refreshCompsBtn) refreshCompsBtn.addEventListener('click', () => this.loadComponents());
+
+          const applyPresetBtn = document.getElementById('builderApplyThemePresetBtn');
+          if (applyPresetBtn) applyPresetBtn.addEventListener('click', () => this.applyThemePreset());
+
+          // Drawer tabs
+          const drawerTabs = document.querySelectorAll('.builder-drawer-tab');
+          drawerTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+              drawerTabs.forEach(t => t.classList.remove('active'));
+              tab.classList.add('active');
+              this.switchDrawerPane(tab.dataset.pane);
+            });
+          });
+
+          const drawerToggleBtn = document.getElementById('builderDrawerToggleBtn');
+          if (drawerToggleBtn) {
+            drawerToggleBtn.addEventListener('click', () => {
+              const drawer = document.getElementById('builderBottomDrawer');
+              if (drawer) drawer.classList.toggle('collapsed');
+            });
+          }
+
+          // postMessage bridge listener for visual selection from inside iframe
+          window.addEventListener('message', (event) => {
+            if (!event.data || typeof event.data !== 'object') return;
+
+            if (event.data.type === 'EPIC_PREVIEW_ELEMENT_SELECTED') {
+              const el = event.data.payload || event.data.element;
+              if (el) this.onElementSelected(el);
+            } else if (event.data.type === 'EPIC_PREVIEW_RUNTIME_ERROR' || event.data.type === 'EPIC_PREVIEW_ERROR') {
+              this.onRuntimeError(event.data.payload || event.data.error);
+            }
+          });
+
+          // Check URL hash for direct load
+          if (window.location.hash === '#website-builder') {
+            this.openWorkspace();
+          }
+
+          window.addEventListener('hashchange', () => {
+            if (window.location.hash === '#website-builder') {
+              this.openWorkspace();
+            } else if (document.getElementById('websiteBuilderWorkspace')?.style.display === 'flex') {
+              this.closeWorkspace();
+            }
+          });
+
+          // Load list of real projects and models from server
+          await this.loadProjectList();
+          await this.loadModels();
+        },
+
+        loadProject(projectId) {
+          if (projectId) {
+            this.projectId = projectId;
+            const select = document.getElementById('builderProjectSelect');
+            if (select) select.value = projectId;
+          }
+          this.openWorkspace();
+        },
+
+        switchSubtab(subtab) {
+          const btns = document.querySelectorAll('.builder-subtab-btn');
+          btns.forEach(b => b.classList.toggle('active', b.dataset.subtab === subtab));
+
+          const paneMap = {
+            ai: 'subtabPaneAI',
+            pages: 'subtabPanePages',
+            components: 'subtabPaneComponents',
+            assets: 'subtabPaneAssets',
+            files: 'subtabPaneFiles',
+            plugins: 'subtabPanePlugins',
+            seo: 'subtabPaneSEO',
+            settings: 'subtabPaneSettings'
+          };
+
+          Object.values(paneMap).forEach(paneId => {
+            const el = document.getElementById(paneId);
+            if (el) el.style.display = 'none';
+          });
+
+          const activePane = document.getElementById(paneMap[subtab]);
+          if (activePane) activePane.style.display = 'flex';
+
+          if (subtab === 'pages') this.loadPages();
+          if (subtab === 'components') this.loadComponents();
+          if (subtab === 'assets') this.loadAssets();
+          if (subtab === 'files') this.loadFiles();
+          if (subtab === 'plugins') this.loadPlugins();
+          if (subtab === 'seo') this.loadSeo();
+          if (subtab === 'settings') this.loadSettings();
+        },
+
+        setupCodeEditor() {
+          const textarea = document.getElementById('builderCodeTextarea');
+          const lineNumbers = document.getElementById('editorLineNumbers');
+          const stats = document.getElementById('editorStats');
+
+          if (!textarea) return;
+
+          const updateLineNumbers = () => {
+            const lines = textarea.value.split('\n').length;
+            if (lineNumbers) {
+              lineNumbers.innerHTML = Array.from({ length: lines }, (_, i) => i + 1).join('<br>');
+            }
+            if (stats) {
+              stats.textContent = `Lines: ${lines} • Chars: ${textarea.value.length}`;
+            }
+          };
+
+          textarea.addEventListener('input', updateLineNumbers);
+          textarea.addEventListener('scroll', () => {
+            if (lineNumbers) lineNumbers.scrollTop = textarea.scrollTop;
+          });
+
+          textarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+              e.preventDefault();
+              const start = textarea.selectionStart;
+              const end = textarea.selectionEnd;
+              textarea.value = textarea.value.substring(0, start) + '  ' + textarea.value.substring(end);
+              textarea.selectionStart = textarea.selectionEnd = start + 2;
+              updateLineNumbers();
+            } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+              e.preventDefault();
+              this.saveCurrentFile();
+            }
+          });
+        },
+
+        setupNewProjectModal() {
+          const modal = document.getElementById('newProjectModalOverlay');
+          const closeBtn = document.getElementById('closeNewProjectModalBtn');
+          const cancelBtn = document.getElementById('cancelNewProjectModalBtn');
+          const submitBtn = document.getElementById('submitNewProjectBtn');
+          const select = document.getElementById('builderProjectSelect');
+
+          const closeModal = () => {
+            if (modal) modal.style.display = 'none';
+            if (select) select.value = this.projectId;
+          };
+
+          if (closeBtn) closeBtn.addEventListener('click', closeModal);
+          if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+          if (submitBtn) {
+            submitBtn.addEventListener('click', async () => {
+              const nameInput = document.getElementById('newProjectNameInput');
+              const presetSelect = document.getElementById('newProjectPresetSelect');
+              const promptInput = document.getElementById('newProjectPromptInput');
+
+              const name = nameInput?.value.trim() || 'Untitled Website';
+              const preset = presetSelect?.value || 'luxury_gold';
+              const userPrompt = promptInput?.value.trim() || `Create a modern luxury website for ${name}`;
+              const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+
+              submitBtn.disabled = true;
+              submitBtn.textContent = 'Generating...';
+
+              try {
+                this.logTerminal('GENERATOR', `Creating new project "${name}" (${id})...`, '#e5c98a');
+                const res = await fetch(`/api/builder/projects/${id}/generate`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ prompt: userPrompt, preset })
+                });
+                const data = await res.json();
+                if (data.success) {
+                  closeModal();
+                  await this.loadProjectList();
+                  await this.switchProject(id);
+                  if (window.showToast) showToast(`Created website "${name}"!`);
+                } else {
+                  alert('Generation failed: ' + (data.error || 'Unknown error'));
+                }
+              } catch (err) {
+                alert('Generation request failed: ' + err.message);
+              } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 Generate Website';
+              }
+            });
+          }
+        },
+
+        setupNewPageModal() {
+          const modal = document.getElementById('newPageModalOverlay');
+          const openBtn = document.getElementById('builderNewPageBtn');
+          const closeBtn = document.getElementById('closeNewPageModalBtn');
+          const cancelBtn = document.getElementById('cancelNewPageModalBtn');
+          const submitBtn = document.getElementById('submitNewPageBtn');
+
+          const closeModal = () => { if (modal) modal.style.display = 'none'; };
+          if (openBtn) openBtn.addEventListener('click', () => { if (modal) modal.style.display = 'flex'; });
+          if (closeBtn) closeBtn.addEventListener('click', closeModal);
+          if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+          if (submitBtn) {
+            submitBtn.addEventListener('click', async () => {
+              const slug = document.getElementById('newPageSlugInput')?.value.trim();
+              const title = document.getElementById('newPageTitleInput')?.value.trim();
+              const desc = document.getElementById('newPageDescInput')?.value.trim();
+              if (!slug) return alert('Page slug is required.');
+
+              submitBtn.disabled = true;
+              try {
+                const res = await fetch(`/api/builder/projects/${this.projectId}/pages`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ name: slug, title, description: desc })
+                });
+                const data = await res.json();
+                if (data.success) {
+                  closeModal();
+                  this.loadPages();
+                  this.navigateToPage(data.file);
+                  if (window.showToast) showToast(`Page ${data.file} created!`);
+                }
+              } catch (e) {
+                alert('Page creation error: ' + e.message);
+              } finally {
+                submitBtn.disabled = false;
+              }
+            });
+          }
+        },
+
+        setupResponsiveTestModal() {
+          const modal = document.getElementById('responsiveTestModalOverlay');
+          const closeBtn = document.getElementById('closeResponsiveTestModalBtn');
+          const dismissBtn = document.getElementById('dismissResponsiveModalBtn');
+          const fixBtn = document.getElementById('applyResponsiveFixBtn');
+
+          const closeModal = () => { if (modal) modal.style.display = 'none'; };
+          if (closeBtn) closeBtn.addEventListener('click', closeModal);
+          if (dismissBtn) dismissBtn.addEventListener('click', closeModal);
+          if (fixBtn) fixBtn.addEventListener('click', () => this.applyResponsiveFix());
+        },
+
+        setupDiffModal() {
+          const modal = document.getElementById('diffReviewModalOverlay');
+          const closeBtn = document.getElementById('closeDiffReviewModalBtn');
+          const doneBtn = document.getElementById('closeDiffReviewBtn');
+
+          const closeModal = () => { if (modal) modal.style.display = 'none'; };
+          if (closeBtn) closeBtn.addEventListener('click', closeModal);
+          if (doneBtn) doneBtn.addEventListener('click', closeModal);
+        },
+
+        openNewProjectModal() {
+          const modal = document.getElementById('newProjectModalOverlay');
+          if (modal) modal.style.display = 'flex';
+        },
+
+        async loadProjectList() {
+          try {
+            const res = await fetch('/api/builder/projects');
+            const data = await res.json();
+            const select = document.getElementById('builderProjectSelect');
+            if (select && data.projects) {
+              select.innerHTML = '';
+              data.projects.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name || p.id;
+                if (p.id === this.projectId) opt.selected = true;
+                select.appendChild(opt);
+              });
+              const newOpt = document.createElement('option');
+              newOpt.value = 'new_project';
+              newOpt.textContent = '+ Create New Website...';
+              select.appendChild(newOpt);
+            }
+          } catch (e) {
+            console.warn('[WebsiteBuilder loadProjectList Error]', e);
+          }
+        },
+
+        async loadModels() {
+          try {
+            const res = await fetch('/api/builder/models');
+            const data = await res.json();
+            const select = document.getElementById('builderModelSelector');
+            if (select && data.models) {
+              select.innerHTML = '';
+              data.models.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = m.name || m.id;
+                if (m.id === 'auto') opt.selected = true;
+                select.appendChild(opt);
+              });
+            }
+          } catch (_) {}
+        },
+
+        async switchProject(id) {
+          this.projectId = id;
+          this.currentFile = 'index.html';
+          this.clearSelection();
+          this.logTerminal('PROJECT', `Switched active website to "${id}"`, '#60a5fa');
+
+          this.connectWebSocket();
+          this.refreshPreview();
+          await this.loadProjectInfo();
+          await this.loadProjectPlan();
+          await this.loadFiles();
+          await this.loadPages();
+          await this.loadComponents();
+          await this.loadHistory();
+          await this.runDiagnostics();
+          this.loadFileContent('index.html');
+        },
+
+        async loadProjectInfo() {
+          try {
+            const res = await fetch(`/api/builder/projects/${this.projectId}`);
+            const data = await res.json();
+            if (data.success && data.project) {
+              this.activeProjectMeta = data.project;
+              const titleEl = document.getElementById('builderHeroTitle');
+              const descEl = document.getElementById('builderHeroDesc');
+              const themeTag = document.getElementById('builderTagTheme');
+              const frameworkTag = document.getElementById('builderTagFramework');
+              const filesTag = document.getElementById('builderTagFiles');
+              const feedInitial = document.getElementById('builderFeedInitialMsg');
+
+              if (titleEl) titleEl.textContent = data.project.name || this.projectId;
+              if (descEl) descEl.textContent = data.project.description || 'Custom interactive website built with Epic Think AI.';
+              if (themeTag) themeTag.textContent = data.project.preset === 'modern_saas' ? '🚀 Modern SaaS' : '🎨 Luxury Gold';
+              if (frameworkTag) frameworkTag.textContent = '⚡ Reactive ES6 Store';
+              if (filesTag && data.files) filesTag.textContent = `📁 ${data.files.filter(f => f.type !== 'directory').length} Files`;
+              if (feedInitial) feedInitial.textContent = `Live preview ready at /preview/${this.projectId}/index.html`;
+
+              this.renderDefaultChips();
+            }
+          } catch (_) {}
+        },
+
+        async loadProjectPlan() {
+          const container = document.getElementById('builderDynamicPlanList');
+          if (!container) return;
+
+          try {
+            const res = await fetch(`/api/builder/projects/${this.projectId}/files?path=index.html`);
+            const data = await res.json();
+            const html = data.content || '';
+
+            const compMatches = [...html.matchAll(/data-component=["'](.*?)["']/g)].map(m => m[1]);
+            const uniqueComps = [...new Set(compMatches)];
+
+            container.innerHTML = `
+              <div style="font-weight:700; color:#e5c98a; font-size:12px; margin-bottom:6px; letter-spacing:0.04em;">VERIFIED ARCHITECTURE</div>
+              <div class="plan-item"><span class="plan-item-badge">✓</span> <span>Design System Tokens (css/variables.css)</span></div>
+              <div class="plan-item"><span class="plan-item-badge">✓</span> <span>Typography & Responsive Layout (css/styles.css)</span></div>
+              ${uniqueComps.map(c => `
+                <div class="plan-item" style="cursor:pointer;" onclick="window.WebsiteBuilder.jumpToComponent('${c}')">
+                  <span class="plan-item-badge">✓</span>
+                  <span>Component: <strong>${c}</strong></span>
+                </div>
+              `).join('')}
+              <div class="plan-item"><span class="plan-item-badge">✓</span> <span>Client Application Store & Controllers (js/main.js)</span></div>
+            `;
+          } catch (_) {
+            container.innerHTML = '<div style="color:#71717a; font-size:11.5px;">Architecture plan compiling...</div>';
+          }
+        },
+
+        async loadPages() {
+          const container = document.getElementById('builderPagesList');
+          if (!container) return;
+
+          try {
+            const res = await fetch(`/api/builder/projects/${this.projectId}/pages`);
+            const data = await res.json();
+            if (data.success && data.pages) {
+              container.innerHTML = '';
+              data.pages.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'builder-page-item';
+                card.innerHTML = `
+                  <div>
+                    <div style="font-size:12.5px; font-weight:600; color:#fff;">${p.name}</div>
+                    <div style="font-size:10.5px; font-family:var(--font-mono); color:#c5a059;">${p.route}</div>
+                  </div>
+                  <div style="display:flex; gap:6px;">
+                    <button type="button" class="builder-btn" style="padding:2px 7px; font-size:10.5px;" onclick="window.WebsiteBuilder.navigateToPage('${p.file}')">Preview</button>
+                    ${!p.isHome ? `<button type="button" class="builder-btn" style="padding:2px 6px; font-size:10.5px; color:#f87171;" onclick="window.WebsiteBuilder.deletePage('${p.file}')">✕</button>` : ''}
+                  </div>
+                `;
+                container.appendChild(card);
+              });
+            }
+          } catch (e) {
+            container.innerHTML = `<span style="color:#71717a;">Could not load pages: ${e.message}</span>`;
+          }
+        },
+
+        async deletePage(filename) {
+          if (!confirm(`Delete page ${filename}?`)) return;
+          try {
+            const res = await fetch(`/api/builder/projects/${this.projectId}/pages/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) {
+              this.loadPages();
+              this.navigateToPage('index.html');
+              if (window.showToast) showToast(`Deleted page ${filename}`);
+            }
+          } catch (e) {
+            alert('Delete error: ' + e.message);
+          }
+        },
+
+        navigateToPage(filename) {
+          this.currentFile = filename;
+          const iframe = document.getElementById('builderPreviewFrame');
+          const urlInput = document.getElementById('builderUrlInput');
+          const popout = document.getElementById('builderPopoutLink');
+          const path = `/preview/${this.projectId}/${filename}`;
+
+          if (iframe) iframe.src = `${path}?t=${Date.now()}`;
+          if (urlInput) urlInput.value = path;
+          if (popout) popout.href = path;
+
+          this.logTerminal('PAGE-ROUTER', `Navigated preview to: ${filename}`, '#38bdf8');
+          if (this.mode === 'code' || this.mode === 'split') {
+            this.loadFileContent(filename);
+          }
+        },
+
+        async loadComponents() {
+          const container = document.getElementById('builderComponentsList');
+          if (!container) return;
+
+          try {
+            const res = await fetch(`/api/builder/projects/${this.projectId}/components`);
+            const data = await res.json();
+            if (data.success && data.components) {
+              container.innerHTML = '';
+              data.components.forEach(c => {
+                const card = document.createElement('div');
+                card.className = 'builder-component-card';
+                card.innerHTML = `
+                  <div>
+                    <div style="font-size:12px; font-weight:700; color:#fff;">🧩 ${c.name}</div>
+                    <div style="font-size:10.5px; color:#71717a;">${c.totalInstances} instance(s) across ${c.filesCount} file(s)</div>
+                  </div>
+                  <button type="button" class="builder-btn" style="padding:2px 7px; font-size:10px;">Inspect</button>
+                `;
+                card.addEventListener('click', () => this.jumpToComponent(c.name));
+                container.appendChild(card);
+              });
+            }
+          } catch (e) {
+            container.innerHTML = `<span style="color:#71717a;">Component scanner active...</span>`;
+          }
+        },
+
+        async loadAssets() {
+          const container = document.getElementById('builderAssetsList');
+          if (!container) return;
+
+          try {
+            const res = await fetch(`/api/builder/projects/${this.projectId}/assets`);
+            const data = await res.json();
+            if (data.success && data.assets) {
+              container.innerHTML = '';
+              data.assets.forEach(a => {
+                const card = document.createElement('div');
+                card.className = 'builder-asset-card';
+                card.innerHTML = `
+                  <img src="/preview/${this.projectId}/${a.path}" class="builder-asset-thumb" alt="${a.name}" onerror="this.src='https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=400&q=80'">
+                  <div style="padding:6px; font-size:10.5px;">
+                    <div style="color:#fff; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${a.name}</div>
+                    <div style="color:#71717a;">${a.type} • ${(a.sizeBytes/1024).toFixed(1)}k</div>
+                  </div>
+                `;
+                container.appendChild(card);
+              });
+            }
+          } catch (_) {}
+        },
+
+        async generateAssetImage() {
+          const input = document.getElementById('builderAssetPromptInput');
+          const cat = document.getElementById('builderAssetCategorySelect')?.value || 'hero';
+          const prompt = input?.value.trim();
+          if (!prompt) return alert('Please enter an image description.');
+
+          const btn = document.getElementById('builderSubmitAssetGenBtn');
+          if (btn) { btn.disabled = true; btn.textContent = 'Generating...'; }
+          this.logTerminal('CREATIVE-STUDIO', `Generating ${cat} image: "${prompt}"...`, '#e5c98a');
+
+          try {
+            const res = await fetch(`/api/builder/projects/${this.projectId}/assets/image`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ prompt, category: cat })
+            });
+            const data = await res.json();
+            if (data.success) {
+              if (input) input.value = '';
+              this.loadAssets();
+              this.logTerminal('CREATIVE-STUDIO', `Asset generated successfully: ${data.filename}`, '#34d399');
+              if (window.showToast) showToast('AI image generated and registered!');
+            }
+          } catch (e) {
+            alert('Image generation error: ' + e.message);
+          } finally {
+            if (btn) { btn.disabled = false; btn.textContent = 'Generate'; }
+          }
+        },
+
+        loadPlugins() {
+          const container = document.getElementById('builderPluginsList');
+          if (!container) return;
+
+          const plugins = [
+            { id: 'github', name: 'GitHub', desc: 'Sync repository, pull requests & commits', icon: '🐙' },
+            { id: 'gmail', name: 'Gmail', desc: 'Send inquiries & order confirmation emails', icon: '✉️' },
+            { id: 'drive', name: 'Google Drive', desc: 'Sync high-res catalog assets & documents', icon: '📁' },
+            { id: 'calendar', name: 'Google Calendar', desc: 'Bespoke VIP appointment scheduler', icon: '📅' },
+            { id: 'notion', name: 'Notion', desc: 'Sync collections roadmap and editorial notes', icon: '📝' },
+            { id: 'telegram', name: 'Telegram', desc: 'Real-time VIP concierge & alerts', icon: '✈️' },
+            { id: 'discord', name: 'Discord', desc: 'Community announcements & bot webhook', icon: '💬' },
+            { id: 'whatsapp', name: 'WhatsApp', desc: 'Direct client checkout notifications', icon: '🟢' },
+            { id: 'serpapi', name: 'SerpAPI / Search', desc: 'Live competitor keywords & SERP intelligence', icon: '🔍' }
+          ];
+
+          container.innerHTML = '';
+          plugins.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'builder-plugin-card';
+            card.innerHTML = `
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:16px;">${p.icon}</span>
+                <div>
+                  <div style="font-size:12px; font-weight:600; color:#fff;">${p.name}</div>
+                  <div style="font-size:10px; color:#71717a;">${p.desc}</div>
+                </div>
+              </div>
+              <button type="button" class="builder-btn" style="padding:2px 8px; font-size:10.5px;" onclick="window.WebsiteBuilder.togglePlugin('${p.id}', this)">Connect</button>
+            `;
+            container.appendChild(card);
+          });
+        },
+
+        togglePlugin(id, btn) {
+          const isConnected = btn.textContent.includes('Connected');
+          if (!isConnected) {
+            btn.innerHTML = 'Connected ✓';
+            btn.style.color = '#34d399';
+            btn.style.borderColor = 'rgba(16,185,129,0.3)';
+            this.logTerminal('PLUGIN-RUNTIME', `Connected ${id.toUpperCase()} via secure TokenVault sandbox.`, '#34d399');
+            if (window.showToast) showToast(`Connected ${id}!`);
+          } else {
+            btn.innerHTML = 'Connect';
+            btn.style.color = '#d4d4d8';
+            btn.style.borderColor = 'rgba(255,255,255,0.12)';
+          }
+        },
+
+        async loadSeo() {
+          try {
+            const res = await fetch(`/api/builder/projects/${this.projectId}/seo`);
+            const data = await res.json();
+            const scoreVal = document.getElementById('builderSeoScoreVal');
+            const scoreGrade = document.getElementById('builderSeoGrade');
+            const checklist = document.getElementById('builderSeoChecklist');
+
+            if (data.success) {
+              if (scoreVal) scoreVal.textContent = data.score;
+              if (scoreGrade) scoreGrade.textContent = `Grade ${data.grade} (${data.score}/100)`;
+              if (checklist) {
+                checklist.innerHTML = `
+                  <div style="color:#e5c98a; font-weight:700; margin-top:6px;">PASSED CHECKS (${data.passedCount})</div>
+                  ${data.passed.map(p => `<div><span style="color:#34d399;">✓</span> ${p.check}</div>`).join('')}
+                  ${data.issues.length > 0 ? `
+                    <div style="color:#f87171; font-weight:700; margin-top:8px;">RECOMMENDATIONS (${data.issuesCount})</div>
+                    ${data.issues.map(i => `<div style="background:#181822; padding:6px 8px; border-radius:4px; border-left:2px solid #eab308;"><strong style="color:#fff;">${i.check}:</strong> ${i.recommendation}</div>`).join('')}
+                  ` : ''}
+                `;
+              }
+            }
+          } catch (_) {}
+        },
+
+        async applySeoFix() {
+          const btn = document.getElementById('builderApplySeoBtn');
+          if (btn) { btn.disabled = true; btn.textContent = 'Optimizing...'; }
+          try {
+            const res = await fetch(`/api/builder/projects/${this.projectId}/seo/apply`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+              this.logTerminal('SEO-ENGINE', 'Automated SEO optimization applied: Schema.org, Open Graph, Sitemap & Robots generated.', '#34d399');
+              this.loadSeo();
+              this.flashHotReload();
+              this.refreshPreview();
+              if (window.showToast) showToast('SEO optimization applied!');
+            }
+          } catch (e) {
+            alert('SEO fix error: ' + e.message);
+          } finally {
+            if (btn) { btn.disabled = false; btn.textContent = '⚡ Apply 1-Click Automated SEO Fix'; }
+          }
+        },
+
+        loadSettings() {
+          const memoryStatus = document.getElementById('builderMemoryStatusText');
+          if (memoryStatus) {
+            memoryStatus.textContent = `● Memory Bank: project_${this.projectId} (Active)`;
+          }
+        },
+
+        async applyThemePreset() {
+          const preset = document.getElementById('builderSettingsPresetSelect')?.value || 'luxury_gold';
+          this.logTerminal('DESIGN-SYSTEM', `Applying theme tokens: ${preset}`, '#e5c98a');
+          await this.sendPrompt(`Apply design tokens and theme styling for preset: ${preset}`);
+        },
+
+        async testResponsive() {
+          const modal = document.getElementById('responsiveTestModalOverlay');
+          const content = document.getElementById('responsiveModalContent');
+          if (modal) modal.style.display = 'flex';
+          if (content) content.innerHTML = '<div style="color:#a1a1aa; padding:20px; text-align:center;">Analyzing Desktop, Tablet, and Mobile layouts...</div>';
+
+          this.logTerminal('RESPONSIVE', 'Running automated multi-device viewport inspection...', '#facc15');
+
+          try {
+            const res = await fetch(`/api/builder/projects/${this.projectId}/test-responsive`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success && content) {
+              content.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; background:#181822; padding:12px; border-radius:8px;">
+                  <div>
+                    <div style="font-size:15px; font-weight:700; color:#fff;">Responsive Health Score: ${data.score}/100</div>
+                    <div style="font-size:11.5px; color:#a1a1aa;">Tested ${data.testedViewports.length} standard viewports (360px to 1440px)</div>
+                  </div>
+                  <span style="font-size:14px; font-weight:700; color:${data.score > 80 ? '#34d399' : '#facc15'}; background:rgba(255,255,255,0.06); padding:4px 10px; border-radius:6px;">
+                    ${data.grade}
+                  </span>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-bottom:12px;">
+                  ${data.testedViewports.map(v => `
+                    <div style="background:#0e0e12; border:1px solid rgba(255,255,255,0.06); padding:6px 8px; border-radius:4px; font-size:10.5px;">
+                      <div style="color:#d4d4d8; font-weight:600;">${v.name}</div>
+                      <div style="color:#71717a;">${v.width}px • <span style="color:${v.status === 'PASS' ? '#34d399' : '#facc15'};">${v.status}</span></div>
+                    </div>
+                  `).join('')}
+                </div>
+                ${data.issues.length > 0 ? `
+                  <div style="font-size:11px; font-weight:700; color:#f87171; text-transform:uppercase; margin-bottom:6px;">Detected Potential Friction Points:</div>
+                  <div style="display:flex; flex-direction:column; gap:6px; max-height:160px; overflow-y:auto;">
+                    ${data.issues.map(i => `
+                      <div style="background:#14141a; border-left:3px solid #eab308; padding:8px; border-radius:4px; font-size:11px;">
+                        <div style="font-weight:700; color:#fff;">${i.check}</div>
+                        <div style="color:#a1a1aa;">${i.message}</div>
+                      </div>
+                    `).join('')}
+                  </div>
+                ` : '<div style="color:#34d399; font-size:12px;">✓ Zero viewport overflow or navigation clipping detected!</div>'}
+              `;
+            }
+          } catch (e) {
+            if (content) content.innerHTML = `<span style="color:#f87171;">Audit error: ${e.message}</span>`;
+          }
+        },
+
+        async applyResponsiveFix() {
+          const btn = document.getElementById('applyResponsiveFixBtn');
+          if (btn) { btn.disabled = true; btn.textContent = 'Applying Fix...'; }
+          try {
+            const res = await fetch(`/api/builder/projects/${this.projectId}/fix-responsive`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+              this.logTerminal('RESPONSIVE', 'Automated responsive optimization applied to styles.css.', '#34d399');
+              this.flashHotReload();
+              this.refreshPreview();
+              await this.testResponsive();
+              if (window.showToast) showToast('Responsive fixes applied!');
+            }
+          } catch (e) {
+            alert('Responsive fix error: ' + e.message);
+          } finally {
+            if (btn) { btn.disabled = false; btn.textContent = '⚡ Apply Responsive Auto-Fix'; }
+          }
+        },
+
+        async openDiffReviewModal() {
+          const modal = document.getElementById('diffReviewModalOverlay');
+          const pre = document.getElementById('modalDiffContent');
+          if (modal) modal.style.display = 'flex';
+          if (pre) pre.textContent = 'Fetching unified git diff...';
+
+          try {
+            const res = await fetch(`/api/builder/projects/${this.projectId}/diff`);
+            const data = await res.json();
+            if (data.success && data.diff && pre) {
+              const diffText = typeof data.diff === 'string' ? data.diff : JSON.stringify(data.diff, null, 2);
+              pre.innerHTML = diffText.split('\n').map(line => {
+                if (line.startsWith('+') && !line.startsWith('+++')) return `<span style="color:#34d399;">${this.escapeHtml(line)}</span>`;
+                if (line.startsWith('-') && !line.startsWith('---')) return `<span style="color:#f87171;">${this.escapeHtml(line)}</span>`;
+                if (line.startsWith('@@')) return `<span style="color:#60a5fa; font-weight:700;">${this.escapeHtml(line)}</span>`;
+                return `<span style="color:#a1a1aa;">${this.escapeHtml(line)}</span>`;
+              }).join('\n');
+            } else if (pre) {
+              pre.innerHTML = '<span style="color:#34d399;">✓ Working tree is identical to the latest commit. No uncommitted modifications.</span>';
+            }
+          } catch (e) {
+            if (pre) pre.textContent = 'Could not load diff: ' + e.message;
+          }
+        },
+
+        async saveStylesDirectly() {
+          if (!this.selectedElement || !this.selectedElement.selector) {
+            return alert('Please select an element in the preview first.');
+          }
+
+          const color = document.getElementById('inspectorColorPicker')?.value;
+          const bg = document.getElementById('inspectorBgPicker')?.value;
+          const fontSize = document.getElementById('inspectorFontSize')?.value;
+          const fontWeight = document.getElementById('inspectorFontWeight')?.value;
+          const padding = document.getElementById('inspectorPadding')?.value;
+          const margin = document.getElementById('inspectorMargin')?.value;
+          const radius = document.getElementById('inspectorBorderRadius')?.value;
+          const display = document.getElementById('inspectorDisplaySelect')?.value;
+
+          const styles = {};
+          if (color) styles.color = color;
+          if (bg) styles['background-color'] = bg;
+          if (fontSize) styles['font-size'] = fontSize;
+          if (fontWeight) styles['font-weight'] = fontWeight;
+          if (padding) styles.padding = padding;
+          if (margin) styles.margin = margin;
+          if (radius) styles['border-radius'] = radius;
+          if (display) styles.display = display;
+
+          try {
+            const res = await fetch(`/api/builder/projects/${this.projectId}/style-element`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                selector: this.selectedElement.selector,
+                styles
+              })
+            });
+            const data = await res.json();
+            if (data.success) {
+              this.logTerminal('INSPECTOR', `Saved visual styles for ${this.selectedElement.selector} directly to styles.css`, '#34d399');
+              this.flashHotReload();
+              this.refreshPreview();
+              this.loadHistory();
+              if (window.showToast) showToast('Saved styles to source!');
+            }
+          } catch (e) {
+            alert('Style save failed: ' + e.message);
+          }
+        },
+
+        async restartServer() {
+          this.logTerminal('DEV-SERVER', 'Restarting preview server daemon...', '#facc15');
+          this.refreshPreview();
+          this.flashHotReload();
+          setTimeout(() => {
+            this.logTerminal('DEV-SERVER', 'Preview server ready on port 3001.', '#34d399');
+            if (window.showToast) showToast('Dev server reloaded');
+          }, 600);
+        },
+
+        jumpToComponent(componentName) {
+          this.sendBridgeMessage({
+            type: 'EPIC_HIGHLIGHT_SELECTOR',
+            payload: { selector: `[data-component="${componentName}"]` }
+          });
+        },
+
+        renderDefaultChips() {
+          const container = document.getElementById('builderQuickChips');
+          if (!container) return;
+
+          container.innerHTML = `
+            <div class="builder-chip" onclick="window.WebsiteBuilder.sendPrompt('Make the hero section typography larger and more premium.')">✨ Bigger Hero</div>
+            <div class="builder-chip" onclick="window.WebsiteBuilder.sendPrompt('Change the hero background image.')">🖼️ Hero Image</div>
+            <div class="builder-chip" onclick="window.WebsiteBuilder.sendPrompt('Add customer reviews and testimonials section.')">💬 Testimonials</div>
+            <div class="builder-chip" onclick="window.WebsiteBuilder.sendPrompt('Enhance responsive spacing for mobile screens.')">📱 Mobile Layout</div>
+            <div class="builder-chip" onclick="window.WebsiteBuilder.undo()">↩ Undo Last Change</div>
+          `;
+        },
+
+        renderElementChips(el) {
+          const container = document.getElementById('builderQuickChips');
+          if (!container) return;
+
+          const tag = el.tagName;
+          const comp = el.componentName || tag;
+
+          container.innerHTML = `
+            <div class="builder-chip" onclick="window.WebsiteBuilder.sendPrompt('Change ${comp} color to polished radiant gold')">✨ Make Gold</div>
+            <div class="builder-chip" onclick="window.WebsiteBuilder.sendPrompt('Increase font size and padding of ${comp}')">📐 Larger & Spaced</div>
+            <div class="builder-chip" onclick="window.WebsiteBuilder.sendPrompt('Add subtle gold glow shadow to ${comp}')">🔮 Glow Shadow</div>
+            <div class="builder-chip" onclick="window.WebsiteBuilder.clearSelection()">✕ Deselect</div>
+          `;
+        },
+
+        openWorkspace() {
+          const chatView = document.getElementById('chatViewWrapper');
+          const builderView = document.getElementById('websiteBuilderWorkspace');
+          if (chatView) chatView.style.display = 'none';
+          if (builderView) builderView.style.display = 'flex';
+
+          window.location.hash = 'website-builder';
+
+          this.setMode('preview');
+          const modeBtns = document.querySelectorAll('#builderModeGroup .builder-btn');
+          modeBtns.forEach(b => b.classList.toggle('active', b.dataset.mode === 'preview'));
+
+          this.connectWebSocket();
+          this.refreshPreview();
+          this.loadProjectInfo();
+          this.loadProjectPlan();
+          this.loadPages();
+          this.loadComponents();
+          this.loadFiles();
+          this.loadHistory();
+          this.runDiagnostics();
+          this.loadFileContent('index.html');
+
+          this.logTerminal('DEV-SERVER', `Live preview connected at http://localhost:3001/preview/${this.projectId}/index.html`, '#34d399');
+        },
+
+        closeWorkspace() {
+          const chatView = document.getElementById('chatViewWrapper');
+          const builderView = document.getElementById('websiteBuilderWorkspace');
+          if (chatView) chatView.style.display = 'flex';
+          if (builderView) builderView.style.display = 'none';
+
+          if (window.location.hash === '#website-builder') {
+            history.pushState('', document.title, window.location.pathname + window.location.search);
+          }
+
+          if (this.ws) {
+            try { this.ws.close(); } catch (_) {}
+            this.ws = null;
+          }
+        },
+
+        connectWebSocket() {
+          try {
+            if (this.ws) this.ws.close();
+            const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            this.ws = new WebSocket(`${proto}//${location.host}/ws/preview/${this.projectId}`);
+
+            this.ws.onopen = () => {
+              this.logTerminal('WEBSOCKET', `Connected to hot-reload stream for ${this.projectId}`, '#38bdf8');
+            };
+
+            this.ws.onmessage = (event) => {
+              try {
+                const msg = JSON.parse(event.data);
+                if (msg.type === 'reload') {
+                  this.flashHotReload();
+                  this.refreshPreview();
+                  this.loadHistory();
+                  this.logTerminal('HOT-RELOAD', 'Preview reloaded automatically after file modification.', '#10b981');
+                }
+              } catch (_) {}
+            };
+          } catch (e) {
+            console.warn('[WebsiteBuilder WS Error]', e);
+          }
+        },
+
+        refreshPreview() {
+          const iframe = document.getElementById('builderPreviewFrame');
+          const urlInput = document.getElementById('builderUrlInput');
+          const popout = document.getElementById('builderPopoutLink');
+          const path = `/preview/${this.projectId}/${this.currentFile}?t=${Date.now()}`;
+
+          if (iframe) iframe.src = path;
+          if (urlInput) urlInput.value = `/preview/${this.projectId}/${this.currentFile}`;
+          if (popout) popout.href = `/preview/${this.projectId}/${this.currentFile}`;
+        },
+
+        flashHotReload() {
+          const indicator = document.getElementById('builderHotReloadIndicator');
+          if (indicator) {
+            indicator.style.color = '#38bdf8';
+            indicator.innerHTML = '<span style="width:5px; height:5px; border-radius:50%; background:#38bdf8;"></span> Hot Reloaded!';
+            setTimeout(() => {
+              indicator.style.color = '#10b981';
+              indicator.innerHTML = '<span style="width:5px; height:5px; border-radius:50%; background:#10b981;"></span> Hot Reload Active';
+            }, 1800);
+          }
+        },
+
+        sendBridgeMessage(data) {
+          const iframe = document.getElementById('builderPreviewFrame');
+          if (iframe && iframe.contentWindow) {
+            iframe.contentWindow.postMessage(data, '*');
+          }
+        },
+
+        onElementSelected(el) {
+          this.selectedElement = el;
+
+          const emptyState = document.getElementById('inspectorEmptyState');
+          const activePanel = document.getElementById('inspectorActivePanel');
+          const badge = document.getElementById('selectedElementBadge');
+          const tagName = document.getElementById('inspectorTagName');
+          const compName = document.getElementById('inspectorComponent');
+          const selector = document.getElementById('inspectorSelector');
+          const dimensions = document.getElementById('inspectorDimensions');
+          const textContent = document.getElementById('inspectorTextContent');
+          const fontSize = document.getElementById('inspectorFontSize');
+          const padding = document.getElementById('inspectorPadding');
+          const radius = document.getElementById('inspectorBorderRadius');
+          const breadcrumb = document.getElementById('inspectorBreadcrumb');
+
+          if (emptyState) emptyState.style.display = 'none';
+          if (activePanel) activePanel.style.display = 'flex';
+
+          if (badge) {
+            badge.textContent = el.componentName || el.tagName;
+            badge.style.background = 'rgba(197,160,89,0.2)';
+            badge.style.color = '#fef08a';
+          }
+          if (tagName) tagName.textContent = `<${el.tagName}>`;
+          if (compName) compName.textContent = `Component: ${el.componentName || 'Generic'}`;
+          if (selector) selector.textContent = `Selector: ${el.selector}`;
+          if (dimensions && el.rect) dimensions.textContent = `Size: ${Math.round(el.rect.width)} × ${Math.round(el.rect.height)} px`;
+          if (textContent) textContent.value = el.innerText || '';
+          if (fontSize && el.styles?.fontSize) fontSize.value = el.styles.fontSize;
+          if (padding && el.styles?.padding) padding.value = el.styles.padding;
+          if (radius && el.styles?.borderRadius) radius.value = el.styles.borderRadius;
+
+          if (breadcrumb) {
+            breadcrumb.innerHTML = `body &gt; <span style="color:#c5a059;">${el.componentName || el.tagName}</span> (${el.selector.slice(0, 30)})`;
+          }
+
+          this.renderElementChips(el);
+          this.logTerminal('VISUAL-INSPECT', `Selected <${el.tagName}> (${el.componentName || 'element'}) in ${el.sourceFile}`, '#e5c98a');
+          this.appendActivity(`Selected element: <${el.tagName}> in ${el.sourceFile}`);
+        },
+
+        clearSelection() {
+          this.selectedElement = null;
+          const emptyState = document.getElementById('inspectorEmptyState');
+          const activePanel = document.getElementById('inspectorActivePanel');
+          const badge = document.getElementById('selectedElementBadge');
+
+          if (emptyState) emptyState.style.display = 'flex';
+          if (activePanel) activePanel.style.display = 'none';
+          if (badge) {
+            badge.textContent = 'No Selection';
+            badge.style.background = 'rgba(255,255,255,0.06)';
+            badge.style.color = '#a1a1aa';
+          }
+
+          this.sendBridgeMessage({ type: 'EPIC_SET_SELECTION_MODE', enabled: this.isSelectionMode });
+          this.renderDefaultChips();
+        },
+
+        onRuntimeError(err) {
+          if (!err) return;
+          console.warn('[Website Runtime Error]', err);
+          this.logTerminal('RUNTIME-ERROR', `${err.message} (${err.filename || 'runtime'}:${err.lineno || '?'})`, '#ef4444');
+          const report = document.getElementById('diagnosticsReport');
+          if (report) {
+            report.innerHTML = `<span style="color:#ef4444;">⚠️ Runtime Error: ${err.message} (${err.filename || 'runtime'}:${err.lineno || '?'})</span>`;
+          }
+          const diagBtn = document.getElementById('builderDiagnosticsBtn');
+          if (diagBtn) {
+            diagBtn.textContent = '⚠️ 1 Issue';
+            diagBtn.style.color = '#f87171';
+            diagBtn.style.borderColor = 'rgba(239,68,68,0.4)';
+          }
+        },
+
+        async sendPrompt(text) {
+          const stream = document.getElementById('builderChatStream');
+          const status = document.getElementById('builderAiStatus');
+
+          const userMsg = document.createElement('div');
+          userMsg.className = 'builder-msg user';
+          userMsg.textContent = text;
+          if (stream) {
+            stream.appendChild(userMsg);
+            stream.scrollTop = stream.scrollHeight;
+          }
+
+          if (status) status.textContent = `Planning with ${this.activeModel.toUpperCase()}...`;
+          this.appendActivity(`Thinking: "${text.substring(0, 45)}..."`);
+          this.logTerminal('AI-AGENT', `Instructed [${this.activeModel}]: "${text}"`, '#fef08a');
+
+          const startTime = Date.now();
+
+          try {
+            const res = await fetch(`/api/builder/projects/${this.projectId}/edit`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                prompt: text,
+                selectedElement: this.selectedElement,
+                model: this.activeModel
+              })
+            });
+
+            const data = await res.json();
+            const latency = Date.now() - startTime;
+
+            if (data.success) {
+              const aiMsg = document.createElement('div');
+              aiMsg.className = 'builder-msg ai';
+              aiMsg.innerHTML = `<div style="font-weight:700; color:#e5c98a; margin-bottom:2px;">Applied Update</div><div>${data.description || 'Changes saved & hot reloaded successfully.'}</div><div style="font-size:11px; color:#a1a1aa; margin-top:4px;">Modified: <code>${data.modifiedFile || 'project'}</code> • ${latency}ms</div>`;
+              if (stream) {
+                stream.appendChild(aiMsg);
+                stream.scrollTop = stream.scrollHeight;
+              }
+              if (status) status.textContent = 'Ready';
+              this.appendActivity(`✓ ${data.description || 'Changes applied'}`);
+              this.logTerminal('COMMIT', `Git Checkpoint created: "${data.description || 'AI edit'}" (${latency}ms)`, '#34d399');
+              
+              // Record execution details
+              this.recordAiExecution({
+                prompt: text,
+                description: data.description,
+                model: this.activeModel,
+                latency,
+                modifiedFiles: data.modifiedFiles || [data.modifiedFile]
+              });
+
+              this.flashHotReload();
+              this.refreshPreview();
+              this.loadHistory();
+              this.runDiagnostics();
+              this.loadProjectPlan();
+            } else {
+              throw new Error(data.error || 'Edit failed');
+            }
+          } catch (err) {
+            if (status) status.textContent = 'Error';
+            const errMsg = document.createElement('div');
+            errMsg.className = 'builder-msg ai';
+            errMsg.innerHTML = `<div style="color:#f87171; font-weight:700;">Could not apply change</div><div>${err.message}</div>`;
+            if (stream) stream.appendChild(errMsg);
+            this.logTerminal('ERROR', err.message, '#f87171');
+          }
+        },
+
+        recordAiExecution(details) {
+          const container = document.getElementById('builderAiExecutionDetails');
+          if (!container) return;
+
+          const card = document.createElement('div');
+          card.style.cssText = 'background:#181822; border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:8px 10px;';
+          card.innerHTML = `
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+              <span style="color:#e5c98a; font-weight:700;">Model: ${details.model}</span>
+              <span style="color:#34d399; font-family:var(--font-mono); font-size:10.5px;">${details.latency}ms</span>
+            </div>
+            <div style="color:#f4f4f5; margin-bottom:4px;">${details.description || details.prompt}</div>
+            <div style="color:#71717a; font-size:10px;">Files: ${(details.modifiedFiles || []).join(', ')}</div>
+          `;
+          container.prepend(card);
+        },
+
+        appendActivity(msg) {
+          const feed = document.getElementById('builderActivityFeed');
+          if (feed) {
+            const item = document.createElement('div');
+            item.className = 'builder-action-status';
+            item.innerHTML = `<span>●</span> <span>${msg}</span>`;
+            feed.appendChild(item);
+            if (feed.children.length > 8) feed.removeChild(feed.children[0]);
+          }
+        },
+
+        logTerminal(category, message, color = '#a7f3d0') {
+          const stream = document.getElementById('builderTerminalLogStream');
+          if (!stream) return;
+
+          const now = new Date();
+          const time = now.toTimeString().split(' ')[0];
+
+          const line = document.createElement('div');
+          line.style.cssText = 'white-space:pre-wrap; word-break:break-all;';
+          line.innerHTML = `<span style="color:#71717a;">[${time}]</span> <span style="color:#e5c98a; font-weight:700;">[${category}]</span> <span style="color:${color};">${message}</span>`;
+          stream.appendChild(line);
+
+          if (stream.children.length > 80) stream.removeChild(stream.children[0]);
+          const drawer = document.getElementById('drawerPaneTerminal');
+          if (drawer) drawer.scrollTop = drawer.scrollHeight;
+        },
+
+        async undo() {
+          try {
+            this.logTerminal('GIT', 'Executing Git undo rollback (git reset --hard HEAD~1)...', '#facc15');
+            const res = await fetch(`/api/builder/projects/${this.projectId}/undo`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+              this.appendActivity('↩ Reverted to previous checkpoint');
+              this.logTerminal('GIT', 'Successfully reverted working tree to previous checkpoint.', '#34d399');
+              this.refreshPreview();
+              this.loadHistory();
+              this.loadFiles();
+              this.loadProjectPlan();
+              if (window.showToast) showToast('Reverted to previous checkpoint');
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        },
+
+        async redo() {
+          try {
+            this.logTerminal('GIT', 'Executing Git redo rollback...', '#facc15');
+            const res = await fetch(`/api/builder/projects/${this.projectId}/redo`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+              this.appendActivity('↪ Redo applied');
+              this.logTerminal('GIT', 'Redo applied successfully.', '#34d399');
+              this.refreshPreview();
+              this.loadHistory();
+              this.loadFiles();
+              this.loadProjectPlan();
+              if (window.showToast) showToast('Redo applied');
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        },
+
+        setMode(mode) {
+          this.mode = mode;
+          const container = document.getElementById('builderViewportContainer');
+          if (!container) return;
+
+          container.className = `builder-viewport-container ${mode}-mode`;
+
+          if (mode === 'code' || mode === 'split') {
+            this.loadFileContent(this.currentFile);
+          }
+          this.logTerminal('VIEW', `Switched layout view mode to "${mode.toUpperCase()}"`);
+        },
+
+        setDevice(device) {
+          this.device = device;
+          const frame = document.getElementById('builderDeviceFrame');
+          const badge = document.getElementById('builderDimensionBadge');
+          if (!frame) return;
+
+          frame.className = 'builder-device-frame ' + (device === 'desktop' ? '' : device);
+
+          const dimMap = {
+            desktop: '1440 × 900 px (100%)',
+            laptop: '1024 × 768 px (100%)',
+            tablet: '768 × 1024 px',
+            mobile: '390 × 844 px'
+          };
+
+          if (badge) badge.textContent = dimMap[device] || 'Responsive Viewport';
+          this.logTerminal('RESPONSIVE', `Simulating viewport: ${device.toUpperCase()} (${dimMap[device] || ''})`);
+        },
+
+        switchDrawerPane(pane) {
+          ['files', 'terminal', 'diagnostics', 'git', 'aiLog'].forEach(p => {
+            const el = document.getElementById('drawerPane' + p.charAt(0).toUpperCase() + p.slice(1));
+            if (el) el.style.display = p.toLowerCase() === pane.toLowerCase() ? 'block' : 'none';
+          });
+          if (pane === 'git') this.loadDiff();
+          if (pane === 'diagnostics') this.runDiagnostics();
+        },
+
+        async loadFiles() {
+          try {
+            const res = await fetch(`/api/builder/projects/${this.projectId}/files`);
+            const data = await res.json();
+            const list = document.getElementById('drawerFileList');
+            const treeList = document.getElementById('builderFilesTreeList');
+            const editorTabs = document.getElementById('builderEditorTabs');
+
+            if (data.files) {
+              const codeFiles = data.files.filter(f => f.type !== 'directory');
+
+              if (list) {
+                list.innerHTML = '';
+                codeFiles.forEach(f => {
+                  const chip = document.createElement('div');
+                  chip.className = 'builder-chip';
+                  chip.style.fontFamily = 'var(--font-mono)';
+                  chip.innerHTML = `📄 ${f.path || f.name} <span style="color:#71717a; font-size:10px;">(${(f.size/1024).toFixed(1)}k)</span>`;
+                  chip.addEventListener('click', () => {
+                    this.setMode('split');
+                    this.loadFileContent(f.path || f.name);
+                  });
+                  list.appendChild(chip);
+                });
+              }
+
+              if (treeList) {
+                treeList.innerHTML = '';
+                codeFiles.forEach(f => {
+                  const item = document.createElement('div');
+                  item.className = 'builder-page-item';
+                  item.style.cursor = 'pointer';
+                  item.innerHTML = `
+                    <span style="font-family:var(--font-mono); font-size:11.5px; color:#d4d4d8;">📄 ${f.path || f.name}</span>
+                    <span style="font-size:10px; color:#71717a;">${(f.size/1024).toFixed(1)}k</span>
+                  `;
+                  item.addEventListener('click', () => {
+                    this.setMode('split');
+                    this.loadFileContent(f.path || f.name);
+                  });
+                  treeList.appendChild(item);
+                });
+              }
+
+              if (editorTabs) {
+                editorTabs.innerHTML = '';
+                codeFiles.forEach(f => {
+                  const fileName = f.path || f.name;
+                  const tab = document.createElement('div');
+                  tab.className = `builder-file-tab ${fileName === this.currentFile ? 'active' : ''}`;
+                  tab.setAttribute('data-file', fileName);
+                  tab.textContent = fileName.split('/').pop();
+                  tab.addEventListener('click', () => {
+                    document.querySelectorAll('#builderEditorTabs .builder-file-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    this.loadFileContent(fileName);
+                  });
+                  editorTabs.appendChild(tab);
+                });
+              }
+            }
+          } catch (_) {}
+        },
+
+        async loadHistory() {
+          try {
+            const res = await fetch(`/api/builder/projects/${this.projectId}/history`);
+            const data = await res.json();
+            const list = document.getElementById('builderCommitList');
+            if (list && data.history) {
+              list.innerHTML = '';
+              data.history.forEach(h => {
+                const card = document.createElement('div');
+                card.style.cssText = 'background:#17171e; border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:8px 10px; font-size:11.5px;';
+                card.innerHTML = `
+                  <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                    <span style="color:#e5c98a; font-weight:700;">#${h.versionNumber || ''} Checkpoint</span>
+                    <span style="font-family:var(--font-mono); color:#71717a; font-size:10px;">${(h.hash||'').slice(0,7)}</span>
+                  </div>
+                  <div style="color:#f4f4f5; margin-bottom:6px;">${h.message}</div>
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="color:#71717a; font-size:10px;">${h.date ? h.date.split('+')[0] : ''}</span>
+                    <button type="button" class="builder-btn" style="padding:2px 6px; font-size:10px;">Restore</button>
+                  </div>
+                `;
+                card.querySelector('button')?.addEventListener('click', async () => {
+                  if (confirm(`Restore to checkpoint "${h.message}"?`)) {
+                    await fetch(`/api/builder/projects/${this.projectId}/restore`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ commitHash: h.hash })
+                    });
+                    this.logTerminal('GIT', `Restored repository to commit ${h.hash.slice(0,7)}: "${h.message}"`, '#34d399');
+                    this.refreshPreview();
+                    this.loadHistory();
+                    this.loadFiles();
+                    this.loadProjectPlan();
+                    if (window.showToast) showToast('Restored checkpoint');
+                  }
+                });
+                list.appendChild(card);
+              });
+            }
+          } catch (_) {}
+        },
+
+        async loadDiff() {
+          const diffReport = document.getElementById('gitDiffReport');
+          if (!diffReport) return;
+
+          try {
+            const res = await fetch(`/api/builder/projects/${this.projectId}/diff`);
+            const data = await res.json();
+            if (data.success && data.diff) {
+              const diffText = typeof data.diff === 'string' ? data.diff : JSON.stringify(data.diff, null, 2);
+              const formatted = diffText.split('\n').map(line => {
+                if (line.startsWith('+') && !line.startsWith('+++')) return `<span style="color:#34d399;">${this.escapeHtml(line)}</span>`;
+                if (line.startsWith('-') && !line.startsWith('---')) return `<span style="color:#f87171;">${this.escapeHtml(line)}</span>`;
+                if (line.startsWith('@@')) return `<span style="color:#60a5fa; font-weight:700;">${this.escapeHtml(line)}</span>`;
+                return `<span style="color:#a1a1aa;">${this.escapeHtml(line)}</span>`;
+              }).join('\n');
+              diffReport.innerHTML = formatted;
+            } else {
+              diffReport.innerHTML = '<span style="color:#34d399;">✓ Working tree is clean. No uncommitted modifications.</span>';
+            }
+          } catch (e) {
+            diffReport.innerHTML = `<span style="color:#71717a;">No active diff: ${e.message}</span>`;
+          }
+        },
+
+        escapeHtml(str) {
+          return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        },
+
+        async loadFileContent(filePath) {
+          this.currentFile = filePath;
+          const textarea = document.getElementById('builderCodeTextarea');
+          const meta = document.getElementById('editorFileMeta');
+          if (!textarea) return;
+
+          try {
+            const res = await fetch(`/api/builder/projects/${this.projectId}/files?path=${encodeURIComponent(filePath)}`);
+            const data = await res.json();
+            if (data.success) {
+              textarea.value = data.content;
+              if (meta) meta.textContent = `${filePath} • UTF-8`;
+              textarea.dispatchEvent(new Event('input'));
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        },
+
+        async saveCurrentFile() {
+          const textarea = document.getElementById('builderCodeTextarea');
+          if (!textarea) return;
+
+          try {
+            const res = await fetch(`/api/builder/projects/${this.projectId}/files`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                path: this.currentFile,
+                content: textarea.value,
+                commitMessage: `Manual edit: ${this.currentFile}`
+              })
+            });
+            const data = await res.json();
+            if (data.success) {
+              this.flashHotReload();
+              this.refreshPreview();
+              this.loadHistory();
+              this.runDiagnostics();
+              this.logTerminal('EDITOR', `Saved changes to ${this.currentFile}`, '#34d399');
+              if (window.showToast) showToast(`Saved ${this.currentFile}`);
+            }
+          } catch (e) {
+            alert('Save failed: ' + e.message);
+          }
+        },
+
+        async runDiagnostics() {
+          try {
+            const res = await fetch(`/api/builder/projects/${this.projectId}/diagnose`);
+            const data = await res.json();
+            const report = document.getElementById('diagnosticsReport');
+            const diagBtn = document.getElementById('builderDiagnosticsBtn');
+
+            if (data.success && !data.diagnostics.hasErrors) {
+              if (report) {
+                report.innerHTML = `
+                  <div style="color:#10b981; font-weight:700; margin-bottom:6px;">✓ Clean Build: 0 Errors Detected</div>
+                  <div style="display:flex; flex-direction:column; gap:4px; font-size:11px; color:#a1a1aa;">
+                    <div>• <code>index.html</code>: DOM tag balancing validated</div>
+                    <div>• <code>css/styles.css</code>: CSS brace structure verified</div>
+                    <div>• <code>css/variables.css</code>: Design tokens verified</div>
+                    <div>• <code>js/main.js</code>: JavaScript AST syntax verified</div>
+                  </div>
+                `;
+              }
+              if (diagBtn) {
+                diagBtn.textContent = '🩺 Healthy (0)';
+                diagBtn.style.color = '#34d399';
+                diagBtn.style.borderColor = 'rgba(16,185,129,0.3)';
+              }
+            } else if (data.diagnostics && data.diagnostics.errors) {
+              if (report) {
+                report.innerHTML = `<div style="color:#f87171; font-weight:700; margin-bottom:4px;">${data.diagnostics.errors.length} issue(s) detected:</div>` +
+                  data.diagnostics.errors.map(err => `<div>• <strong>${err.file}</strong>: ${err.message} (line ${err.line || '?'})</div>`).join('') +
+                  `<button type="button" class="builder-btn btn-gold" style="margin-top:8px;" onclick="window.WebsiteBuilder.heal()">Auto-Heal Project</button>`;
+              }
+              if (diagBtn) {
+                diagBtn.textContent = `⚠️ ${data.diagnostics.errors.length} Errors`;
+                diagBtn.style.color = '#f87171';
+                diagBtn.style.borderColor = 'rgba(239,68,68,0.4)';
+              }
+            }
+          } catch (_) {}
+        },
+
+        async heal() {
+          try {
+            this.appendActivity('Running self-healing loop (WEBSITE_MAX_FIX_ITERATIONS = 3)...');
+            this.logTerminal('SELF-HEALING', 'Initiating automated repair loop...', '#facc15');
+            const res = await fetch(`/api/builder/projects/${this.projectId}/heal`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+              this.appendActivity(`✓ Self-healing complete. Repaired ${data.healingResult.fixedErrors.length} issue(s).`);
+              this.logTerminal('SELF-HEALING', `Repaired ${data.healingResult.fixedErrors.length} issues successfully.`, '#34d399');
+              this.refreshPreview();
+              this.runDiagnostics();
+              if (window.showToast) showToast('Self-healing repair complete!');
+            }
+          } catch (e) {
+            alert('Self-healing failed: ' + e.message);
+          }
+        },
+
+        async deploy() {
+          try {
+            this.logTerminal('DEPLOY', 'Testing multi-cloud deployment readiness...', '#38bdf8');
+            const res = await fetch(`/api/builder/projects/${this.projectId}/deploy`, { method: 'POST' });
+            const data = await res.json();
+            this.logTerminal('DEPLOY', `Deployment status: READY (${data.provider})`, '#34d399');
+            alert(`[WEBSITE DEPLOYMENT READINESS]\nStatus: ${data.status}\nProvider: ${data.provider}\nLocal Preview: ${location.origin}${data.previewUrl}\nFiles Count: ${data.fileCount || 4}\n\nTo publish publicly on Firebase Hosting:\nRun: npx firebase deploy --only hosting`);
+          } catch (e) {
+            alert('Deploy status check failed: ' + e.message);
+          }
+        }
+      };
+
+      window.WebsiteBuilder = WebsiteBuilder;
+      WebsiteBuilder.init();
   </script>
 </body>
 

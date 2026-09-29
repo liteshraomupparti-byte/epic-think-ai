@@ -24,6 +24,7 @@ function getHmacSecret() {
 
 export class OAuthManager {
   static adapters = {
+    google: new GoogleOAuthAdapter(),
     github: new GitHubOAuthAdapter(),
     gmail: new GoogleOAuthAdapter(),
     google_drive: new GoogleOAuthAdapter(),
@@ -136,9 +137,12 @@ export class OAuthManager {
       throw new Error('SECURITY VIOLATION: Cannot link OAuth credentials to a different user session (Account swapping blocked).');
     }
 
-    // Enforce plugin match
+    // Enforce plugin match (allow cross-compatibility across Google-family services)
+    const isGoogleFamily = (id) => ['google', 'gmail', 'google-drive', 'google_drive', 'google-calendar', 'google_calendar'].includes(String(id).toLowerCase());
     if (expectedPluginId && parsed.pluginId !== String(expectedPluginId)) {
-      throw new Error(`State plugin mismatch: expected ${expectedPluginId}, got ${parsed.pluginId}.`);
+      if (!(isGoogleFamily(expectedPluginId) && isGoogleFamily(parsed.pluginId))) {
+        throw new Error(`State plugin mismatch: expected ${expectedPluginId}, got ${parsed.pluginId}.`);
+      }
     }
 
     return parsed;
@@ -171,9 +175,10 @@ export class OAuthManager {
     }
 
     // 2. Exchange authorization code with provider
+    const effectiveRedirectUri = redirectUri || state.redirectUri || (adapter instanceof GoogleOAuthAdapter ? process.env.GOOGLE_REDIRECT_URI : null);
     const tokenResult = await adapter.exchangeCode({
       code,
-      redirectUri: redirectUri || state.redirectUri,
+      redirectUri: effectiveRedirectUri,
       codeVerifier
     });
 
@@ -195,6 +200,7 @@ export class OAuthManager {
 
     return {
       success: true,
+      uid,
       pluginId,
       accountBinding: tokenResult.accountBinding || null
     };

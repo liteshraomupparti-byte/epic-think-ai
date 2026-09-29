@@ -41,7 +41,8 @@ export class ContextManager {
     recalledPromptContext = '',
     maxHistoryMessages = 8,
     activeModelPreset = 'Epic Think 4o',
-    systemInstruction = null
+    systemInstruction = null,
+    builderProject = null
   }) {
     const messages = [];
 
@@ -50,11 +51,11 @@ export class ContextManager {
 You possess deep technical expertise across full-stack development, distributed systems, system design, databases, security, and general problem solving.
 Always provide direct, clear, highly accurate, and helpful answers. Format code clearly in markdown with language tags.`;
 
-    // Real-time temporal grounding
+    // Real-time temporal grounding (Indian Standard Time - IST / UTC+5:30)
     const now = new Date();
-    const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
-    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short', timeZone: 'UTC' });
-    system += `\n\n[SYSTEM CONTEXT & REAL-TIME CLOCK]:\nCurrent UTC Date & Time: ${dateStr}, ${timeStr}.\nUse this accurate temporal reference for any questions about today's date, day, month, year, or current time.`;
+    const dateStr = now.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Kolkata' });
+    const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, timeZoneName: 'short', timeZone: 'Asia/Kolkata' });
+    system += `\n\n[SYSTEM CONTEXT & REAL-TIME CLOCK]:\nCurrent Date & Time: ${dateStr}, ${timeStr} (Indian Standard Time / IST, UTC+5:30).\nAlways use Indian Standard Time (IST) as your default time zone reference whenever the user asks for the current time, today's date, day, month, year, or timing/scheduling.`;
 
     // Tool calling guidance
     system += `\n\n[TOOL USAGE GUIDELINES]:
@@ -66,6 +67,36 @@ Always provide direct, clear, highly accurate, and helpful answers. Format code 
       system += `\nYou are operating in Deep Think (o1 Reasoning) mode. Thoroughly reason through edge cases, constraints, and architecture trade-offs.`;
     } else if (activeModelPreset && activeModelPreset.includes('Fast')) {
       system += `\nYou are operating in Ultra Fast mode. Deliver immediate, concise, and direct answers without unnecessary fluff.`;
+    }
+
+    // 2. Autonomous Builder & Intent Guidance (Lovable & Emergent AI Mode)
+    system += `\n\n[AUTONOMOUS BUILDER POLICY & ZERO-BLOCKING-QUESTION RULE (Lovable / Emergent AI Mode)]:
+- You are not a passive text chatbot; you are an autonomous full-stack software engineer and website builder like Lovable, Emergent AI, and v0.
+- When the user asks you to build, create, develop, or code an application or website (or provides features/tech stack specs):
+  1. NEVER interrogate the user with 4-5 blocking questions! Never ask "What kind of app?", "What features do you need?", "Preferred tech stack?", or "Which specific database?".
+  2. Make intelligent, production-grade default choices immediately:
+     • Modern responsive mobile-first UI with dark glassmorphism / luxury gold or clean modern aesthetic
+     • Cohesive layout hierarchy with clean navigation, hero, interactive cards, and responsive grids
+     • Complete working interactive JavaScript logic (forms, modals, filters, local state)
+     • Realistic mock data, REST APIs, or database schemas (MongoDB, PostgreSQL, or Firebase)
+  3. The website/app files are already synthesized and written directly into the project repository. DO NOT dump long raw source code files into the chat. Instead, highlight the architecture and features, provide the live preview link, and invite the user to modify any aspect through prompt.
+  4. Always empower the user to preview their application immediately and iterate with natural language prompts!
+
+[SINGLE-LINE INTENT UNDERSTANDING]:
+- BUILD: Start building immediately with zero blocking questions. Create the application and provide the live preview.
+- MODIFY: If the user provides a prompt to change or modify the application (e.g. "change background to navy blue", "add contact form", "make navbar sticky"), apply the update directly to the project files, reload the live preview, and confirm the modification without dumping raw code.
+- DOUBT / EXPLANATION: If the user came with a doubt or question ("what is...", "how does..."), provide a deep, clear, authoritative explanation with examples and diagrams without building an unnecessary project.
+- DEBUG: If the user came to fix a bug or error, pinpoint the root cause immediately and provide the exact corrected code.`;
+
+    if (builderProject) {
+      const isEdit = builderProject.action === 'modified';
+      system += `\n\n[AUTONOMOUS WEBSITE BUILDER - PROJECT ${isEdit ? 'UPDATED' : 'SYNTHESIZED'}]:
+A live, working project has already been autonomously ${isEdit ? 'modified' : 'synthesized'} and verified in the Website Builder:
+• Project ID: ${builderProject.projectId}
+• Title: ${builderProject.title}
+• Live Preview URL: ${builderProject.previewUrl}
+• Files: ${(builderProject.files || []).join(', ')}
+Acknowledge the build/update with excitement! Explain the architecture and features created. Remind the user they can continue modifying the application through prompt!`;
     }
 
     // 2. Incorporate Hindsight Long-Term Memory Context

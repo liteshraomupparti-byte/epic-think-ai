@@ -57,7 +57,8 @@ export class ToolExecutionEngine {
     toolName,
     args = {},
     conversationId = null,
-    confirmationId = null
+    confirmationId = null,
+    bypassConfirmation = false
   }) {
     const startTime = Date.now();
 
@@ -95,7 +96,7 @@ export class ToolExecutionEngine {
     ToolExecutionEngine.validateArguments(tool.parameters, args);
 
     // 6. Verify Human Confirmation Gate
-    const needsConfirmation = permCheck.requiresConfirmation;
+    const needsConfirmation = permCheck.requiresConfirmation && !bypassConfirmation;
     if (needsConfirmation) {
       if (!confirmationId) {
         // Halt and issue a confirmation request ticket

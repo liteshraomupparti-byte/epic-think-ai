@@ -41,6 +41,8 @@ import { initRealtimeSync, broadcastToUser } from './services/realtimeSync.js';
 import pluginRoutes from './routes/pluginRoutes.js';
 import agentRoutes from './routes/agentRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
+import builderRoutes from './routes/builderRoutes.js';
+import { PreviewServer } from './services/websiteBuilder/PreviewServer.js';
 import { initializePlugins } from './plugins/index.js';
 import { initAIEngine } from './ai/index.js';
 
@@ -67,20 +69,22 @@ app.use(express.json({ limit: '15mb' }));
 
 // Request logging (sanitized - no tokens or keys logged)
 app.use((req, res, next) => {
-  const timestamp = new Date().toISOString();
-  if (req.path.startsWith('/api/memory') || req.path.startsWith('/api/conversations') || req.path.startsWith('/api/plugins') || req.path.startsWith('/api/agent') || req.path.startsWith('/api/ai')) {
-    console.log(`[HTTP ${timestamp}] ${req.method} ${req.path}`);
+  const timestamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true });
+  if (req.path.startsWith('/api/memory') || req.path.startsWith('/api/conversations') || req.path.startsWith('/api/plugins') || req.path.startsWith('/api/agent') || req.path.startsWith('/api/ai') || req.path.startsWith('/api/builder') || req.path.startsWith('/preview')) {
+    console.log(`[HTTP IST ${timestamp}] ${req.method} ${req.path}`);
   }
   next();
 });
 
 // ============================================================================
-// PLUGIN, AGENT & MULTI-PROVIDER AI API ROUTES (PROTECTED BY FIREBASE AUTH)
+// PLUGIN, AGENT, MULTI-PROVIDER AI & WEBSITE BUILDER API ROUTES
 // ============================================================================
 app.use('/api/plugins', pluginRoutes);
 app.use('/api/agent', agentRoutes);
 app.use('/api', agentRoutes); // Exposes /api/confirmations and aliases
 app.use('/api/ai', aiRoutes);
+app.use('/api/builder', builderRoutes);
+app.use('/preview', PreviewServer.createExpressHandler());
 
 // ============================================================================
 // REAL-TIME CONVERSATIONS & MONGODB API (PROTECTED BY FIREBASE AUTH)
@@ -520,6 +524,9 @@ const server = http.createServer(app);
 // Initialize WebSocket real-time synchronization
 initRealtimeSync(server);
 
+// Initialize Website Builder Live Preview WebSocket synchronization
+PreviewServer.attachWebSocket(server);
+
 // Initialize MongoDB connection
 initMongoDB().catch((err) => {
   console.warn('[MONGODB] Initial connection warning:', err.message);
@@ -531,6 +538,7 @@ server.listen(PORT, () => {
   console.log(` Epic Think AI Backend Server Running on Port ${PORT}`);
   console.log(` Web Interface:   http://localhost:${PORT}/`);
   console.log(` Alternative URL: http://localhost:${PORT}/Epic%20Think%20AI.html`);
+  console.log(` Website Builder: http://localhost:${PORT}/#website-builder`);
   console.log(` Memory Status:   http://localhost:${PORT}/api/memory/status`);
   console.log(` Mongo Status:    http://localhost:${PORT}/api/conversations/status`);
   console.log(` Real-Time WS:    ws://localhost:${PORT}/ws`);

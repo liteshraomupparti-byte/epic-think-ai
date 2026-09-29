@@ -68,5 +68,31 @@ export const googleCalendarTools = [
         return await client.createEvent(args);
       });
     }
+  },
+  {
+    name: 'create_event',
+    description: 'Create and schedule a new event on Google Calendar. (Requires human confirmation).',
+    permissionTier: RiskTiers.EXTERNAL_ACTION,
+    parameters: {
+      type: 'object',
+      properties: {
+        summary: { type: 'string', description: 'Event title' },
+        description: { type: 'string', description: 'Event details / agenda' },
+        start: { type: 'string', description: 'ISO 8601 start datetime (e.g. 2026-10-01T10:00:00Z)' },
+        end: { type: 'string', description: 'ISO 8601 end datetime (e.g. 2026-10-01T11:00:00Z)' },
+        attendees: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'List of attendee email addresses'
+        }
+      },
+      required: ['summary', 'start', 'end']
+    },
+    handler: async (args, context) => {
+      return await context.credentialHandle.getAuthorizedClient(async (credentials) => {
+        const client = new GoogleWorkspaceClient(credentials.accessToken);
+        return await client.createEvent(args);
+      });
+    }
   }
 ];

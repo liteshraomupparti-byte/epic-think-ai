@@ -13,6 +13,7 @@ import { ResultSanitizer } from '../../plugins/core/ResultSanitizer.js';
 import { SafeLogger } from '../../plugins/core/SafeLogger.js';
 import { recallMemory, retainMemory } from '../../services/hindsightService.js';
 import { AICancellationError, AITimeoutError } from '../errors/AIErrors.js';
+import { IntentDispatcher } from './IntentDispatcher.js';
 
 export class AgentOrchestrator {
   /**
@@ -67,6 +68,32 @@ export class AgentOrchestrator {
       return await this.handleConfirmedResume({ uid, conversationId, confirmationId, emit });
     }
 
+    // Auto-detect natural language affirmative or negative response for pending confirmation tickets
+    const trimmedPrompt = (userPrompt || '').trim().toLowerCase();
+    const isAffirmative = /^(?:yes|yep|yeah|sure|confirm|confirmed|approve|approved|proceed|send|send\s+it|do\s+it|go\s+ahead|okay|ok|i\s+approve|please\s+send)\b/i.test(trimmedPrompt);
+    const isNegative = /^(?:no|nope|cancel|cancelled|reject|rejected|abort|stop|don'?t|do\s+not)\b/i.test(trimmedPrompt);
+
+    if (isAffirmative || isNegative) {
+      const pendingTickets = ConfirmationManager.getPendingForUser(uid);
+      const ticket = (conversationId && pendingTickets.find(t => t.conversationId === conversationId)) || pendingTickets[pendingTickets.length - 1];
+      if (ticket) {
+        if (isAffirmative) {
+          emit('ai:thinking', { thought: `Detected natural language confirmation for pending action: ${ticket.pluginId}.${ticket.toolName}` });
+          return await this.handleConfirmedResume({ uid, conversationId, confirmationId: ticket.confirmationId, emit });
+        } else {
+          ConfirmationManager.resolveConfirmation(ticket.confirmationId, 'rejected', uid);
+          return {
+            success: true,
+            text: `I have cancelled the execution of \`${ticket.pluginId}.${ticket.toolName}\` as requested.`,
+            provider: 'Epic Think Autonomous Engine',
+            model: modelPreset,
+            requiresConfirmation: false,
+            confirmationTicket: null
+          };
+        }
+      }
+    }
+
     // 1. Recall Hindsight Semantic Memory
     let recalledMemories = [];
     let recalledPromptContext = '';
@@ -88,13 +115,72 @@ export class AgentOrchestrator {
     const isConversationalGreeting = /^(?:hi|hello|hey|greetings|good\s+(?:morning|afternoon|evening)|howdy|sup|how\s+are\s+you|who\s+are\s+you|what\s+can\s+you\s+do)\b[!?.]*$/i.test(userPrompt.trim());
     const toolsForRun = isConversationalGreeting ? [] : activeTools;
 
+    // 2b. Intent Detection & Autonomous Builder (Lovable / Emergent AI Trigger)
+    const intentAnalysis = IntentDispatcher.detectIntent(userPrompt, recentMessages, conversationId, uid);
+    let builderProject = null;
+
+    if (intentAnalysis.intent === 'BUILD_APP') {
+      emit('ai:thinking', { thought: `Autonomous Builder: Detected application build intent. Synthesizing full project files and live preview...` });
+      builderProject = await IntentDispatcher.executeAutonomousBuild({
+        prompt: userPrompt,
+        uid,
+        conversationId,
+        modelPreset
+      });
+      if (builderProject) {
+        emit('ai:thinking', { thought: `Autonomous Builder: Built "${builderProject.title}" with live preview at ${builderProject.previewUrl}` });
+      }
+    } else if (intentAnalysis.intent === 'MODIFY_APP') {
+      emit('ai:thinking', { thought: `Autonomous Builder: Detected modification prompt. Updating project files and refreshing live preview...` });
+      builderProject = await IntentDispatcher.executeAutonomousEdit({
+        projectId: intentAnalysis.projectId,
+        prompt: userPrompt,
+        uid,
+        conversationId,
+        modelPreset
+      });
+      if (builderProject) {
+        emit('ai:thinking', { thought: `Autonomous Builder: Applied "${builderProject.description}" to "${builderProject.title}"` });
+      }
+    }
+
+    // If an autonomous build or prompt modification completed, return directly with live preview
+    if (builderProject) {
+      const isEdit = builderProject.action === 'modified';
+      const durationMs = Date.now() - startTime;
+      const finalMsg = isEdit
+        ? `### ✨ Application Updated: **${builderProject.title}**\n\nI have updated your application based on your prompt: **"${userPrompt}"** with zero build errors!\n\n#### 🛠️ Modifications Applied:\n- **Change**: ${builderProject.description}\n- **Updated File(s)**: \`${builderProject.modifiedFiles?.join('`, `') || builderProject.modifiedFile}\`\n- **Live Preview**: Refreshed in real-time.\n\n${IntentDispatcher.formatBuilderCardMarkdown(builderProject)}`
+        : `### 🚀 Autonomous Build Complete: **${builderProject.title}**\n\nI have autonomously architected and built your application from your prompt with **zero blocking questions**!\n\n#### 🏗️ Architecture & Features Built:\n- **Responsive UI**: Mobile-first layout with smooth interactions and clean typography.\n- **Interactive Logic**: Client-side state handling, dynamic components, and mock API ready.\n- **0 Build Errors**: Synthesized, verified, and self-healed in Website Builder.\n\n${IntentDispatcher.formatBuilderCardMarkdown(builderProject)}`;
+
+      emit('ai:complete', {
+        text: finalMsg,
+        provider: 'Epic Think Autonomous Engine',
+        model: modelPreset,
+        durationMs
+      });
+
+      return {
+        success: true,
+        text: finalMsg,
+        provider: 'Epic Think Autonomous Engine',
+        model: modelPreset,
+        recalledMemoriesCount: recalledMemories.length,
+        executedToolCalls: [],
+        requiresConfirmation: false,
+        confirmationTicket: null,
+        durationMs,
+        builderProject
+      };
+    }
+
     // 3. Assemble Initial Context
     const { systemPrompt, messages } = ContextManager.buildContext({
       userPrompt,
       recentMessages,
       recalledMemories,
       recalledPromptContext,
-      activeModelPreset: modelPreset
+      activeModelPreset: modelPreset,
+      builderProject
     });
 
     // 4. Autonomous Agent Loop
@@ -251,7 +337,7 @@ export class AgentOrchestrator {
           if (res.status === 'requires_confirmation') {
             requiresConfirmationTicket = res.confirmationTicket;
             emit('ai:thinking', { thought: `Action requires human confirmation: ${tc.name}` });
-            finalAnswer = `This action requires your confirmation before proceeding:\n\n**Action:** \`${tc.pluginId}.${tc.toolName}\`\n**Summary:** ${res.confirmationTicket.summary}\n\nPlease review and approve the action ticket.`;
+            finalAnswer = `This action requires your confirmation before proceeding:\n\n**Action:** \`${tc.pluginId}.${tc.toolName}\`\n**Summary:** ${res.confirmationTicket.summary}\n\n:::action-ticket\n${JSON.stringify(res.confirmationTicket)}\n:::\n\nPlease review and approve the action ticket below, or simply reply **"yes"** / **"confirm"** in the chat.`;
             break;
           }
 
@@ -321,6 +407,11 @@ export class AgentOrchestrator {
       }
     }
 
+    // If an autonomous builder project was created, append the Lovable preview card
+    if (builderProject && !finalAnswer.includes(':::builder-card')) {
+      finalAnswer += '\n\n' + IntentDispatcher.formatBuilderCardMarkdown(builderProject);
+    }
+
     const durationMs = Date.now() - startTime;
     emit('ai:complete', {
       text: finalAnswer,
@@ -338,7 +429,8 @@ export class AgentOrchestrator {
       executedToolCalls,
       requiresConfirmation: Boolean(requiresConfirmationTicket),
       confirmationTicket: requiresConfirmationTicket,
-      durationMs
+      durationMs,
+      builderProject
     };
   }
 

@@ -63,3 +63,7 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Website Builder Generated Projects
+builder_projects/
+

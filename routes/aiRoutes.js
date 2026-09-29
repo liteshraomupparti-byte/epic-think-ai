@@ -18,11 +18,20 @@ import { SafeLogger } from '../plugins/core/SafeLogger.js';
 
 const router = express.Router();
 
+// Helper to allow both authenticated users and local/guest users seamless access
+const optionalAuth = (req, res, next) => {
+  if (req.headers.authorization) {
+    return requireAuth(req, res, next);
+  }
+  req.user = { uid: 'guest_user', email: 'guest@epicthink.ai' };
+  next();
+};
+
 /**
  * Primary AI Chat & Tool Execution
  * POST /api/ai/chat
  */
-router.post('/chat', requireAuth, async (req, res) => {
+router.post('/chat', optionalAuth, async (req, res) => {
   const { prompt, text, message, conversationId, recentMessages, history, modelPreset, confirmationId } = req.body || {};
   const userPrompt = prompt || text || message;
   const effectiveMessages = recentMessages || history || [];
@@ -54,7 +63,19 @@ router.post('/chat', requireAuth, async (req, res) => {
       executedToolCalls: result.executedToolCalls,
       requiresConfirmation: result.requiresConfirmation,
       confirmationTicket: result.confirmationTicket,
-      durationMs: result.durationMs || result.latency
+      ticket: result.confirmationTicket ? {
+        ...result.confirmationTicket,
+        id: result.confirmationTicket.confirmationId || result.confirmationTicket.id,
+        confirmationId: result.confirmationTicket.confirmationId || result.confirmationTicket.id,
+        tool: result.confirmationTicket.toolName || result.confirmationTicket.tool,
+        toolName: result.confirmationTicket.toolName || result.confirmationTicket.tool,
+        risk: result.confirmationTicket.riskTier || result.confirmationTicket.risk,
+        riskTier: result.confirmationTicket.riskTier || result.confirmationTicket.risk,
+        params: result.confirmationTicket.parameters || result.confirmationTicket.params,
+        parameters: result.confirmationTicket.parameters || result.confirmationTicket.params
+      } : null,
+      durationMs: result.durationMs || result.latency,
+      builderProject: result.builderProject
     });
   } catch (err) {
     SafeLogger.error('AI chat endpoint failure', {

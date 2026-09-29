@@ -134,6 +134,37 @@ export class AgentPlanner {
       });
     }
 
+    // Auto-detect natural language affirmative or negative response for pending confirmation tickets
+    const isAffirmative = /^(?:yes|yep|yeah|sure|confirm|confirmed|approve|approved|proceed|send|send\s+it|do\s+it|go\s+ahead|okay|ok|i\s+approve|please\s+send)\b/i.test(trimmedPrompt);
+    const isNegative = /^(?:no|nope|cancel|cancelled|reject|rejected|abort|stop|don'?t|do\s+not)\b/i.test(trimmedPrompt);
+
+    if (isAffirmative || isNegative) {
+      const pendingTickets = ConfirmationManager.getPendingForUser(uid);
+      const ticket = (conversationId && pendingTickets.find(t => t.conversationId === conversationId)) || pendingTickets[pendingTickets.length - 1];
+      if (ticket) {
+        if (isAffirmative) {
+          return await AgentPlanner.resumeConfirmedAction({
+            uid,
+            conversationId,
+            confirmationId: ticket.confirmationId,
+            userPrompt: trimmedPrompt,
+            recalledMemories
+          });
+        } else {
+          ConfirmationManager.resolveConfirmation(ticket.confirmationId, 'rejected', uid);
+          return {
+            success: true,
+            text: `I have cancelled the execution of \`${ticket.pluginId}.${ticket.toolName}\` as requested.`,
+            thoughts: '[CONFIRMATION: User rejected action ticket]',
+            recalledMemoriesCount: 0,
+            executedToolCalls: [],
+            requiresConfirmation: false,
+            confirmationTicket: null
+          };
+        }
+      }
+    }
+
     // -----------------------------------------------------------------
     // STEP 3: Planner Execution Loop (Max 5 Iterations)
     // -----------------------------------------------------------------
@@ -196,7 +227,7 @@ export class AgentPlanner {
         // Check if Human Confirmation is required
         if (execResult.status === 'requires_confirmation') {
           requiresConfirmationTicket = execResult.confirmationTicket;
-          finalAnswer = `This action requires your confirmation before proceeding:\n\n**Action:** \`${pluginId}.${toolName}\`\n**Summary:** ${execResult.confirmationTicket.summary}\n\nPlease review and approve the action ticket.`;
+          finalAnswer = `This action requires your confirmation before proceeding:\n\n**Action:** \`${pluginId}.${toolName}\`\n**Summary:** ${execResult.confirmationTicket.summary}\n\n:::action-ticket\n${JSON.stringify(execResult.confirmationTicket)}\n:::\n\nPlease review and approve the action ticket below, or simply reply **"yes"** / **"confirm"** in the chat.`;
           break;
         }
 

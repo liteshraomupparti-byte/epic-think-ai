@@ -49,6 +49,17 @@ router.post('/chat', requireAuth, async (req, res) => {
       executedToolCalls: result.executedToolCalls,
       requiresConfirmation: result.requiresConfirmation,
       confirmationTicket: result.confirmationTicket,
+      ticket: result.confirmationTicket ? {
+        ...result.confirmationTicket,
+        id: result.confirmationTicket.confirmationId || result.confirmationTicket.id,
+        confirmationId: result.confirmationTicket.confirmationId || result.confirmationTicket.id,
+        tool: result.confirmationTicket.toolName || result.confirmationTicket.tool,
+        toolName: result.confirmationTicket.toolName || result.confirmationTicket.tool,
+        risk: result.confirmationTicket.riskTier || result.confirmationTicket.risk,
+        riskTier: result.confirmationTicket.riskTier || result.confirmationTicket.risk,
+        params: result.confirmationTicket.parameters || result.confirmationTicket.params,
+        parameters: result.confirmationTicket.parameters || result.confirmationTicket.params
+      } : null,
       durationMs: result.durationMs
     });
   } catch (err) {

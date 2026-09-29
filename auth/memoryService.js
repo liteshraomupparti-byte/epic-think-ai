@@ -150,7 +150,7 @@ export class MemoryService {
             const formatted = data.memories.map(m => ({
               id: m.id,
               text: m.text,
-              time: m.timestamp ? new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
+              time: m.timestamp ? new Date(m.timestamp).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }) : 'Recently',
               timestamp: m.timestamp || Date.now(),
               entities: m.entities || [],
               context: m.context || 'general',
@@ -191,7 +191,7 @@ export class MemoryService {
     const newEntry = {
       id: 'mem_' + Math.random().toString(36).substring(2, 9),
       text: memoryText.trim(),
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      time: new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }),
       timestamp: Date.now(),
       context: context,
       uid: uid

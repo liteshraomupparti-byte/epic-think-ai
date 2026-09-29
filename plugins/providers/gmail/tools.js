@@ -44,6 +44,24 @@ export const gmailTools = [
     }
   },
   {
+    name: 'read_email_thread',
+    description: 'Read the full thread or messages of a specific email by messageId or threadId.',
+    permissionTier: RiskTiers.READ,
+    parameters: {
+      type: 'object',
+      properties: {
+        messageId: { type: 'string', description: 'Gmail Message ID or Thread ID' },
+        threadId: { type: 'string', description: 'Optional Gmail Thread ID' }
+      }
+    },
+    handler: async (args, context) => {
+      return await context.credentialHandle.getAuthorizedClient(async (credentials) => {
+        const client = new GoogleWorkspaceClient(credentials.accessToken);
+        return await client.readEmail({ messageId: args.messageId || args.threadId });
+      });
+    }
+  },
+  {
     name: 'create_draft',
     description: 'Create an email draft in Gmail without sending it.',
     permissionTier: RiskTiers.WRITE,

@@ -30,9 +30,14 @@ export class GoogleOAuthAdapter extends BaseOAuthAdapter {
       throw new Error('GOOGLE_CLIENT_ID is not configured in server environment.');
     }
 
+    const effectiveRedirectUri = redirectUri || process.env.GOOGLE_REDIRECT_URI;
+    if (!effectiveRedirectUri) {
+      throw new Error('redirect_uri is required for Google OAuth authorization.');
+    }
+
     const params = new URLSearchParams({
       client_id: this.clientId,
-      redirect_uri: redirectUri,
+      redirect_uri: effectiveRedirectUri,
       response_type: 'code',
       scope: this.scopes.join(' '),
       access_type: 'offline', // Critical for receiving refresh_token
@@ -53,11 +58,16 @@ export class GoogleOAuthAdapter extends BaseOAuthAdapter {
       throw new Error('GOOGLE_CLIENT_SECRET is not configured in server environment.');
     }
 
+    const effectiveRedirectUri = redirectUri || process.env.GOOGLE_REDIRECT_URI;
+    if (!effectiveRedirectUri) {
+      throw new Error('redirect_uri is required for Google OAuth code exchange.');
+    }
+
     const bodyParams = {
       code,
       client_id: this.clientId,
       client_secret: this.clientSecret,
-      redirect_uri: redirectUri,
+      redirect_uri: effectiveRedirectUri,
       grant_type: 'authorization_code'
     };
 
