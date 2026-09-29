@@ -12,15 +12,19 @@
 import { getIdToken } from './authService.js';
 
 const getApiBase = () => {
-  if (typeof window === 'undefined') return 'http://localhost:3001';
-  if (window.location.port === '3001') return '';
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') return '';
+    if (window.location.port === '3001') return '';
+  }
   return 'http://localhost:3001';
 };
 
 const getWsUrl = () => {
   if (typeof window === 'undefined') return 'ws://localhost:3001/ws';
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const host = window.location.port === '3001' ? window.location.host : 'localhost:3001';
+  const host = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' 
+    ? window.location.host 
+    : (window.location.port === '3001' ? window.location.host : 'localhost:3001');
   return `${protocol}//${host}/ws`;
 };
 

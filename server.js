@@ -532,15 +532,19 @@ initMongoDB().catch((err) => {
   console.warn('[MONGODB] Initial connection warning:', err.message);
 });
 
-// Start Server
-server.listen(PORT, () => {
-  console.log('====================================================');
-  console.log(` Epic Think AI Backend Server Running on Port ${PORT}`);
-  console.log(` Web Interface:   http://localhost:${PORT}/`);
-  console.log(` Alternative URL: http://localhost:${PORT}/Epic%20Think%20AI.html`);
-  console.log(` Website Builder: http://localhost:${PORT}/#website-builder`);
-  console.log(` Memory Status:   http://localhost:${PORT}/api/memory/status`);
-  console.log(` Mongo Status:    http://localhost:${PORT}/api/conversations/status`);
-  console.log(` Real-Time WS:    ws://localhost:${PORT}/ws`);
-  console.log('====================================================');
-});
+// Start Server if run directly
+if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
+  server.listen(PORT, () => {
+    console.log('====================================================');
+    console.log(` Epic Think AI Backend Server Running on Port ${PORT}`);
+    console.log(` Web Interface:   http://localhost:${PORT}/`);
+    console.log(` Alternative URL: http://localhost:${PORT}/Epic%20Think%20AI.html`);
+    console.log(` Website Builder: http://localhost:${PORT}/#website-builder`);
+    console.log(` Memory Status:   http://localhost:${PORT}/api/memory/status`);
+    console.log(` Mongo Status:    http://localhost:${PORT}/api/conversations/status`);
+    console.log(` Real-Time WS:    ws://localhost:${PORT}/ws`);
+    console.log('====================================================');
+  });
+}
+
+export default app;

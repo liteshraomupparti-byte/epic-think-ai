@@ -8,7 +8,10 @@
 import { getIdToken } from "./authService.js";
 
 const getApiBase = () => {
-  if (window.location.port === '3001') return '';
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') return '';
+    if (window.location.port === '3001') return '';
+  }
   return 'http://localhost:3001';
 };
 

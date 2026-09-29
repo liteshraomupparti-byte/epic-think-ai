@@ -15,9 +15,10 @@
 import { getIdToken } from "./authService.js";
 
 const getApiBase = () => {
-  // If running directly on the backend server port, use relative path
-  if (window.location.port === '3001') return '';
-  // Fallback to local server address for cross-port development (e.g. port 8080)
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') return '';
+    if (window.location.port === '3001') return '';
+  }
   return 'http://localhost:3001';
 };
 

@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/chat",
+      "destination": "/Epic Think AI.html"
+    },
+    {
+      "source": "/preview/(.*)",
+      "destination": "/api"
+    }
+  ]
+}
