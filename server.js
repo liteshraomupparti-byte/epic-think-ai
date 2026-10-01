@@ -59,6 +59,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust reverse proxies (Vercel, Cloudflare, AWS) so req.protocol accurately reports 'https'
+app.set('trust proxy', 1);
+
 // Initialize Epic Think AI Plugins System
 initializePlugins();
 

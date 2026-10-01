@@ -130,6 +130,48 @@ router.delete('/:id/disconnect', requireAuth, async (req, res) => {
 });
 
 /**
+ * Helper to resolve the correct, environment-aware OAuth Redirect URI
+ */
+function resolveOAuthRedirectUri(req, pluginId) {
+  if (req.query.redirectUri) {
+    return req.query.redirectUri;
+  }
+
+  const isGooglePlugin = ['google', 'gmail', 'google-drive', 'google_drive', 'google-calendar', 'google_calendar'].includes(String(pluginId).toLowerCase());
+
+  // Detect host and protocol reliably (supporting Vercel edge proxies and local dev)
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  const forwardedHost = req.headers['x-forwarded-host'];
+  const host = forwardedHost || req.get('host') || 'localhost:3001';
+  const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+  const protocol = isLocalhost ? (req.protocol || 'http') : (forwardedProto || 'https');
+
+  if (isGooglePlugin) {
+    // Check both standard environment variable names
+    const configuredUri = process.env.GOOGLE_REDIRECT_URI || process.env.GOOGLE_CALLBACK_URL;
+
+    if (configuredUri) {
+      // If we are on localhost, only use configuredUri if it is a localhost URI
+      if (isLocalhost && (configuredUri.includes('localhost') || configuredUri.includes('127.0.0.1'))) {
+        return configuredUri;
+      }
+      // If we are in production, only use configuredUri if it is an HTTPS URI
+      if (!isLocalhost && configuredUri.startsWith('https://')) {
+        return configuredUri;
+      }
+    }
+
+    // Dynamic canonical fallback:
+    // Local: http://localhost:3001/api/plugins/google/oauth/callback
+    // Prod:  https://hink-ai.vercel.app/api/plugins/google/oauth/callback
+    return `${protocol}://${host}/api/plugins/google/oauth/callback`;
+  }
+
+  // Non-Google plugins (e.g. github, notion)
+  return `${protocol}://${host}/api/plugins/${pluginId}/oauth/callback`;
+}
+
+/**
  * Get OAuth Authorization URL
  * GET /api/plugins/:id/oauth/authorize
  */
@@ -137,9 +179,7 @@ router.get('/:id/oauth/authorize', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const uid = req.user.uid;
-    const isGooglePlugin = ['google', 'gmail', 'google-drive', 'google_drive', 'google-calendar', 'google_calendar'].includes(String(id).toLowerCase());
-    const configuredGoogleUri = isGooglePlugin ? process.env.GOOGLE_REDIRECT_URI : null;
-    const redirectUri = req.query.redirectUri || configuredGoogleUri || `${req.protocol}://${req.get('host')}/api/plugins/${id}/oauth/callback`;
+    const redirectUri = resolveOAuthRedirectUri(req, id);
 
     const authUrl = OAuthManager.getAuthorizationUrl({
       uid,
@@ -149,7 +189,8 @@ router.get('/:id/oauth/authorize', requireAuth, async (req, res) => {
 
     res.json({
       success: true,
-      authUrl
+      authUrl,
+      redirectUri
     });
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
@@ -202,10 +243,10 @@ router.get('/:id/oauth/callback', async (req, res) => {
       }
     }
 
-    res.redirect(`/?plugin_oauth_success=${encodeURIComponent(targetPluginId)}&pluginConnected=${encodeURIComponent(targetPluginId)}`);
+    res.redirect(`/?plugin_oauth_success=${encodeURIComponent(targetPluginId)}&pluginConnected=${encodeURIComponent(targetPluginId)}#plugins`);
   } catch (err) {
     SafeLogger.error('OAuth callback failed', { plugin: id, error: err.message });
-    res.redirect(`/?plugin_oauth_error=${encodeURIComponent(err.message)}&pluginError=${encodeURIComponent(err.message)}`);
+    res.redirect(`/?plugin_oauth_error=${encodeURIComponent(err.message)}&pluginError=${encodeURIComponent(err.message)}#plugins`);
   }
 });
 

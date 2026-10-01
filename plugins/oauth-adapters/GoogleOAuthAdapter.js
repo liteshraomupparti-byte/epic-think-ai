@@ -25,12 +25,33 @@ export class GoogleOAuthAdapter extends BaseOAuthAdapter {
     });
   }
 
+  resolveEffectiveRedirectUri(redirectUri) {
+    if (redirectUri) return redirectUri;
+
+    const envUri = process.env.GOOGLE_REDIRECT_URI || process.env.GOOGLE_CALLBACK_URL;
+    const isVercel = Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
+
+    if (envUri) {
+      if (isVercel && (envUri.includes('localhost') || envUri.includes('127.0.0.1'))) {
+        return 'https://hink-ai.vercel.app/api/plugins/google/oauth/callback';
+      }
+      return envUri;
+    }
+
+    if (isVercel) {
+      return 'https://hink-ai.vercel.app/api/plugins/google/oauth/callback';
+    }
+
+    const port = process.env.PORT || 3001;
+    return `http://localhost:${port}/api/plugins/google/oauth/callback`;
+  }
+
   getAuthorizationUrl({ state, redirectUri, codeChallenge }) {
     if (!this.clientId) {
       throw new Error('GOOGLE_CLIENT_ID is not configured in server environment.');
     }
 
-    const effectiveRedirectUri = redirectUri || process.env.GOOGLE_REDIRECT_URI;
+    const effectiveRedirectUri = this.resolveEffectiveRedirectUri(redirectUri);
     if (!effectiveRedirectUri) {
       throw new Error('redirect_uri is required for Google OAuth authorization.');
     }
@@ -58,7 +79,7 @@ export class GoogleOAuthAdapter extends BaseOAuthAdapter {
       throw new Error('GOOGLE_CLIENT_SECRET is not configured in server environment.');
     }
 
-    const effectiveRedirectUri = redirectUri || process.env.GOOGLE_REDIRECT_URI;
+    const effectiveRedirectUri = this.resolveEffectiveRedirectUri(redirectUri);
     if (!effectiveRedirectUri) {
       throw new Error('redirect_uri is required for Google OAuth code exchange.');
     }
