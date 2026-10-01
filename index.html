@@ -446,7 +446,12 @@
       justify-content: space-between;
       padding: 0 16px;
       background-color: var(--bg-main);
+      border-bottom: 1px solid var(--border-light);
       z-index: 20;
+    }
+
+    .top-nav-main-bar {
+      display: contents;
     }
 
     .top-nav-left {
@@ -461,9 +466,11 @@
       gap: 6px;
       padding: 6px 12px;
       border-radius: var(--radius-pill);
-      font-size: 15px;
+      font-size: 14.5px;
       font-weight: 600;
       color: var(--text-main);
+      white-space: nowrap;
+      user-select: none;
     }
 
     .model-selector-btn:hover {
@@ -479,10 +486,22 @@
       font-weight: 500;
     }
 
+    .top-nav-badges-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 10px;
+      margin-right: auto;
+    }
+
     .top-nav-right {
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+
+    .mobile-new-chat-btn {
+      display: none !important;
     }
 
     .nav-badge-btn {
@@ -495,6 +514,9 @@
       border: 1px solid var(--border-main);
       border-radius: var(--radius-pill);
       color: var(--text-secondary);
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .nav-badge-btn:hover {
@@ -558,6 +580,18 @@
         opacity: 1;
         transform: scale(1.2);
       }
+    }
+
+    /* Chat View Wrapper */
+    #chatViewWrapper {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 0%;
+      min-height: 0;
+      height: calc(100vh - 52px);
+      max-height: calc(100vh - 52px);
+      overflow: hidden;
+      position: relative;
     }
 
     /* Chat Scroll Area - 100% Reliable Block-Level Scrolling */
@@ -1151,22 +1185,35 @@
     /* ==========================================================================
        FLOATING SIGNATURE CHATGPT INPUT COMPOSER
        ========================================================================== */
-    .composer-wrapper {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      padding: 0 20px 18px;
-      background: linear-gradient(180deg, rgba(33, 33, 33, 0) 0%, var(--bg-main) 35%);
+    /* Sidebar Mobile Backdrop */
+    .sidebar-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.25s ease;
       pointer-events: none;
+    }
+
+    .composer-wrapper {
+      position: relative;
+      flex-shrink: 0;
+      width: 100%;
+      padding: 10px 20px max(14px, env(safe-area-inset-bottom, 14px));
+      background: var(--bg-main);
       display: flex;
       flex-direction: column;
       align-items: center;
       z-index: 25;
+      border-top: 1px solid var(--border-light);
     }
 
     [data-theme="light"] .composer-wrapper {
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, var(--bg-main) 35%);
+      background: var(--bg-main);
     }
 
     .composer-inner {
@@ -1726,41 +1773,670 @@
     }
 
     /* Responsive Mobile Behavior */
+    /* Responsive Mobile Behavior */
     @media (max-width: 768px) {
       .sidebar {
         position: fixed;
         left: 0;
         top: 0;
         bottom: 0;
+        width: min(320px, 84vw) !important;
+        max-width: 84vw !important;
         transform: translateX(-100%);
         box-shadow: none;
+        z-index: 1000;
+        padding-top: max(12px, env(safe-area-inset-top, 12px));
+        padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       }
 
       .sidebar.open {
-        transform: translateX(0);
-        box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.6);
+        transform: translateX(0) !important;
+        box-shadow: 0 0 32px rgba(0, 0, 0, 0.6) !important;
       }
 
       .sidebar.collapsed {
         margin-left: 0;
       }
 
-      .suggestion-grid {
-        grid-template-columns: 1fr;
+      .sidebar-backdrop.active {
+        display: block !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
       }
 
-      .chat-container {
-        padding: 16px 14px 220px;
+      body.sidebar-drawer-open {
+        overflow: hidden !important;
+        touch-action: none;
       }
 
-      .composer-wrapper {
-        padding: 0 12px 12px;
+      /* Mobile App Container & Layout Lock (Eliminates Dual Scrollbars) */
+      html, body {
+        overflow: hidden !important;
+        position: fixed;
+        width: 100%;
+        height: 100%;
+      }
+
+      .app-container {
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        overflow: hidden !important;
+      }
+
+      .main-content {
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        overflow: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
+      }
+
+      /* Mobile Top Navigation - Single Clean 48px Header */
+      .top-nav {
+        height: 48px !important;
+        min-height: 48px !important;
+        max-height: 48px !important;
+        flex-direction: row !important;
+        padding: 0 10px !important;
+        gap: 0 !important;
+        background: var(--bg-main) !important;
+        border-bottom: 1px solid var(--border-light) !important;
+        flex-shrink: 0 !important;
+        overflow: visible !important;
+      }
+
+      .top-nav-main-bar {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        width: 100% !important;
+        height: 48px !important;
+        min-height: 48px !important;
+        padding: 0 10px !important;
+      }
+
+      .top-nav-left {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        min-width: 0 !important;
+        flex: 1 !important;
+      }
+
+      .model-selector-btn {
+        font-size: 13.5px !important;
+        font-weight: 600 !important;
+        padding: 5px 11px !important;
+        gap: 5px !important;
+        border-radius: var(--radius-pill) !important;
+        background: var(--bg-subtle) !important;
+        border: 1px solid var(--border-light) !important;
+        white-space: nowrap !important;
+        max-width: 180px !important;
+        flex-shrink: 0 !important;
+      }
+
+      #activeModelLabel {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        max-width: 135px !important;
+        display: inline-block !important;
+        vertical-align: middle !important;
+      }
+
+      .top-nav-right {
+        display: flex !important;
+        align-items: center !important;
+        gap: 4px !important;
+        flex-shrink: 0 !important;
+      }
+
+      .mobile-new-chat-btn {
+        display: inline-flex !important;
+        width: 34px !important;
+        height: 34px !important;
+        border-radius: 50% !important;
+        background: var(--bg-subtle) !important;
+        color: var(--text-main) !important;
+        border: 1px solid var(--border-light) !important;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .mobile-new-chat-btn:active {
+        background: var(--bg-subtle-hover) !important;
+        transform: scale(0.94);
+      }
+
+      /* Mobile Quick Feature Badges Carousel (Hidden to Prevent Top Navigation Duplication) */
+      .top-nav-badges-strip {
+        display: none !important;
+        width: 100% !important;
+        height: 38px !important;
+        min-height: 38px !important;
+        margin: 0 !important;
+        align-items: center !important;
+        gap: 6px !important;
+        padding: 0 10px 6px !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        white-space: nowrap !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+      }
+
+      .top-nav-badges-strip::-webkit-scrollbar {
+        display: none !important;
+      }
+
+      .top-nav-badges-strip .nav-badge-btn {
+        flex-shrink: 0 !important;
+        height: 28px !important;
+        padding: 0 10px !important;
+        font-size: 11.5px !important;
+        border-radius: 9999px !important;
+        background: var(--bg-card) !important;
+        border: 1px solid var(--border-light) !important;
+        gap: 5px !important;
+        color: var(--text-secondary) !important;
+        transition: transform 0.15s ease, background-color 0.15s ease;
+      }
+
+      .top-nav-badges-strip .nav-badge-btn:active {
+        transform: scale(0.95);
+        background: var(--bg-card-hover) !important;
+      }
+
+      .top-nav-badges-strip .nav-badge-btn svg {
+        width: 12px !important;
+        height: 12px !important;
+        flex-shrink: 0 !important;
+      }
+
+      .website-builder-nav-btn {
+        background: linear-gradient(135deg, rgba(197, 160, 89, 0.28), rgba(16, 185, 129, 0.18)) !important;
+        border: 1px solid #c5a059 !important;
+        color: #fef08a !important;
+        font-weight: 700 !important;
+        box-shadow: 0 0 10px rgba(197, 160, 89, 0.3) !important;
       }
 
       .popover-menu {
-        left: 14px;
+        left: 10px !important;
+        right: 10px !important;
+        top: 50px !important;
+        width: auto !important;
+        z-index: 10002 !important;
+      }
+
+      /* Mobile Chat Area - Single Scrollbar & Pure Flex Sizing */
+      #chatViewWrapper {
+        flex: 1 1 0% !important;
+        min-height: 0 !important;
+        height: calc(100dvh - 48px) !important;
+        max-height: calc(100dvh - 48px) !important;
+        overflow: hidden !important;
+        position: relative !important;
+        display: flex !important;
+        flex-direction: column !important;
+      }
+
+      .chat-scroll-area {
+        flex: 1 1 0% !important;
+        min-height: 0 !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        scrollbar-width: thin !important;
+        scrollbar-gutter: auto !important;
+        overscroll-behavior-y: contain;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .chat-scroll-area::-webkit-scrollbar {
+        width: 4px;
+      }
+
+      .chat-scroll-area::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.18);
+        border-radius: 4px;
+      }
+
+      .chat-container {
+        padding: 12px 12px 16px !important;
+        max-width: 100% !important;
+        min-height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        box-sizing: border-box !important;
+      }
+
+      /* Mobile Hero Welcome Screen - Compact & Clean */
+      .hero-container {
+        margin: 6px auto 16px !important;
+        padding: 0 4px !important;
+        max-width: 100% !important;
+      }
+
+      .hero-logo {
+        width: 42px !important;
+        height: 42px !important;
+        margin-bottom: 12px !important;
+      }
+
+      .hero-logo svg {
+        width: 24px !important;
+        height: 24px !important;
+      }
+
+      .hero-title {
+        font-size: 21px !important;
+        font-weight: 700 !important;
+        margin-bottom: 6px !important;
+        letter-spacing: -0.01em !important;
+      }
+
+      .hero-subtitle {
+        font-size: 12.5px !important;
+        line-height: 1.4 !important;
+        margin-bottom: 16px !important;
+        max-width: 320px !important;
+        color: var(--text-secondary) !important;
+      }
+
+      .suggestion-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+        width: 100% !important;
+      }
+
+      .suggestion-card {
+        padding: 10px 10px !important;
+        border-radius: 12px !important;
+        gap: 3px !important;
+        background: var(--bg-card) !important;
+        border: 1px solid var(--border-light) !important;
+        box-shadow: none !important;
+      }
+
+      .suggestion-card:active {
+        transform: scale(0.97) !important;
+        background: var(--bg-card-hover) !important;
+      }
+
+      .suggestion-header {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11.5px !important;
+        font-weight: 600 !important;
+        color: var(--text-main);
+      }
+
+      .suggestion-header svg {
+        width: 13px !important;
+        height: 13px !important;
+        flex-shrink: 0;
+        color: var(--accent);
+      }
+
+      .suggestion-prompt {
+        font-size: 10.5px !important;
+        line-height: 1.35 !important;
+        color: var(--text-muted);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      /* Mobile Scroll-to-Bottom Button Positioning */
+      .scroll-bottom-btn {
+        top: -44px !important;
+        right: 18px !important;
+        transform: none !important;
+        width: 34px !important;
+        height: 34px !important;
+        background: var(--bg-card) !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45) !important;
+        border: 1px solid var(--border-light) !important;
+      }
+
+      /* Never show scroll bottom button on hero welcome screen */
+      .hero-container ~ * .scroll-bottom-btn,
+      #chatContainer:has(.hero-container) ~ .composer-wrapper .scroll-bottom-btn {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+      }
+
+      /* Mobile Composer Optimization */
+      .composer-wrapper {
+        position: relative !important;
+        bottom: auto !important;
+        left: auto !important;
+        right: auto !important;
+        flex-shrink: 0 !important;
+        width: 100% !important;
+        padding: 8px 10px max(10px, env(safe-area-inset-bottom, 10px)) !important;
+        background: var(--bg-main) !important;
+        border-top: 1px solid var(--border-light) !important;
+      }
+
+      .composer-inner {
+        padding: 8px 10px 8px 12px !important;
+        border-radius: 20px !important;
+      }
+
+      .composer-textarea {
+        font-size: 15px !important;
+      }
+
+      .composer-toolbar {
+        margin-top: 6px;
+      }
+
+      .toolbar-tools {
+        gap: 4px;
+      }
+
+      .pill-toggle-btn {
+        padding: 4px 8px !important;
+        font-size: 11.5px !important;
+        gap: 4px !important;
+      }
+
+      .pill-toggle-btn svg {
+        width: 12px;
+        height: 12px;
+      }
+
+      .disclaimer-text {
+        font-size: 11px !important;
+        margin-top: 5px !important;
+        line-height: 1.3;
+        padding: 0 8px;
+      }
+
+      /* Plugin Store Mobile Sheet & Card Fixes */
+      .plugin-modal-content {
+        max-width: 100vw !important;
+        width: 100vw !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        border-radius: 0 !important;
+        border: none !important;
+        display: flex !important;
+        flex-direction: column !important;
+        margin: 0 !important;
+      }
+
+      .modal-dialog.plugin-modal-content {
+        margin: 0 !important;
+        max-width: 100vw !important;
+        width: 100vw !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+      }
+
+      .plugins-grid {
+        grid-template-columns: 1fr !important;
+        max-height: none !important;
+        flex: 1 1 0% !important;
+        overflow-y: auto !important;
+        gap: 12px !important;
+        padding-right: 0 !important;
+      }
+
+      .plugin-card {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        padding: 14px !important;
+      }
+
+      .plugin-tools-tags {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+      }
+
+      .tool-chip {
+        max-width: 100% !important;
+        word-break: break-word !important;
+        white-space: normal !important;
+      }
+
+      .plugin-filter-row {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+      }
+
+      .plugin-cat-tabs {
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        width: 100% !important;
+        scrollbar-width: none !important;
+      }
+
+      #pluginStoreModal .modal-footer {
+        flex-shrink: 0 !important;
+        padding: 12px 16px max(12px, env(safe-area-inset-bottom, 12px)) !important;
+        background: var(--bg-modal) !important;
+        border-top: 1px solid var(--border-main) !important;
+      }
+
+      /* Website Builder Workspace Mobile Full-Bleed */
+      #websiteBuilderWorkspace {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100dvh !important;
+        z-index: 10000 !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+      }
+
+      body.builder-workspace-open {
+        overflow: hidden !important;
+        touch-action: none;
+      }
+
+      .builder-toolbar {
+        height: 44px;
+        min-height: 44px;
+        padding: 0 8px;
+        gap: 6px;
+      }
+
+      .builder-toolbar-center {
+        display: none !important;
+      }
+
+      .builder-toolbar-left .builder-project-select {
+        max-width: 130px;
+        font-size: 11px;
+        padding: 4px 6px;
+      }
+
+      #builderModelSelector,
+      #builderSaveStatusBadge {
+        display: none !important;
+      }
+
+      .builder-back-to-chat-btn {
+        padding: 4px 8px !important;
+        font-size: 11px !important;
+        border-radius: 4px !important;
+      }
+
+      .builder-toolbar-right {
+        gap: 4px;
+      }
+
+      #builderInspectToggle,
+      #builderUndoBtn,
+      #builderRedoBtn,
+      #builderDiffReviewBtn {
+        display: none !important;
+      }
+
+      .builder-mobile-device-bar {
+        display: flex;
+        height: 42px;
+        min-height: 42px;
+        background: #111116;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 8px;
+        gap: 6px;
+        z-index: 25;
+      }
+
+      .mobile-device-group {
+        flex: 1;
+        display: flex;
+        gap: 4px;
+        background: #171720;
+        padding: 3px;
+        border-radius: 8px;
+      }
+
+      .mobile-device-group .builder-btn {
+        flex: 1;
+        justify-content: center;
+        font-size: 11.5px;
+        font-weight: 600;
+        padding: 5px 6px;
+        border-radius: 6px;
+        background: transparent;
+        border: none;
+        color: #a1a1aa;
+      }
+
+      .mobile-device-group .builder-btn.active {
+        background: rgba(197, 160, 89, 0.22);
+        color: #fef08a;
+        box-shadow: 0 0 8px rgba(197, 160, 89, 0.25);
+      }
+
+      .builder-main-row {
+        flex-direction: column;
+        padding-bottom: 54px;
+      }
+
+      .builder-col-chat {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        border-right: none;
+      }
+
+      .builder-col-canvas {
+        width: 100% !important;
+      }
+
+      .builder-viewport-container {
+        padding: 8px !important;
+      }
+
+      .builder-mobile-tab-bar {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 54px;
+        background: rgba(15, 15, 20, 0.96);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        z-index: 10002;
+        align-items: center;
+        justify-content: space-around;
+        padding: 0 6px env(safe-area-inset-bottom, 0px);
+      }
+
+      .builder-mobile-tab {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        background: transparent;
+        border: none;
+        color: #71717a;
+        cursor: pointer;
+        padding: 6px 0;
+        border-radius: 8px;
+        transition: all 0.15s ease;
+        position: relative;
+        touch-action: manipulation;
+      }
+
+      .builder-mobile-tab:active {
+        transform: scale(0.94);
+      }
+
+      .builder-mobile-tab.active {
+        color: #e5c98a;
+      }
+
+      .m-tab-icon {
+        font-size: 16px;
+        line-height: 1;
+      }
+
+      .m-tab-label {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+
+      .builder-mobile-fab {
+        display: flex;
+        position: absolute;
+        bottom: 68px;
         right: 14px;
-        width: auto;
+        background: linear-gradient(135deg, #c5a059, #937435);
+        color: #000;
+        font-weight: 700;
+        font-size: 12px;
+        padding: 9px 16px;
+        border-radius: 30px;
+        box-shadow: 0 8px 24px rgba(197, 160, 89, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        cursor: pointer;
+        align-items: center;
+        gap: 6px;
+        z-index: 40;
+        transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+      }
+
+      .builder-mobile-fab:active {
+        transform: scale(0.94);
+      }
+
+      .builder-col-inspector {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        z-index: 10005 !important;
+      }
+
+      .builder-modal-card {
+        width: 95% !important;
+        margin: 10px auto !important;
+        max-height: 90vh !important;
       }
     }
 
@@ -2734,6 +3410,21 @@
       font-family: var(--font-sans);
       position: relative;
       overflow: hidden;
+      opacity: 0;
+      transform: translateY(16px) scale(0.985);
+      transition: opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1), transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity, transform;
+    }
+
+    #websiteBuilderWorkspace.workspace-active {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    #websiteBuilderWorkspace.workspace-closing {
+      opacity: 0;
+      transform: translateY(14px) scale(0.99);
+      transition: opacity 0.22s ease-in, transform 0.22s ease-in;
     }
 
     /* Builder Header Toolbar */
@@ -3081,60 +3772,188 @@
       position: relative;
     }
 
+    /* ==========================================================================
+       RESPONSIVE MULTI-DEVICE VIEWPORT PREVIEW ENGINE
+       ========================================================================== */
     .builder-viewport-container {
       width: 100%;
       height: 100%;
       display: flex;
       justify-content: center;
-      align-items: stretch;
-      padding: 0;
-      overflow: hidden;
-      transition: all 0.3s ease;
+      align-items: center;
+      padding: 16px;
+      overflow: auto;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
+      background: radial-gradient(circle at 50% 20%, #15151e 0%, #07070a 100%);
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .builder-device-stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      margin: auto;
+      flex-shrink: 0;
+      transition: width 0.32s cubic-bezier(0.16, 1, 0.3, 1), height 0.32s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .builder-device-frame {
-      flex: 1;
-      width: 100%;
-      height: 100%;
-      background: #0a0a0c;
-      overflow: hidden;
       display: flex;
       flex-direction: column;
-      border: none;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      margin: 0 auto;
-    }
-
-    .builder-device-frame.tablet {
-      width: 768px !important;
-      max-width: 100%;
-      height: calc(100% - 24px);
-      margin: 12px auto;
-      border: 3px solid #272730;
-      border-radius: 20px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85);
-    }
-
-    .builder-device-frame.laptop {
-      width: 1024px !important;
-      max-width: 100%;
-      height: calc(100% - 16px);
-      margin: 8px auto;
-      border: 2px solid #272730;
-      border-radius: 12px;
-      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85);
-    }
-
-    .builder-device-frame.mobile {
-      width: 390px !important;
-      max-width: 100%;
-      height: calc(100% - 24px);
-      margin: 12px auto;
-      border: 4px solid #33333d;
-      border-radius: 36px;
+      background: #0a0a0c;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      position: relative;
+      transform-origin: top center;
+      transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), width 0.32s cubic-bezier(0.16, 1, 0.3, 1), height 0.32s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.3s ease;
+      will-change: transform, width, height;
       overflow: hidden;
-      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.9);
+    }
+
+    /* Desktop Viewport Preview (1440px native width) */
+    .builder-device-frame.desktop {
+      width: 1440px;
+      height: 900px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+
+    /* Desktop Browser Chrome */
+    .builder-desktop-chrome {
+      height: 38px;
+      min-height: 38px;
+      background: #181822;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 12px;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .builder-chrome-dots {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .builder-chrome-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .builder-chrome-dot.red { background: #ff5f56; }
+    .builder-chrome-dot.yellow { background: #ffbd2e; }
+    .builder-chrome-dot.green { background: #27c93f; }
+
+    .builder-chrome-address-bar {
+      flex: 1;
+      max-width: 520px;
+      margin: 0 auto;
+      height: 24px;
+      background: #0d0d12;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #a1a1aa;
+      font-family: var(--font-mono);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding: 0 8px;
+    }
+
+    /* Tablet Viewport Preview (iPad 768 × 1024 px) */
+    .builder-device-frame.tablet {
+      width: 768px;
+      height: 1024px;
+      border: 12px solid #1c1c26;
+      border-radius: 36px;
+      box-shadow: 0 32px 100px rgba(0, 0, 0, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 0 0 2px rgba(255, 255, 255, 0.08);
+    }
+    .builder-device-frame.tablet.landscape {
+      width: 1024px;
+      height: 768px;
+    }
+
+    .builder-tablet-camera {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #09090e;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      position: absolute;
+      top: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+    }
+
+    /* Mobile Viewport Preview (iPhone 16 / Flagship 390 × 844 px) */
+    .builder-device-frame.mobile {
+      width: 390px;
+      height: 844px;
+      border: 10px solid #1a1a24;
+      border-radius: 46px;
+      box-shadow: 0 32px 100px rgba(0, 0, 0, 0.92), inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 0 0 2px rgba(255, 255, 255, 0.08);
+    }
+    .builder-device-frame.mobile.landscape {
+      width: 844px;
+      height: 390px;
+      border-radius: 36px;
+    }
+
+    .builder-dynamic-island {
+      width: 96px;
+      height: 24px;
+      background: #000000;
+      border-radius: 20px;
+      position: absolute;
+      top: 9px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 9px;
+      pointer-events: none;
+    }
+    .builder-dynamic-island-camera {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #111116;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .builder-dynamic-island-sensor {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #08080c;
+    }
+
+    .builder-home-indicator {
+      width: 130px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.35);
+      border-radius: 4px;
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      pointer-events: none;
     }
 
     .builder-frame-iframe {
@@ -3143,17 +3962,123 @@
       border: none;
       background: #0a0a0c;
       flex: 1;
+      -webkit-overflow-scrolling: touch;
+      display: block;
+    }
+
+    /* Live Preview Shimmer Loading Skeleton */
+    .builder-preview-loader {
+      position: absolute;
+      inset: 0;
+      background: rgba(10, 10, 14, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      opacity: 1;
+      transition: opacity 0.28s ease, visibility 0.28s ease;
+      pointer-events: auto;
+    }
+    .builder-preview-loader.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .preview-spinner {
+      width: 44px;
+      height: 44px;
+      border: 3px solid rgba(197, 160, 89, 0.2);
+      border-top-color: #c5a059;
+      border-right-color: #10b981;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    .preview-loader-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #f4f4f5;
+      letter-spacing: 0.02em;
+    }
+    .preview-loader-sub {
+      font-size: 11.5px;
+      color: #e5c98a;
+      font-family: var(--font-mono);
+    }
+    .preview-loader-bar {
+      width: 160px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+      position: relative;
+    }
+    .preview-loader-progress {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 40%;
+      background: linear-gradient(90deg, #c5a059, #10b981);
+      border-radius: 2px;
+      animation: loaderProgress 1.4s infinite ease-in-out;
+    }
+    @keyframes loaderProgress {
+      0% { left: -40%; width: 40%; }
+      50% { left: 40%; width: 50%; }
+      100% { left: 100%; width: 40%; }
+    }
+
+    /* Mini-Toolbar & Canvas Header */
+    .builder-canvas-minibar {
+      width: 100%;
+      height: 36px;
+      min-height: 36px;
+      background: #121217;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      font-size: 11.5px;
+      gap: 10px;
+      z-index: 10;
+    }
+
+    .builder-dimension-badge {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      color: #a1a1aa;
+      white-space: nowrap;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .builder-zoom-select {
+      background: #181820;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 4px;
+      color: #d4d4d8;
+      font-size: 11px;
+      padding: 3px 6px;
+      outline: none;
+      cursor: pointer;
     }
 
     /* Mode switching classes on .builder-viewport-container */
-    .builder-viewport-container.preview-mode .builder-device-frame {
+    .builder-viewport-container.preview-mode .builder-device-stage {
       display: flex !important;
     }
     .builder-viewport-container.preview-mode .builder-code-editor-panel {
       display: none !important;
     }
 
-    .builder-viewport-container.code-mode .builder-device-frame {
+    .builder-viewport-container.code-mode .builder-device-stage {
       display: none !important;
     }
     .builder-viewport-container.code-mode .builder-code-editor-panel {
@@ -3162,13 +4087,10 @@
       max-width: 100% !important;
     }
 
-    .builder-viewport-container.split-mode .builder-device-frame {
+    .builder-viewport-container.split-mode .builder-device-stage {
       display: flex !important;
       width: 50% !important;
       max-width: 50% !important;
-      border-right: 1px solid rgba(255, 255, 255, 0.08);
-      margin: 0;
-      border-radius: 0;
     }
     .builder-viewport-container.split-mode .builder-code-editor-panel {
       display: flex !important;
@@ -3879,6 +4801,9 @@
      ========================================================================== -->
   <div class="app-container" id="appView" style="display:none;">
 
+    <!-- Mobile Drawer Backdrop -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
     <!-- ======================================================================
        LEFT COLLAPSIBLE SIDEBAR
        ====================================================================== -->
@@ -4023,54 +4948,82 @@
     <main class="main-content">
 
       <!-- Top Nav Header -->
+      <!-- Top Nav Header -->
       <header class="top-nav">
-        <div class="top-nav-left">
-          <!-- Re-open sidebar button (shows when sidebar collapsed) -->
-          <button class="icon-btn" id="sidebarOpenBtn" title="Open sidebar">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="9" y1="3" x2="9" y2="21"></line>
-            </svg>
-          </button>
+        <div class="top-nav-main-bar">
+          <div class="top-nav-left">
+            <!-- Re-open sidebar button (shows when sidebar collapsed) -->
+            <button class="icon-btn" id="sidebarOpenBtn" title="Open sidebar">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="9" y1="3" x2="9" y2="21"></line>
+              </svg>
+            </button>
 
-          <!-- Model Selector Pill (ChatGPT 4o style) -->
-          <button class="model-selector-btn" id="modelSelectorBtn">
-            <span id="activeModelLabel">Epic Think 4o</span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </button>
+            <!-- Model Selector Pill (ChatGPT 4o style) -->
+            <button class="model-selector-btn" id="modelSelectorBtn">
+              <span id="activeModelLabel">Epic Think 4o</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
 
-          <!-- Model Selector Dropdown Popover -->
-          <div class="popover-menu" id="modelPopover">
-            <div class="popover-item active" data-model="Epic Think 4o">
-              <div style="flex: 1;">
-                <div class="item-title">Epic Think 4o <span class="model-tag">Smartest</span></div>
-                <div class="item-desc">High-intelligence flagship model for complex reasoning, analysis, and coding.
+            <!-- Model Selector Dropdown Popover -->
+            <div class="popover-menu" id="modelPopover">
+              <div class="popover-item active" data-model="Epic Think 4o">
+                <div style="flex: 1;">
+                  <div class="item-title">Epic Think 4o <span class="model-tag">Smartest</span></div>
+                  <div class="item-desc">High-intelligence flagship model for complex reasoning, analysis, and coding.
+                  </div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <div class="popover-item" data-model="Epic Think o1 (Reasoning)">
+                <div style="flex: 1;">
+                  <div class="item-title">Epic Think o1 <span class="model-tag">Deep Think</span></div>
+                  <div class="item-desc">Advanced chain-of-thought reasoning with multi-step validation.</div>
                 </div>
               </div>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5"
-                stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-            </div>
-            <div class="popover-item" data-model="Epic Think o1 (Reasoning)">
-              <div style="flex: 1;">
-                <div class="item-title">Epic Think o1 <span class="model-tag">Deep Think</span></div>
-                <div class="item-desc">Advanced chain-of-thought reasoning with multi-step validation.</div>
-              </div>
-            </div>
-            <div class="popover-item" data-model="Epic Think Fast">
-              <div style="flex: 1;">
-                <div class="item-title">Epic Think Fast <span class="model-tag">Ultra Fast</span></div>
-                <div class="item-desc">Lightweight and instant for everyday tasks and quick drafting.</div>
+              <div class="popover-item" data-model="Epic Think Fast">
+                <div style="flex: 1;">
+                  <div class="item-title">Epic Think Fast <span class="model-tag">Ultra Fast</span></div>
+                  <div class="item-desc">Lightweight and instant for everyday tasks and quick drafting.</div>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Plugins & Agent Tools Button (Left Side) -->
+          <div class="top-nav-right">
+            <!-- Mobile-only New Chat Button -->
+            <button class="icon-btn mobile-new-chat-btn" id="mobileNewChatBtn" title="New chat" aria-label="New chat">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+
+            <!-- Share / Export Button -->
+            <button class="icon-btn" id="shareChatBtn" title="Share or export chat">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="18" cy="5" r="3"></circle>
+                <circle cx="6" cy="12" r="3"></circle>
+                <circle cx="18" cy="19" r="3"></circle>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Action / Feature Badges Strip (Scrollable carousel on mobile, inline on desktop) -->
+        <div class="top-nav-badges-strip" id="topNavBadgesStrip">
+          <!-- Plugins & Agent Tools Button -->
           <button class="nav-badge-btn" id="pluginStoreBtn" title="Plugin Store & Tools">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
@@ -4103,17 +5056,6 @@
             </svg>
             <span style="font-weight: 600;">Website Builder</span>
           </button>
-        </div>
-
-        <div class="top-nav-right">
-          <!-- Feedback Button -->
-          <button class="nav-badge-btn" id="openGlobalFeedbackBtn" title="Send Feedback & Ideas">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-            </svg>
-            <span>Feedback</span>
-          </button>
 
           <!-- Memory Management Badge Button -->
           <button class="nav-badge-btn" id="memoryDrawerBtn" title="Manage AI Memory">
@@ -4128,22 +5070,19 @@
             <span>Memory (<span id="memoryCount">0</span>)</span>
           </button>
 
-          <!-- Share / Export Button -->
-          <button class="icon-btn" id="shareChatBtn" title="Share or export chat">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          <!-- Feedback Button -->
+          <button class="nav-badge-btn" id="openGlobalFeedbackBtn" title="Send Feedback & Ideas">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="18" cy="5" r="3"></circle>
-              <circle cx="6" cy="12" r="3"></circle>
-              <circle cx="18" cy="19" r="3"></circle>
-              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
             </svg>
+            <span>Feedback</span>
           </button>
         </div>
       </header>
 
       <!-- Chat View Wrapper (Toggled when switching modes) -->
-      <div id="chatViewWrapper" style="display:flex; flex-direction:column; flex:1; min-height:0; height:calc(100vh - 52px);">
+      <div id="chatViewWrapper">
         <!-- Chat Messages Scroll Container -->
         <div class="chat-scroll-area" id="chatScrollArea">
           <div class="chat-container" id="chatContainer">
@@ -4315,6 +5254,16 @@
           </div>
         </div>
 
+        <!-- Mobile Viewport Sub-Bar (Visible on screens <= 768px) -->
+        <div class="builder-mobile-device-bar" id="builderMobileDeviceBar">
+          <div class="builder-btn-group mobile-device-group" id="builderMobileDeviceGroup">
+            <button type="button" class="builder-btn active" data-device="desktop" title="Desktop Viewport (1440px)">🖥️ Desktop</button>
+            <button type="button" class="builder-btn" data-device="tablet" title="Tablet Viewport (768px)">📱 Tablet</button>
+            <button type="button" class="builder-btn" data-device="mobile" title="Mobile iPhone (390px)">📱 Mobile</button>
+          </div>
+          <button type="button" class="builder-btn" id="builderMobileRotateBtn" title="Rotate Orientation" style="padding:4px 8px; font-size:11px;">🔄 Rotate</button>
+        </div>
+
         <!-- Main 2-Column Work Area -->
         <div class="builder-main-row">
           
@@ -4463,26 +5412,82 @@
           <div class="builder-col-canvas" id="builderCanvasCol">
             
             <!-- Address Bar / Mini Toolbar -->
-            <div style="width:100%; height:32px; background:#121216; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:space-between; padding:0 12px; font-size:11.5px;">
-              <div style="display:flex; align-items:center; gap:8px; flex:1; max-width:540px;">
-                <button type="button" class="icon-btn" id="builderRefreshPreviewBtn" title="Refresh Live Preview" style="width:24px; height:24px;">🔄</button>
-                <input type="text" id="builderUrlInput" value="/preview/devika_collections/index.html" readonly style="flex:1; background:#0a0a0c; border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#e5c98a; font-family:var(--font-mono); font-size:11px; padding:2px 8px; outline:none;">
-                <span id="builderDimensionBadge" style="font-family:var(--font-mono); font-size:10.5px; color:#71717a; white-space:nowrap;">1440 × 900 px</span>
+            <div class="builder-canvas-minibar" id="builderCanvasMinibar">
+              <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">
+                <button type="button" class="icon-btn" id="builderRefreshPreviewBtn" title="Refresh Live Preview" style="width:28px; height:28px; border-radius:6px; flex-shrink:0;">🔄</button>
+                <input type="text" id="builderUrlInput" value="/preview/devika_collections/index.html" readonly style="flex:1; max-width:300px; background:#0a0a0c; border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#e5c98a; font-family:var(--font-mono); font-size:11px; padding:3px 8px; outline:none; text-overflow:ellipsis;">
+                <span id="builderDimensionBadge" class="builder-dimension-badge">🖥️ 1440 × 900 px</span>
               </div>
-              <div style="display:flex; align-items:center; gap:10px;">
+              <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                <!-- Device Viewport Quick Switcher (In canvas header as well) -->
+                <div class="builder-btn-group canvas-device-group" id="canvasDeviceGroup">
+                  <button type="button" class="builder-btn active" data-device="desktop" title="Desktop Viewport (1440px)">🖥️</button>
+                  <button type="button" class="builder-btn" data-device="tablet" title="Tablet Viewport (768px)">📱</button>
+                  <button type="button" class="builder-btn" data-device="mobile" title="Mobile Viewport (390px)">📱</button>
+                </div>
+                <button type="button" class="builder-btn" id="builderRotateBtn" title="Rotate Orientation (Portrait / Landscape)" style="padding:3px 8px; font-size:11px;">🔄 Rotate</button>
+                <select id="builderZoomSelect" class="builder-zoom-select" title="Preview Zoom Scale">
+                  <option value="fit" selected>🔍 Auto Fit</option>
+                  <option value="1">100%</option>
+                  <option value="0.75">75%</option>
+                  <option value="0.5">50%</option>
+                </select>
                 <span id="builderHotReloadIndicator" style="display:inline-flex; align-items:center; gap:4px; font-size:10.5px; color:#10b981;">
                   <span style="width:5px; height:5px; border-radius:50%; background:#10b981;"></span>
                   Hot Reload Active
                 </span>
-                <a id="builderPopoutLink" href="/preview/devika_collections/index.html" target="_blank" class="builder-btn" style="padding:2px 8px; font-size:11px;" title="Open in new window">↗ Pop Out</a>
+                <a id="builderPopoutLink" href="/preview/devika_collections/index.html" target="_blank" class="builder-btn" style="padding:3px 8px; font-size:11px;" title="Open live preview in separate window">↗ Pop Out</a>
               </div>
             </div>
 
             <!-- Viewport Container (Defaults to preview-mode) -->
             <div class="builder-viewport-container preview-mode" id="builderViewportContainer">
-              <div class="builder-device-frame" id="builderDeviceFrame">
-                <iframe id="builderPreviewFrame" class="builder-frame-iframe" src="/preview/devika_collections/index.html"></iframe>
+              <div class="builder-device-stage" id="builderDeviceStage">
+                <div class="builder-device-frame desktop" id="builderDeviceFrame">
+                  <!-- Desktop Window Chrome (visible in desktop mode) -->
+                  <div class="builder-desktop-chrome" id="builderDesktopChrome">
+                    <div class="builder-chrome-dots">
+                      <span class="builder-chrome-dot red"></span>
+                      <span class="builder-chrome-dot yellow"></span>
+                      <span class="builder-chrome-dot green"></span>
+                    </div>
+                    <div class="builder-chrome-address-bar">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                      <span id="chromeAddressUrl">devika-collections.preview/index.html</span>
+                    </div>
+                    <div style="width:40px;"></div>
+                  </div>
+
+                  <!-- Tablet Camera Notch (visible in tablet mode) -->
+                  <div class="builder-tablet-camera" id="builderTabletCamera" style="display:none;"></div>
+
+                  <!-- Dynamic Island (visible in mobile mode) -->
+                  <div class="builder-dynamic-island" id="builderDynamicIsland" style="display:none;">
+                    <div class="builder-dynamic-island-camera"></div>
+                    <div class="builder-dynamic-island-sensor"></div>
+                  </div>
+
+                  <!-- Live Preview Iframe -->
+                  <iframe id="builderPreviewFrame" class="builder-frame-iframe" src="/preview/devika_collections/index.html" title="AI Live Interactive Preview"></iframe>
+
+                  <!-- Mobile Home Indicator Bar (visible in mobile mode) -->
+                  <div class="builder-home-indicator" id="builderHomeIndicator" style="display:none;"></div>
+
+                  <!-- Live Preview Shimmer Loading Skeleton -->
+                  <div class="builder-preview-loader" id="builderPreviewLoader">
+                    <div class="preview-spinner"></div>
+                    <div class="preview-loader-title">Loading Live Interactive Preview...</div>
+                    <div class="preview-loader-sub" id="previewLoaderProjectName">devika_collections</div>
+                    <div class="preview-loader-bar"><div class="preview-loader-progress"></div></div>
+                  </div>
+                </div>
               </div>
+
+              <!-- Floating Prompt Action Pill on Mobile (Preview Mode) -->
+              <button type="button" class="builder-mobile-fab" id="builderMobileFabPrompt" title="Instruct AI Copilot to edit website">
+                <span class="fab-sparkle">✨</span>
+                <span>Instruct AI</span>
+              </button>
 
               <!-- Code Editor Panel (shown in Code or Split mode) -->
               <div class="builder-code-editor-panel" id="builderCodeEditorPanel">
@@ -4796,6 +5801,27 @@
               <button type="button" class="builder-btn" id="closeDiffReviewBtn">Done</button>
             </div>
           </div>
+        </div>
+
+        <!-- Mobile Bottom Tab Bar (Visible on screens <= 768px) -->
+        <div class="builder-mobile-tab-bar" id="builderMobileTabBar">
+          <button type="button" class="builder-mobile-tab active" data-tab="preview" id="mTabPreview">
+            <span class="m-tab-icon">👁️</span>
+            <span class="m-tab-label">Preview</span>
+          </button>
+          <button type="button" class="builder-mobile-tab" data-tab="chat" id="mTabChat">
+            <span class="m-tab-icon">⚡</span>
+            <span class="m-tab-label">AI Copilot</span>
+            <span class="m-tab-dot" id="mChatDot" style="display:none;"></span>
+          </button>
+          <button type="button" class="builder-mobile-tab" data-tab="code" id="mTabCode">
+            <span class="m-tab-icon">💻</span>
+            <span class="m-tab-label">Code</span>
+          </button>
+          <button type="button" class="builder-mobile-tab" data-tab="tools" id="mTabTools">
+            <span class="m-tab-icon">🛠️</span>
+            <span class="m-tab-label">Tools</span>
+          </button>
         </div>
 
       </div><!-- #websiteBuilderWorkspace -->
@@ -5616,15 +6642,14 @@
     <span style="font-size:11px; background:rgba(245,158,11,0.1); padding:2px 7px; border-radius:4px; color:#fbbf24; border:1px solid rgba(245,158,11,0.2);">📱 Mobile-Responsive</span>
   </div>
 
-  <div style="display:flex; gap:10px;">
-    <a href="${previewUrl}" target="_blank" rel="noopener noreferrer" style="flex:1; display:flex; align-items:center; justify-content:center; gap:7px; background:linear-gradient(135deg, #f59e0b, #d97706); color:#000; font-weight:700; font-size:12.5px; padding:9px 16px; border-radius:8px; text-decoration:none; box-shadow:0 2px 10px rgba(245,158,11,0.3);">
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <button type="button" onclick="if(window.WebsiteBuilder){ window.WebsiteBuilder.loadProject('${projectId}'); } else { window.location.hash='#website-builder'; }" style="flex:2; min-width:180px; display:flex; align-items:center; justify-content:center; gap:7px; background:linear-gradient(135deg, #f59e0b, #d97706); color:#000; font-weight:700; font-size:12.5px; padding:9px 16px; border-radius:8px; border:none; cursor:pointer; box-shadow:0 2px 10px rgba(245,158,11,0.3); transition:all 0.15s ease;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-      <span>Launch Live Preview</span>
-    </a>
-    <button type="button" onclick="if(window.WebsiteBuilder){ window.WebsiteBuilder.loadProject('${projectId}'); } else { window.location.hash='#website-builder'; }" style="flex:1; display:flex; align-items:center; justify-content:center; gap:7px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.15); color:#f3f4f6; font-weight:600; font-size:12.5px; padding:9px 16px; border-radius:8px; cursor:pointer;">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-      <span>Open in Visual Builder</span>
+      <span>👁️ Launch Live Preview</span>
     </button>
+    <a href="${previewUrl}" target="_blank" rel="noopener noreferrer" style="flex:1; min-width:110px; display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.15); color:#f3f4f6; font-weight:600; font-size:12px; padding:9px 12px; border-radius:8px; text-decoration:none; transition:all 0.15s ease;" title="Open in dedicated external browser window">
+      <span>↗ Pop Out</span>
+    </a>
   </div>
 </div>`;
             const idx = builderCards.length;
@@ -6230,6 +7255,8 @@
 
       function renderHero() {
         const container = $('#chatContainer');
+        const scrollBtn = $('#scrollBottomBtn');
+        if (scrollBtn) scrollBtn.classList.remove('visible');
         container.innerHTML = `
       <div class="hero-container">
         <div class="hero-logo">
@@ -6487,14 +7514,46 @@
         });
       }
 
-      function selectChat(id) {
-        if (window.WebsiteBuilder) {
+      const openMobileDrawer = () => {
+        const sb = $('#sidebar');
+        const sbb = $('#sidebarBackdrop');
+        if (sb) sb.classList.add('open');
+        if (sbb) sbb.classList.add('active');
+        document.body.classList.add('sidebar-drawer-open');
+      };
+
+      const closeMobileDrawer = () => {
+        const sb = $('#sidebar');
+        const sbb = $('#sidebarBackdrop');
+        if (sb) sb.classList.remove('open');
+        if (sbb) sbb.classList.remove('active');
+        document.body.classList.remove('sidebar-drawer-open');
+      };
+
+      async function selectChat(id) {
+        if (window.WebsiteBuilder && typeof window.WebsiteBuilder.closeWorkspace === 'function') {
           window.WebsiteBuilder.closeWorkspace();
         }
         state.activeChatId = id;
+        if (window.innerWidth <= 768) {
+          closeMobileDrawer();
+        }
+        const chat = state.chats.find(c => c.id === id);
         renderHistory();
         renderMessages();
         scrollToBottom(true);
+        if (chat && (!chat.messages || chat.messages.length === 0) && currentUser?.uid) {
+          try {
+            const msgs = await MongoChatService.getMessages(id);
+            if (msgs && msgs.length > 0 && state.activeChatId === id) {
+              chat.messages = msgs;
+              renderMessages();
+              scrollToBottom(true);
+            }
+          } catch (e) {
+            console.warn('[selectChat:getMessages]', e);
+          }
+        }
       }
 
       // File Preview Tray renderer
@@ -6854,24 +7913,38 @@
         renderMessages();
         textarea.focus();
         if (window.innerWidth <= 768) {
-          $('#sidebar').classList.remove('open');
+          closeMobileDrawer();
         }
       });
 
+      const mobileNewChatBtn = $('#mobileNewChatBtn');
+      if (mobileNewChatBtn) {
+        mobileNewChatBtn.addEventListener('click', () => {
+          $('#newChatBtn')?.click();
+        });
+      }
+
       $('#homeBrandBtn').addEventListener('click', () => {
-        if (window.WebsiteBuilder) {
+        if (window.WebsiteBuilder && typeof window.WebsiteBuilder.closeWorkspace === 'function') {
           window.WebsiteBuilder.closeWorkspace();
         }
         state.activeChatId = null;
         renderHistory();
         renderMessages();
+        if (window.innerWidth <= 768) {
+          closeMobileDrawer();
+        }
       });
 
-      // Sidebar Toggles
+      // Sidebar Toggles & Mobile Drawer Controller
       const sidebar = $('#sidebar');
+      const sidebarBackdrop = $('#sidebarBackdrop');
+
+      sidebarBackdrop?.addEventListener('click', closeMobileDrawer);
+
       $('#sidebarCollapseBtn').addEventListener('click', () => {
         if (window.innerWidth <= 768) {
-          sidebar.classList.remove('open');
+          closeMobileDrawer();
         } else {
           sidebar.classList.toggle('collapsed');
           state.isSidebarCollapsed = sidebar.classList.contains('collapsed');
@@ -6880,12 +7953,39 @@
 
       $('#sidebarOpenBtn').addEventListener('click', () => {
         if (window.innerWidth <= 768) {
-          sidebar.classList.add('open');
+          openMobileDrawer();
         } else {
           sidebar.classList.remove('collapsed');
           state.isSidebarCollapsed = false;
         }
       });
+
+      // ESC closes drawer on mobile/tablet or popovers
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (sidebar?.classList.contains('open')) {
+            closeMobileDrawer();
+          }
+          if (modelPopover?.classList.contains('open')) {
+            modelPopover.classList.remove('open');
+          }
+        }
+      });
+
+      // Mobile Visual Viewport Handling for On-Screen Virtual Keyboard
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => {
+          if (window.innerWidth <= 768) {
+            const vh = window.visualViewport.height;
+            const chatWrap = $('#chatViewWrapper');
+            if (chatWrap) {
+              chatWrap.style.height = `${vh - 48}px`;
+              chatWrap.style.maxHeight = `${vh - 48}px`;
+            }
+            scrollToBottom(false);
+          }
+        });
+      }
 
       // Search History Input
       $('#chatSearchInput').addEventListener('input', renderHistory);
@@ -7010,13 +8110,20 @@
       const scrollBtn = $('#scrollBottomBtn');
       if (scrollEl && scrollBtn) {
         scrollEl.addEventListener('scroll', () => {
+          // Never show scroll button if hero screen is active or there are no messages
+          const hasHero = !!scrollEl.querySelector('.hero-container');
+          const hasMessages = scrollEl.querySelectorAll('.message-row, .message-content-wrapper').length > 0;
+          if (hasHero || !hasMessages) {
+            scrollBtn.classList.remove('visible');
+            return;
+          }
           const distanceFromBottom = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight;
           if (distanceFromBottom > 160) {
             scrollBtn.classList.add('visible');
           } else {
             scrollBtn.classList.remove('visible');
           }
-        });
+        }, { passive: true });
 
         scrollBtn.addEventListener('click', () => {
           scrollEl.scrollTo({ top: scrollEl.scrollHeight, behavior: 'smooth' });
@@ -7124,7 +8231,8 @@
       // Open / Close Plugin Store
       const openPluginStoreModal = (e) => {
         if (e && e.preventDefault) e.preventDefault();
-        if (window.WebsiteBuilder) {
+        closeMobileDrawer();
+        if (window.WebsiteBuilder && typeof window.WebsiteBuilder.closeWorkspace === 'function') {
           window.WebsiteBuilder.closeWorkspace();
         }
         renderPluginsGrid();
@@ -7133,16 +8241,27 @@
           console.warn('[PLUGINS] Background refresh error:', err);
         });
       };
-      $('#pluginStoreBtn')?.addEventListener('click', openPluginStoreModal);
-      $('#sidebarPluginsBtn')?.addEventListener('click', openPluginStoreModal);
+      $('#pluginStoreBtn')?.addEventListener('click', () => {
+        window.location.hash = 'plugins';
+      });
+      $('#sidebarPluginsBtn')?.addEventListener('click', () => {
+        closeMobileDrawer();
+        window.location.hash = 'plugins';
+      });
 
-      $('#closePluginStoreBtn')?.addEventListener('click', () => pluginStoreModal.classList.remove('open'));
-      $('#donePluginStoreBtn')?.addEventListener('click', () => pluginStoreModal.classList.remove('open'));
+      const closePluginStore = () => {
+        pluginStoreModal.classList.remove('open');
+        if (window.location.hash === '#plugins') {
+          history.pushState('', document.title, window.location.pathname + window.location.search);
+        }
+      };
+      $('#closePluginStoreBtn')?.addEventListener('click', closePluginStore);
+      $('#donePluginStoreBtn')?.addEventListener('click', closePluginStore);
 
       // Backdrop click dismiss for plugin modals
       pluginStoreModal?.addEventListener('click', (e) => {
         if (e.target === pluginStoreModal) {
-          pluginStoreModal.classList.remove('open');
+          closePluginStore();
         }
       });
 
@@ -7495,20 +8614,33 @@
       const aiStudioModal = $('#aiStudioModal');
       const openAiStudioModal = (e) => {
         if (e && e.preventDefault) e.preventDefault();
-        if (window.WebsiteBuilder) {
+        closeMobileDrawer();
+        if (window.WebsiteBuilder && typeof window.WebsiteBuilder.closeWorkspace === 'function') {
           window.WebsiteBuilder.closeWorkspace();
         }
         aiStudioModal.classList.add('open');
       };
 
-      $('#sidebarAiStudioBtn')?.addEventListener('click', openAiStudioModal);
-      $('#aiStudioTopBtn')?.addEventListener('click', openAiStudioModal);
-      $('#closeAiStudioBtn')?.addEventListener('click', () => aiStudioModal.classList.remove('open'));
-      $('#doneAiStudioBtn')?.addEventListener('click', () => aiStudioModal.classList.remove('open'));
+      $('#sidebarAiStudioBtn')?.addEventListener('click', () => {
+        closeMobileDrawer();
+        window.location.hash = 'ai-studio';
+      });
+      $('#aiStudioTopBtn')?.addEventListener('click', () => {
+        window.location.hash = 'ai-studio';
+      });
+
+      const closeAiStudio = () => {
+        aiStudioModal.classList.remove('open');
+        if (window.location.hash === '#ai-studio') {
+          history.pushState('', document.title, window.location.pathname + window.location.search);
+        }
+      };
+      $('#closeAiStudioBtn')?.addEventListener('click', closeAiStudio);
+      $('#doneAiStudioBtn')?.addEventListener('click', closeAiStudio);
 
       aiStudioModal?.addEventListener('click', (e) => {
         if (e.target === aiStudioModal) {
-          aiStudioModal.classList.remove('open');
+          closeAiStudio();
         }
       });
 
@@ -8292,9 +9424,14 @@
 
             // Restore isolated chats from MongoDB real-time service (with localStorage cache fallback)
             try { await MongoChatService.init(user); } catch (e) { console.warn('[MongoChatService:Init]', e); }
-            let serverChats = [];
+            let serverChats = null;
             try { serverChats = await MongoChatService.getConversations(user.uid); } catch (e) { console.warn('[MongoChatService:Get]', e); }
-            state.chats = (serverChats && serverChats.length > 0) ? serverChats : storage.get('eta_chats_' + user.uid, []);
+            if (Array.isArray(serverChats)) {
+              state.chats = serverChats;
+              storage.set('eta_chats_' + user.uid, serverChats);
+            } else {
+              state.chats = storage.get('eta_chats_' + user.uid, []);
+            }
             try { state.memories = await MemoryService.getMemories(user.uid); } catch (e) { state.memories = []; }
             state.activeChatId = state.chats.length > 0 ? state.chats[0].id : null;
 
@@ -8368,6 +9505,9 @@
         selectedElement: null,
         mode: 'preview',
         device: 'desktop',
+        orientation: 'portrait',
+        zoomScale: 'fit',
+        mobileTab: 'preview',
         activeModel: 'auto',
         isSelectionMode: true,
         ws: null,
@@ -8378,6 +9518,7 @@
           const sidebarBtn = document.getElementById('sidebarWebsiteBuilderBtn');
           const topBtn = document.getElementById('websiteBuilderTopBtn');
           const exitBtn = document.getElementById('builderExitBtn');
+          const backToChatBtn = document.getElementById('builderBackToChatBtn');
           const sendBtn = document.getElementById('builderSendBtn');
           const promptInput = document.getElementById('builderPromptInput');
           const refreshBtn = document.getElementById('builderRefreshPreviewBtn');
@@ -8395,9 +9536,19 @@
           const restartServerBtn = document.getElementById('builderRestartServerBtn');
           const testRespBtn = document.getElementById('builderTestResponsiveBtn');
 
-          if (sidebarBtn) sidebarBtn.addEventListener('click', () => this.openWorkspace());
-          if (topBtn) topBtn.addEventListener('click', () => this.openWorkspace());
-          if (exitBtn) exitBtn.addEventListener('click', () => this.closeWorkspace());
+          if (sidebarBtn) sidebarBtn.addEventListener('click', () => {
+            closeMobileDrawer();
+            window.location.hash = 'website-builder';
+          });
+          if (topBtn) topBtn.addEventListener('click', () => {
+            window.location.hash = 'website-builder';
+          });
+          if (exitBtn) exitBtn.addEventListener('click', () => {
+            window.location.hash = 'chat';
+          });
+          if (backToChatBtn) backToChatBtn.addEventListener('click', () => {
+            window.location.hash = 'chat';
+          });
 
           if (refreshBtn) refreshBtn.addEventListener('click', () => this.refreshPreview());
           if (undoBtn) undoBtn.addEventListener('click', () => this.undo());
@@ -8501,16 +9652,71 @@
             });
           });
 
-          // Device viewport switchers
-          const deviceBtns = document.querySelectorAll('#builderDeviceGroup .builder-btn');
-          deviceBtns.forEach(btn => {
+          // Device viewport switchers across all toolbars (desktop toolbar, canvas minibar, mobile device bar)
+          document.querySelectorAll('[data-device]').forEach(btn => {
             if (btn.id === 'builderTestResponsiveBtn') return;
             btn.addEventListener('click', () => {
-              deviceBtns.forEach(b => { if (b.id !== 'builderTestResponsiveBtn') b.classList.remove('active'); });
-              btn.classList.add('active');
               this.setDevice(btn.dataset.device);
             });
           });
+
+          // Orientation toggle buttons
+          const rotateBtn = document.getElementById('builderRotateBtn');
+          const mobileRotateBtn = document.getElementById('builderMobileRotateBtn');
+          if (rotateBtn) rotateBtn.addEventListener('click', () => this.toggleOrientation());
+          if (mobileRotateBtn) mobileRotateBtn.addEventListener('click', () => this.toggleOrientation());
+
+          // Preview zoom scale dropdown
+          const zoomSelect = document.getElementById('builderZoomSelect');
+          if (zoomSelect) {
+            zoomSelect.addEventListener('change', (e) => {
+              this.setZoomScale(e.target.value);
+            });
+          }
+
+          // Mobile bottom tab bar buttons
+          document.querySelectorAll('.builder-mobile-tab').forEach(tabBtn => {
+            tabBtn.addEventListener('click', () => {
+              this.setMobileTab(tabBtn.dataset.tab);
+            });
+          });
+
+          // Mobile floating prompt action pill
+          const mobileFab = document.getElementById('builderMobileFabPrompt');
+          if (mobileFab) {
+            mobileFab.addEventListener('click', () => {
+              this.setMobileTab('chat');
+              setTimeout(() => {
+                const pInput = document.getElementById('builderPromptInput');
+                if (pInput) pInput.focus();
+              }, 150);
+            });
+          }
+
+          // Responsive viewport scaling on window resize & orientation change
+          window.addEventListener('resize', () => {
+            const ws = document.getElementById('websiteBuilderWorkspace');
+            if (ws && (ws.style.display === 'flex' || ws.classList.contains('workspace-active'))) {
+              this.updateViewportScale();
+            }
+          });
+          window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+              const ws = document.getElementById('websiteBuilderWorkspace');
+              if (ws && (ws.style.display === 'flex' || ws.classList.contains('workspace-active'))) {
+                this.updateViewportScale();
+              }
+            }, 200);
+          });
+
+          // Hide shimmer loader when live preview iframe finishes loading
+          const iframe = document.getElementById('builderPreviewFrame');
+          if (iframe) {
+            iframe.addEventListener('load', () => {
+              const loader = document.getElementById('builderPreviewLoader');
+              if (loader) loader.classList.add('hidden');
+            });
+          }
 
           // Code editor controls & live line numbers
           this.setupCodeEditor();
@@ -8657,18 +9863,41 @@
             }
           });
 
-          // Check URL hash for direct load
-          if (window.location.hash === '#website-builder') {
-            this.openWorkspace();
-          }
-
-          window.addEventListener('hashchange', () => {
-            if (window.location.hash === '#website-builder') {
+          // Unified Global Hash Router & Deep Link Dispatcher
+          const handleGlobalRoute = () => {
+            const hash = window.location.hash || '#chat';
+            if (hash === '#website-builder') {
+              if (pluginStoreModal?.classList.contains('open')) pluginStoreModal.classList.remove('open');
+              if (aiStudioModal?.classList.contains('open')) aiStudioModal.classList.remove('open');
+              closeMobileDrawer();
               this.openWorkspace();
-            } else if (document.getElementById('websiteBuilderWorkspace')?.style.display === 'flex') {
-              this.closeWorkspace();
+            } else if (hash === '#plugins') {
+              if (document.getElementById('websiteBuilderWorkspace')?.style.display === 'flex') {
+                this.closeWorkspace();
+              }
+              if (aiStudioModal?.classList.contains('open')) aiStudioModal.classList.remove('open');
+              closeMobileDrawer();
+              openPluginStoreModal();
+            } else if (hash === '#ai-studio') {
+              if (document.getElementById('websiteBuilderWorkspace')?.style.display === 'flex') {
+                this.closeWorkspace();
+              }
+              if (pluginStoreModal?.classList.contains('open')) pluginStoreModal.classList.remove('open');
+              closeMobileDrawer();
+              openAiStudioModal();
+            } else {
+              // #chat or default
+              if (document.getElementById('websiteBuilderWorkspace')?.style.display === 'flex') {
+                this.closeWorkspace();
+              }
+              if (pluginStoreModal?.classList.contains('open')) pluginStoreModal.classList.remove('open');
+              if (aiStudioModal?.classList.contains('open')) aiStudioModal.classList.remove('open');
             }
-          });
+          };
+
+          handleGlobalRoute();
+          window.addEventListener('hashchange', handleGlobalRoute);
+          window.addEventListener('popstate', handleGlobalRoute);
 
           // Load list of real projects and models from server
           await this.loadProjectList();
@@ -9427,15 +10656,45 @@
           `;
         },
 
-        openWorkspace() {
+        openWorkspace(targetProjectId) {
+          if (targetProjectId) {
+            this.projectId = targetProjectId;
+            const select = document.getElementById('builderProjectSelect');
+            if (select) select.value = targetProjectId;
+          }
+
           const chatView = document.getElementById('chatViewWrapper');
           const builderView = document.getElementById('websiteBuilderWorkspace');
+          if (!builderView) return;
+
+          // Lock body scroll on mobile to avoid background scrolling
+          document.body.classList.add('builder-workspace-open');
+
+          // Close mobile app sidebar if open
+          const appContainer = document.getElementById('appContainer');
+          if (appContainer) appContainer.classList.remove('sidebar-open');
+
           if (chatView) chatView.style.display = 'none';
-          if (builderView) builderView.style.display = 'flex';
+          builderView.style.display = 'flex';
+
+          // Trigger hardware-accelerated scale-fade opening animation
+          builderView.classList.remove('workspace-closing');
+          requestAnimationFrame(() => {
+            builderView.classList.add('workspace-active');
+          });
 
           window.location.hash = 'website-builder';
 
-          this.setMode('preview');
+          const isMobile = window.innerWidth <= 768;
+          if (isMobile) {
+            this.mobileTab = 'preview';
+            this.setMobileTab('preview');
+          } else {
+            this.setMode('preview');
+          }
+
+          this.setDevice(this.device || 'desktop');
+
           const modeBtns = document.querySelectorAll('#builderModeGroup .builder-btn');
           modeBtns.forEach(b => b.classList.toggle('active', b.dataset.mode === 'preview'));
 
@@ -9450,18 +10709,34 @@
           this.runDiagnostics();
           this.loadFileContent('index.html');
 
+          // Smooth initial viewport scaling once DOM layout is measured
+          setTimeout(() => {
+            this.updateViewportScale();
+          }, 80);
+
           this.logTerminal('DEV-SERVER', `Live preview connected at http://localhost:3001/preview/${this.projectId}/index.html`, '#34d399');
         },
 
         closeWorkspace() {
           const chatView = document.getElementById('chatViewWrapper');
           const builderView = document.getElementById('websiteBuilderWorkspace');
-          if (chatView) chatView.style.display = 'flex';
-          if (builderView) builderView.style.display = 'none';
+          if (!builderView) return;
 
-          if (window.location.hash === '#website-builder') {
-            history.pushState('', document.title, window.location.pathname + window.location.search);
-          }
+          // Smooth exit animation
+          builderView.classList.remove('workspace-active');
+          builderView.classList.add('workspace-closing');
+
+          setTimeout(() => {
+            builderView.style.display = 'none';
+            builderView.classList.remove('workspace-closing');
+            document.body.classList.remove('builder-workspace-open');
+
+            if (chatView) chatView.style.display = 'flex';
+
+            if (window.location.hash === '#website-builder') {
+              history.pushState('', document.title, window.location.pathname + window.location.search);
+            }
+          }, 240);
 
           if (this.ws) {
             try { this.ws.close(); } catch (_) {}
@@ -9499,11 +10774,25 @@
           const iframe = document.getElementById('builderPreviewFrame');
           const urlInput = document.getElementById('builderUrlInput');
           const popout = document.getElementById('builderPopoutLink');
+          const loader = document.getElementById('builderPreviewLoader');
+          const loaderProj = document.getElementById('previewLoaderProjectName');
+          const chromeAddr = document.getElementById('chromeAddressUrl');
           const path = `/preview/${this.projectId}/${this.currentFile}?t=${Date.now()}`;
 
-          if (iframe) iframe.src = path;
+          if (loader) {
+            loader.classList.remove('hidden');
+            if (loaderProj) loaderProj.textContent = `${this.projectId} / ${this.currentFile}`;
+          }
+
+          if (iframe) {
+            iframe.onload = () => {
+              if (loader) loader.classList.add('hidden');
+            };
+            iframe.src = path;
+          }
           if (urlInput) urlInput.value = `/preview/${this.projectId}/${this.currentFile}`;
           if (popout) popout.href = `/preview/${this.projectId}/${this.currentFile}`;
+          if (chromeAddr) chromeAddr.textContent = `${this.projectId}.preview/${this.currentFile}`;
         },
 
         flashHotReload() {
@@ -9769,22 +11058,180 @@
         },
 
         setDevice(device) {
-          this.device = device;
+          this.device = device || 'desktop';
+
+          // Update active class across all device button groups (top toolbar, canvas minibar, mobile sub-bar)
+          document.querySelectorAll('[data-device]').forEach(btn => {
+            if (btn.id === 'builderTestResponsiveBtn') return;
+            btn.classList.toggle('active', btn.dataset.device === this.device);
+          });
+
           const frame = document.getElementById('builderDeviceFrame');
-          const badge = document.getElementById('builderDimensionBadge');
           if (!frame) return;
 
-          frame.className = 'builder-device-frame ' + (device === 'desktop' ? '' : device);
+          // Apply chassis styling classes
+          frame.className = `builder-device-frame ${this.device} ${this.orientation}`;
 
-          const dimMap = {
-            desktop: '1440 × 900 px (100%)',
-            laptop: '1024 × 768 px (100%)',
-            tablet: '768 × 1024 px',
-            mobile: '390 × 844 px'
-          };
+          // Toggle visibility of device-specific chassis elements
+          const desktopChrome = document.getElementById('builderDesktopChrome');
+          const tabletCamera = document.getElementById('builderTabletCamera');
+          const dynamicIsland = document.getElementById('builderDynamicIsland');
+          const homeIndicator = document.getElementById('builderHomeIndicator');
 
-          if (badge) badge.textContent = dimMap[device] || 'Responsive Viewport';
-          this.logTerminal('RESPONSIVE', `Simulating viewport: ${device.toUpperCase()} (${dimMap[device] || ''})`);
+          if (desktopChrome) desktopChrome.style.display = (this.device === 'desktop' || this.device === 'laptop') ? 'flex' : 'none';
+          if (tabletCamera) tabletCamera.style.display = (this.device === 'tablet') ? 'block' : 'none';
+          if (dynamicIsland) dynamicIsland.style.display = (this.device === 'mobile') ? 'flex' : 'none';
+          if (homeIndicator) homeIndicator.style.display = (this.device === 'mobile') ? 'block' : 'none';
+
+          this.updateViewportScale();
+          this.logTerminal('RESPONSIVE', `Simulating viewport: ${this.device.toUpperCase()} (${this.orientation})`);
+        },
+
+        toggleOrientation() {
+          this.orientation = (this.orientation === 'portrait') ? 'landscape' : 'portrait';
+          
+          const rotateBtns = [document.getElementById('builderRotateBtn'), document.getElementById('builderMobileRotateBtn')];
+          rotateBtns.forEach(btn => {
+            if (btn) btn.classList.toggle('active', this.orientation === 'landscape');
+          });
+
+          this.setDevice(this.device);
+          if (window.showToast) {
+            showToast(`Orientation: ${this.orientation.toUpperCase()}`);
+          }
+        },
+
+        setZoomScale(scale) {
+          this.zoomScale = scale;
+          const select = document.getElementById('builderZoomSelect');
+          if (select && select.value !== scale) select.value = scale;
+          this.updateViewportScale();
+        },
+
+        updateViewportScale() {
+          const frame = document.getElementById('builderDeviceFrame');
+          const stage = document.getElementById('builderDeviceStage');
+          const container = document.getElementById('builderViewportContainer');
+          const badge = document.getElementById('builderDimensionBadge');
+          if (!frame || !stage || !container) return;
+
+          // Target unscaled chassis dimensions (content area + device chrome)
+          let targetW = 1440;
+          let targetH = 900;
+          let icon = '🖥️';
+
+          if (this.device === 'desktop') {
+            targetW = 1440;
+            targetH = 900;
+            icon = '🖥️';
+          } else if (this.device === 'laptop') {
+            targetW = 1024;
+            targetH = 768;
+            icon = '💻';
+          } else if (this.device === 'tablet') {
+            icon = '📱';
+            if (this.orientation === 'landscape') {
+              targetW = 1024;
+              targetH = 768;
+            } else {
+              targetW = 768;
+              targetH = 1024;
+            }
+          } else if (this.device === 'mobile') {
+            icon = '📱';
+            if (this.orientation === 'landscape') {
+              targetW = 844;
+              targetH = 390;
+            } else {
+              targetW = 390;
+              targetH = 844;
+            }
+          }
+
+          // Container dimensions available for preview
+          const cRect = container.getBoundingClientRect();
+          const availW = Math.max(280, (cRect.width || window.innerWidth) - 24);
+          const availH = Math.max(280, (cRect.height || window.innerHeight) - 24);
+
+          let scale = 1;
+          if (this.zoomScale === 'fit') {
+            const scaleX = availW / targetW;
+            const scaleY = availH / targetH;
+            scale = Math.min(scaleX, scaleY);
+            // On desktop mode on large displays, cap at 1.0
+            if (scale > 1) scale = 1;
+          } else {
+            scale = parseFloat(this.zoomScale) || 1;
+          }
+
+          // Clamp scale to safe display range
+          scale = Math.max(0.18, Math.min(2.0, scale));
+
+          // Set frame transform
+          frame.style.transform = `scale(${scale})`;
+          frame.style.transformOrigin = 'top center';
+
+          // Set stage to scaled bounding box so container scrollbars behave smoothly
+          const scaledW = Math.round(targetW * scale);
+          const scaledH = Math.round(targetH * scale);
+          stage.style.width = `${scaledW}px`;
+          stage.style.height = `${scaledH}px`;
+
+          // Update dimension badge
+          if (badge) {
+            const pct = Math.round(scale * 100);
+            badge.textContent = `${icon} ${targetW} × ${targetH} (${pct}%)`;
+          }
+        },
+
+        setMobileTab(tab) {
+          this.mobileTab = tab;
+          const isMobile = window.innerWidth <= 768;
+
+          // Update active mobile tab
+          document.querySelectorAll('.builder-mobile-tab').forEach(b => {
+            b.classList.toggle('active', b.dataset.tab === tab);
+          });
+
+          const chatCol = document.getElementById('builderChatCol');
+          const canvasCol = document.getElementById('builderCanvasCol');
+          const inspectorCol = document.getElementById('builderInspectorCol');
+          const fab = document.getElementById('builderMobileFabPrompt');
+
+          if (!isMobile) {
+            // On desktop/tablet, both columns coexist naturally
+            if (chatCol) chatCol.style.display = 'flex';
+            if (canvasCol) canvasCol.style.display = 'flex';
+            return;
+          }
+
+          // On mobile screens, show only the selected view
+          if (tab === 'preview') {
+            if (chatCol) chatCol.style.display = 'none';
+            if (canvasCol) canvasCol.style.display = 'flex';
+            if (inspectorCol) inspectorCol.classList.remove('open');
+            this.setMode('preview');
+            if (fab) fab.style.display = 'inline-flex';
+            requestAnimationFrame(() => this.updateViewportScale());
+          } else if (tab === 'chat') {
+            if (chatCol) chatCol.style.display = 'flex';
+            if (canvasCol) canvasCol.style.display = 'none';
+            if (inspectorCol) inspectorCol.classList.remove('open');
+            if (fab) fab.style.display = 'none';
+            this.switchSubtab('ai');
+          } else if (tab === 'code') {
+            if (chatCol) chatCol.style.display = 'none';
+            if (canvasCol) canvasCol.style.display = 'flex';
+            if (inspectorCol) inspectorCol.classList.remove('open');
+            if (fab) fab.style.display = 'none';
+            this.setMode('code');
+          } else if (tab === 'tools') {
+            if (chatCol) chatCol.style.display = 'flex';
+            if (canvasCol) canvasCol.style.display = 'none';
+            if (inspectorCol) inspectorCol.classList.remove('open');
+            if (fab) fab.style.display = 'none';
+            this.switchSubtab('pages');
+          }
         },
 
         switchDrawerPane(pane) {

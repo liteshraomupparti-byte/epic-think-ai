@@ -337,7 +337,7 @@ export class PreviewServer {
    * Express Middleware creator to serve /preview/:projectId/*
    */
   static createExpressHandler() {
-    return (req, res, next) => {
+    return async (req, res, next) => {
       const parts = req.path.split('/').filter(Boolean);
       if (parts.length === 0) {
         return res.status(404).send('Project ID required in URL path');
@@ -345,14 +345,14 @@ export class PreviewServer {
       req.params = req.params || {};
       req.params.projectId = parts[0];
       req.params[0] = parts.slice(1).join('/') || 'index.html';
-      return PreviewServer.handlePreviewRequest(req, res, next);
+      return await PreviewServer.handlePreviewRequest(req, res, next);
     };
   }
 
   /**
    * Express Middleware to serve project preview files
    */
-  static handlePreviewRequest(req, res, next) {
+  static async handlePreviewRequest(req, res, next) {
     const projectId = req.params.projectId;
     let subPath = req.params[0] || 'index.html';
     if (!subPath || subPath === '/') subPath = 'index.html';
@@ -363,10 +363,16 @@ export class PreviewServer {
       const fullPath = path.join(projectDir, cleanSubPath);
 
       if (!fs.existsSync(fullPath)) {
-        // Fallback to index.html for SPA client-side routing
-        const indexPath = path.join(projectDir, 'index.html');
-        if (fs.existsSync(indexPath) && !path.extname(cleanSubPath)) {
-          return this.serveHtmlWithBridge(indexPath, res);
+        // Auto-heal missing index.html or project
+        if (cleanSubPath === 'index.html' || !path.extname(cleanSubPath)) {
+          await ProjectManager.ensureProjectFiles(projectId);
+          if (fs.existsSync(fullPath)) {
+            return this.serveHtmlWithBridge(fullPath, res);
+          }
+          const indexPath = path.join(projectDir, 'index.html');
+          if (fs.existsSync(indexPath)) {
+            return this.serveHtmlWithBridge(indexPath, res);
+          }
         }
         return res.status(404).send(`<h3>404 Not Found</h3><p>File <code>${cleanSubPath}</code> not found in project <code>${projectId}</code>.</p>`);
       }

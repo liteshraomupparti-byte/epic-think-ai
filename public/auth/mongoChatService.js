@@ -5,14 +5,17 @@
  * 1. Real-time conversation persistence with MongoDB Cloud / Server
  * 2. Instant optimistic local caching (zero UI latency)
  * 3. Bidirectional WebSocket synchronization across multiple tabs and devices
- * 4. Automatic offline fallback and transparent re-sync
- * 5. Multi-tenant isolation per Firebase UID
+ * 4. Multi-tenant isolation strictly keyed on verified Firebase UID
+ * 5. Transparent fallback and automatic re-sync
  */
 
 import { getIdToken } from './authService.js';
 
 const getApiBase = () => {
   if (typeof window !== 'undefined') {
+    if (window.location.protocol === 'file:' || !window.location.hostname) {
+      return 'http://localhost:3001';
+    }
     if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') return '';
     if (window.location.port === '3001') return '';
   }
@@ -21,6 +24,9 @@ const getApiBase = () => {
 
 const getWsUrl = () => {
   if (typeof window === 'undefined') return 'ws://localhost:3001/ws';
+  if (window.location.protocol === 'file:' || !window.location.hostname) {
+    return 'ws://localhost:3001/ws';
+  }
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const host = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' 
     ? window.location.host 
@@ -38,6 +44,19 @@ class MongoChatServiceClient {
     this.syncStatusListeners = new Set();
     this.currentSyncStatus = 'offline'; // 'offline' | 'connecting' | 'connected' | 'saving' | 'saved'
     this.debounceSaveTimers = new Map();
+  }
+
+  /**
+   * Helper to retrieve a valid Firebase ID token
+   */
+  async getToken(forceRefresh = false) {
+    if (this.currentUser && typeof this.currentUser.getIdToken === 'function') {
+      try {
+        const token = await this.currentUser.getIdToken(forceRefresh);
+        if (token) return token;
+      } catch (_) {}
+    }
+    return await getIdToken(forceRefresh);
   }
 
   /**
@@ -97,7 +116,7 @@ class MongoChatServiceClient {
 
       this.ws.onopen = async () => {
         try {
-          const token = await getIdToken();
+          const token = await this.getToken();
           if (token && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify({ type: 'auth', token }));
           }
@@ -165,13 +184,15 @@ class MongoChatServiceClient {
   }
 
   /**
-   * Fetch all conversations for the user from MongoDB (with localStorage cache fallback)
+   * Fetch all conversations for the user from MongoDB (with isolated local cache)
+   * 
+   * @param {string} [uid]
+   * @returns {Promise<Array>} List of conversation objects
    */
   async getConversations(uid) {
     const targetUid = uid || this.currentUser?.uid;
     const cacheKey = targetUid ? `eta_chats_${targetUid}` : 'eta_chats';
 
-    // Read local cache first for instant UI response
     let cached = [];
     try {
       const raw = localStorage.getItem(cacheKey);
@@ -179,7 +200,7 @@ class MongoChatServiceClient {
     } catch (_) {}
 
     try {
-      const token = await getIdToken();
+      const token = await this.getToken();
       if (!token) return cached;
 
       const res = await fetch(`${getApiBase()}/api/conversations`, {
@@ -195,7 +216,7 @@ class MongoChatServiceClient {
 
       const data = await res.json();
       if (data && Array.isArray(data.conversations)) {
-        // Update local cache with source of truth from MongoDB
+        // Source of truth from MongoDB
         try {
           localStorage.setItem(cacheKey, JSON.stringify(data.conversations));
         } catch (_) {}
@@ -211,6 +232,29 @@ class MongoChatServiceClient {
   }
 
   /**
+   * Fetch single conversation messages directly from server
+   */
+  async getMessages(chatId) {
+    if (!chatId) return [];
+    try {
+      const token = await this.getToken();
+      if (!token) return [];
+
+      const res = await fetch(`${getApiBase()}/api/conversations/${encodeURIComponent(chatId)}/messages`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        return data.messages || [];
+      }
+    } catch (err) {
+      console.warn('[MongoChatService] getMessages error:', err.message);
+    }
+    return [];
+  }
+
+  /**
    * Save or upsert a conversation in real time to MongoDB
    * 
    * @param {object} conversation - Chat object
@@ -223,10 +267,10 @@ class MongoChatServiceClient {
 
     const doSave = async () => {
       try {
-        const token = await getIdToken();
+        const token = await this.getToken();
         if (!token) return;
 
-        // 1. Try WebSocket first if connected for real-time speed
+        // 1. Try WebSocket first if connected for instant live sync
         if (this.ws && this.wsConnected && this.ws.readyState === WebSocket.OPEN) {
           this.ws.send(JSON.stringify({
             type: 'save_chat',
@@ -234,7 +278,7 @@ class MongoChatServiceClient {
           }));
         }
 
-        // 2. Also persist via REST endpoint to ensure guaranteed durability
+        // 2. Persist via REST endpoint for guaranteed durability
         const res = await fetch(`${getApiBase()}/api/conversations`, {
           method: 'POST',
           headers: {
@@ -262,7 +306,7 @@ class MongoChatServiceClient {
       return await doSave();
     }
 
-    // Debounce rapid updates (e.g. streaming chunks) by 300ms
+    // Debounce rapid typing updates
     if (this.debounceSaveTimers.has(conversation.id)) {
       clearTimeout(this.debounceSaveTimers.get(conversation.id));
     }
@@ -277,13 +321,13 @@ class MongoChatServiceClient {
    * Save a single message in real time
    */
   async saveMessageRealtime(chatId, message) {
-    if (!chatId || !message) return;
+    if (!chatId || !message) return null;
 
     this.setSyncStatus('saving');
 
     try {
-      const token = await getIdToken();
-      if (!token) return;
+      const token = await this.getToken();
+      if (!token) return null;
 
       // 1. WebSocket real-time push
       if (this.ws && this.wsConnected && this.ws.readyState === WebSocket.OPEN) {
@@ -295,7 +339,7 @@ class MongoChatServiceClient {
       }
 
       // 2. HTTP POST
-      await fetch(`${getApiBase()}/api/conversations/${encodeURIComponent(chatId)}/messages`, {
+      const res = await fetch(`${getApiBase()}/api/conversations/${encodeURIComponent(chatId)}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -305,9 +349,13 @@ class MongoChatServiceClient {
       });
 
       this.setSyncStatus('saved');
+      if (res.ok) {
+        return await res.json();
+      }
     } catch (err) {
       console.warn('[MongoChatService] saveMessageRealtime error:', err.message);
     }
+    return null;
   }
 
   /**
@@ -317,7 +365,7 @@ class MongoChatServiceClient {
     if (!chatId) return;
 
     try {
-      const token = await getIdToken();
+      const token = await this.getToken();
       if (!token) return;
 
       await fetch(`${getApiBase()}/api/conversations/${encodeURIComponent(chatId)}/title`, {
@@ -328,21 +376,19 @@ class MongoChatServiceClient {
         },
         body: JSON.stringify({ title })
       });
-
-      this.setSyncStatus('saved');
     } catch (err) {
       console.warn('[MongoChatService] updateTitle error:', err.message);
     }
   }
 
   /**
-   * Save user feedback (thumbs up/down)
+   * Save message feedback (thumbs up / down)
    */
   async saveFeedback(chatId, messageIndex, feedback) {
     if (!chatId || typeof messageIndex !== 'number') return;
 
     try {
-      const token = await getIdToken();
+      const token = await this.getToken();
       if (!token) return;
 
       await fetch(`${getApiBase()}/api/conversations/${encodeURIComponent(chatId)}/feedback`, {
@@ -353,8 +399,6 @@ class MongoChatServiceClient {
         },
         body: JSON.stringify({ messageIndex, feedback })
       });
-
-      this.setSyncStatus('saved');
     } catch (err) {
       console.warn('[MongoChatService] saveFeedback error:', err.message);
     }
@@ -367,7 +411,7 @@ class MongoChatServiceClient {
     if (!chatId) return;
 
     try {
-      const token = await getIdToken();
+      const token = await this.getToken();
       if (!token) return;
 
       await fetch(`${getApiBase()}/api/conversations/${encodeURIComponent(chatId)}`, {
@@ -376,19 +420,17 @@ class MongoChatServiceClient {
           'Authorization': `Bearer ${token}`
         }
       });
-
-      this.setSyncStatus('saved');
     } catch (err) {
       console.warn('[MongoChatService] deleteConversation error:', err.message);
     }
   }
 
   /**
-   * Delete all conversations
+   * Delete all conversations for current user
    */
   async deleteAllConversations() {
     try {
-      const token = await getIdToken();
+      const token = await this.getToken();
       if (!token) return;
 
       await fetch(`${getApiBase()}/api/conversations`, {
@@ -397,15 +439,13 @@ class MongoChatServiceClient {
           'Authorization': `Bearer ${token}`
         }
       });
-
-      this.setSyncStatus('saved');
     } catch (err) {
       console.warn('[MongoChatService] deleteAllConversations error:', err.message);
     }
   }
 
   /**
-   * Query database status
+   * Check MongoDB Service Health / Status
    */
   async getStatus() {
     try {
@@ -414,7 +454,7 @@ class MongoChatServiceClient {
         return await res.json();
       }
     } catch (_) {}
-    return { success: false, connected: false };
+    return { connected: false, mode: 'offline', status: 'unreachable' };
   }
 }
 

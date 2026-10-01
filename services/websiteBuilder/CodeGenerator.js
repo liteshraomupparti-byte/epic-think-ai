@@ -1398,9 +1398,37 @@ document.addEventListener('DOMContentLoaded', () => {
   /**
    * Apply a natural language modification to project files
    */
-  static async applyNaturalLanguageEdit({ projectId, prompt, selectedElement = null }) {
+  static async applyNaturalLanguageEdit({ projectId, prompt, selectedElement = null, modelPreset = 'Epic Think 4o' }) {
     const lowerPrompt = prompt.toLowerCase();
     const projectDir = ProjectManager.getProjectDir(projectId);
+
+    // Auto-heal / generate if index.html is missing OR if the user asked to build/create/generate a website
+    const hasIndex = (await ProjectManager.getFiles(projectId).catch(() => [])).some(f => f.name === 'index.html' || f.path === 'index.html');
+    const isCreationIntent = /^(?:create|generate|build|make|rebuild|setup|design|spin up)\s+(?:a\s+)?(?:new\s+)?(?:simple\s+)?(?:website|site|store|app|landing|page)/i.test(lowerPrompt) ||
+                             /(?:create|generate|build|make|rebuild)\s+a\s+(?:simple\s+)?website/i.test(lowerPrompt) ||
+                             !hasIndex;
+
+    if (isCreationIntent) {
+      const preset = /modern|saas|tech/i.test(prompt) ? 'modern_saas' : 'luxury_gold';
+      const genResult = await this.generateProject({
+        projectId,
+        prompt,
+        preset,
+        modelPreset
+      });
+      const modifiedFiles = [];
+      for (const f of genResult.files) {
+        await ProjectManager.saveFile(projectId, f.path, f.content);
+        modifiedFiles.push(f.path);
+      }
+      const changeSummary = `Generated complete website tailored to "${prompt}".`;
+      await ProjectManager.createCheckpoint(projectId, changeSummary);
+      return {
+        success: true,
+        modifiedFiles,
+        changeSummary
+      };
+    }
 
     // Read index.html and styles
     let indexHtml = await ProjectManager.readFile(projectId, 'index.html');
@@ -1699,7 +1727,7 @@ ${currentHtml.slice(0, 4500)}
 Current css/styles.css (truncated if very long):
 ${currentCss.slice(0, 3000)}`,
           systemPrompt,
-          modelPreset: 'Epic Think 4o'
+          modelPreset: modelPreset || 'Epic Think 4o'
         });
 
         const parsedEdit = this.extractJson(aiEditRes.content);

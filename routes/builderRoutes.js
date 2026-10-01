@@ -282,17 +282,19 @@ router.post('/projects/:id/generate', optionalAuth, async (req, res) => {
 router.post('/projects/:id/edit', optionalAuth, async (req, res) => {
     try {
         const { id } = req.params;
-        const { prompt, selectedElement, modelPreset } = req.body || {};
+        const { prompt, selectedElement, modelPreset, model } = req.body || {};
 
         if (!prompt) {
             return res.status(400).json({ success: false, error: 'prompt is required' });
         }
 
+        const activeModel = modelPreset || model || 'Epic Think 4o';
+
         const editResult = await CodeGenerator.editWithNaturalLanguage({
             projectId: id,
             prompt,
             selectedElement,
-            modelPreset
+            modelPreset: activeModel
         });
 
         if (!editResult.success) {

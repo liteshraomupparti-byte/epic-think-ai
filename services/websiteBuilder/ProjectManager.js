@@ -109,7 +109,55 @@ export class ProjectManager {
       console.warn(`[PROJECT_MANAGER] Git init warning for ${projectId}:`, err.message);
     }
 
+    if (opts.autoGenerate !== false) {
+      await this.ensureProjectFiles(projectId, opts);
+    }
+
     return metadata;
+  }
+
+  /**
+   * Ensure project has complete working files (index.html, styles, scripts)
+   */
+  static async ensureProjectFiles(projectId, options = {}) {
+    const projectDir = this.getProjectDir(projectId);
+    const indexPath = path.join(projectDir, 'index.html');
+
+    if (!fs.existsSync(projectDir)) {
+      fs.mkdirSync(projectDir, { recursive: true });
+    }
+
+    if (!fs.existsSync(indexPath)) {
+      try {
+        const { CodeGenerator } = await import('./CodeGenerator.js');
+        const isDevika = /devika/i.test(projectId);
+        const title = options.name || (isDevika ? 'Devika Collections' : projectId.replace(/_/g, ' '));
+        const preset = options.preset || (isDevika ? 'luxury_gold' : 'luxury_gold');
+        const prompt = options.prompt || (isDevika
+          ? 'Create a premium luxury fashion ecommerce website called Devika Collections'
+          : `Create a modern luxury website for ${title}`);
+
+        const genResult = await CodeGenerator.generateProject({
+          projectId,
+          prompt,
+          preset
+        });
+
+        for (const f of genResult.files) {
+          const full = path.join(projectDir, f.path);
+          fs.mkdirSync(path.dirname(full), { recursive: true });
+          fs.writeFileSync(full, f.content, 'utf8');
+        }
+
+        try {
+          await execAsync('git add .', { cwd: projectDir });
+          await execAsync('git commit -m "Auto-generated website initialization"', { cwd: projectDir });
+        } catch (_) {}
+      } catch (err) {
+        console.warn(`[PROJECT_MANAGER] ensureProjectFiles fallback for ${projectId}:`, err.message);
+      }
+    }
+    return true;
   }
 
   /**
@@ -195,6 +243,12 @@ export class ProjectManager {
     const fullPath = path.join(projectDir, cleanRelPath);
 
     if (!fs.existsSync(fullPath)) {
+      if (cleanRelPath === 'index.html' || cleanRelPath.startsWith('css/') || cleanRelPath.startsWith('js/')) {
+        await this.ensureProjectFiles(projectId);
+        if (fs.existsSync(fullPath)) {
+          return fs.readFileSync(fullPath, 'utf8');
+        }
+      }
       throw new Error(`File not found: ${cleanRelPath} in project ${projectId}`);
     }
 

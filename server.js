@@ -31,6 +31,9 @@ import {
   getMongoStatus,
   getConversations,
   getConversation,
+  getConversationAnyUser,
+  getMessages,
+  upsertUser,
   saveConversation,
   updateConversationTitle,
   saveMessage,
@@ -44,6 +47,7 @@ import agentRoutes from './routes/agentRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import builderRoutes from './routes/builderRoutes.js';
 import { PreviewServer } from './services/websiteBuilder/PreviewServer.js';
+import { ProjectManager } from './services/websiteBuilder/ProjectManager.js';
 import { initializePlugins } from './plugins/index.js';
 import { initAIEngine } from './ai/index.js';
 
@@ -117,6 +121,9 @@ app.get('/api/conversations/status', async (req, res) => {
  */
 app.get('/api/conversations', requireAuth, async (req, res) => {
   try {
+    // Automatically record / refresh authenticated user profile in users collection
+    upsertUser(req.user).catch(() => {});
+
     const conversations = await getConversations(req.user.uid);
     res.json({
       success: true,
@@ -134,13 +141,20 @@ app.get('/api/conversations', requireAuth, async (req, res) => {
 });
 
 /**
- * Get single conversation by ID
+ * Get single conversation by ID (Verifies Firebase UID ownership; 403 if owned by another user)
  * GET /api/conversations/:id
  */
 app.get('/api/conversations/:id', requireAuth, async (req, res) => {
   try {
     const conversation = await getConversation(req.user.uid, req.params.id);
     if (!conversation) {
+      const existsOther = await getConversationAnyUser(req.params.id);
+      if (existsOther && existsOther.firebaseUid !== req.user.uid) {
+        return res.status(403).json({
+          success: false,
+          error: 'Forbidden: Access denied to conversation.'
+        });
+      }
       return res.status(404).json({
         success: false,
         error: 'Conversation not found.'
@@ -152,6 +166,29 @@ app.get('/api/conversations/:id', requireAuth, async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
+/**
+ * Get all messages for a specific conversation
+ * GET /api/conversations/:id/messages
+ * Validates that conversation belongs to authenticated Firebase UID
+ */
+app.get('/api/conversations/:id/messages', requireAuth, async (req, res) => {
+  try {
+    const messages = await getMessages(req.user.uid, req.params.id);
+    res.json({
+      success: true,
+      conversationId: req.params.id,
+      messages,
+      count: messages.length
+    });
+  } catch (err) {
+    const statusCode = err.statusCode || (err.message.includes('Access denied') ? 403 : 500);
+    res.status(statusCode).json({
       success: false,
       error: err.message
     });
@@ -543,6 +580,14 @@ initRealtimeSync(server);
 
 // Initialize Website Builder Live Preview WebSocket synchronization
 PreviewServer.attachWebSocket(server);
+
+// Ensure default projects exist with verified templates
+try {
+  await ProjectManager.ensureProjectFiles('devika_collections');
+  console.log('[BUILDER] Default project "devika_collections" verified & ready.');
+} catch (err) {
+  console.warn('[BUILDER] Default project init note:', err.message);
+}
 
 // Initialize MongoDB connection
 initMongoDB().catch((err) => {
