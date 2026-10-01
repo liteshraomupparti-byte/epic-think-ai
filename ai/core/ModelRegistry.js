@@ -8,6 +8,8 @@
  * - Epic Think 4o (Smartest / High Intelligence Flagship)
  */
 
+import { GenerationConfig } from './GenerationConfig.js';
+
 export class ModelRegistry {
   constructor() {
     this.models = new Map();
@@ -105,6 +107,18 @@ export class ModelRegistry {
     // GOOGLE GEMINI AI STUDIO
     // -------------------------------------------------------------
     this.register({
+      id: 'gemini-3.5-flash',
+      provider: 'gemini',
+      name: 'Gemini 3.5 Flash',
+      capabilities: { text: true, vision: true, tools: true, streaming: true, reasoning: true },
+      speedClass: 'fast',
+      qualityClass: 'flagship',
+      contextWindow: 1048576,
+      maxOutputTokens: 8192,
+      presetMapping: ['Epic Think 4o', 'Smartest', 'Epic Think Fast', 'Fast', 'Auto']
+    });
+
+    this.register({
       id: 'gemini-3.7-flash',
       provider: 'gemini',
       name: 'Gemini 3.7 Flash',
@@ -112,6 +126,7 @@ export class ModelRegistry {
       speedClass: 'balanced',
       qualityClass: 'high',
       contextWindow: 1048576,
+      maxOutputTokens: 8192,
       presetMapping: ['Epic Think 4o', 'Smartest']
     });
 
@@ -123,6 +138,7 @@ export class ModelRegistry {
       speedClass: 'fast',
       qualityClass: 'high',
       contextWindow: 1048576,
+      maxOutputTokens: 8192,
       presetMapping: ['Epic Think Fast']
     });
 
@@ -134,6 +150,7 @@ export class ModelRegistry {
       speedClass: 'fast',
       qualityClass: 'standard',
       contextWindow: 1048576,
+      maxOutputTokens: 4096,
       presetMapping: ['Fast']
     });
   }
@@ -142,8 +159,10 @@ export class ModelRegistry {
     if (!modelDef.id || !modelDef.provider) {
       throw new Error('Model definition must include id and provider');
     }
+    const maxOutputTokens = modelDef.maxOutputTokens || GenerationConfig.resolveMaxOutputTokens(modelDef.id, modelDef.provider);
     this.models.set(modelDef.id, {
       ...modelDef,
+      maxOutputTokens,
       registeredAt: Date.now()
     });
   }

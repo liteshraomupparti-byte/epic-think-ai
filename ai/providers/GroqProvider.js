@@ -7,6 +7,7 @@
 
 import { BaseAIProvider } from './BaseAIProvider.js';
 import { AIAuthenticationError, AIModelUnavailableError, AIRateLimitError, AITimeoutError } from '../errors/AIErrors.js';
+import { GenerationConfig } from '../core/GenerationConfig.js';
 
 export class GroqProvider extends BaseAIProvider {
   constructor(config = {}) {
@@ -15,7 +16,7 @@ export class GroqProvider extends BaseAIProvider {
       name: 'Groq Cloud LPU',
       apiKey: config.apiKey || process.env.GROQ_API_KEY || '',
       baseUrl: config.baseUrl || 'https://api.groq.com/openai/v1',
-      timeoutMs: config.timeoutMs || parseInt(process.env.AI_REQUEST_TIMEOUT_MS, 10) || 20000
+      timeoutMs: config.timeoutMs || parseInt(process.env.AI_REQUEST_TIMEOUT_MS, 10) || 55000
     });
     this.defaultModel = config.defaultModel || 'qwen/qwen3.8-27b';
   }
@@ -62,7 +63,7 @@ export class GroqProvider extends BaseAIProvider {
   /**
    * Non-streaming text generation
    */
-  async generate({ prompt, messages, model, systemPrompt, temperature = 0.7, maxTokens = 2048, signal }) {
+  async generate({ prompt, messages, model, systemPrompt, temperature = 0.7, maxTokens = null, signal }) {
     if (!this.isConfigured) {
       throw new AIAuthenticationError('Groq API key is not configured.');
     }
@@ -71,10 +72,11 @@ export class GroqProvider extends BaseAIProvider {
     const bodyMessages = this.buildMessages({ prompt, messages, systemPrompt });
     const startTime = Date.now();
 
-    // Cap max tokens for qwen/qwen3.8-27b to prevent Groq 1000 OTPM rate limit errors
-    const effectiveMaxTokens = targetModel.includes('qwen') 
-      ? Math.min(maxTokens || 800, 800) 
-      : Math.min(maxTokens || 2048, 2048);
+    // Centralized generation token governor - removes artificial 800 token truncation cap
+    const effectiveMaxTokens = GenerationConfig.resolveMaxOutputTokens({
+      requestedTokens: maxTokens,
+      model: targetModel
+    });
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
@@ -111,7 +113,7 @@ export class GroqProvider extends BaseAIProvider {
         content,
         model: data.model || targetModel,
         usage: data.usage,
-        finishReason: choice.finish_reason,
+        finishReason: choice.finish_reason || 'stop',
         latency,
         requestId: data.id || data.x_groq?.id,
         raw: data
@@ -125,7 +127,7 @@ export class GroqProvider extends BaseAIProvider {
   /**
    * Generation with tool calling support
    */
-  async generateWithTools({ prompt, messages, model, tools, systemPrompt, temperature = 0.5, maxTokens = 2048, signal }) {
+  async generateWithTools({ prompt, messages, model, tools, systemPrompt, temperature = 0.5, maxTokens = null, signal }) {
     if (!this.isConfigured) {
       throw new AIAuthenticationError('Groq API key is not configured.');
     }
@@ -135,9 +137,10 @@ export class GroqProvider extends BaseAIProvider {
     const groqTools = this.convertTools(tools);
     const startTime = Date.now();
 
-    const effectiveMaxTokens = targetModel.includes('qwen') 
-      ? Math.min(maxTokens || 800, 800) 
-      : Math.min(maxTokens || 2048, 2048);
+    const effectiveMaxTokens = GenerationConfig.resolveMaxOutputTokens({
+      requestedTokens: maxTokens,
+      model: targetModel
+    });
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
@@ -227,7 +230,7 @@ export class GroqProvider extends BaseAIProvider {
   /**
    * Streaming text generation with callback
    */
-  async stream({ prompt, messages, model, systemPrompt, temperature = 0.7, maxTokens = 2048, signal }, onChunk) {
+  async stream({ prompt, messages, model, systemPrompt, temperature = 0.7, maxTokens = null, signal }, onChunk) {
     if (!this.isConfigured) {
       throw new AIAuthenticationError('Groq API key is not configured.');
     }
@@ -236,9 +239,10 @@ export class GroqProvider extends BaseAIProvider {
     const bodyMessages = this.buildMessages({ prompt, messages, systemPrompt });
     const startTime = Date.now();
 
-    const effectiveMaxTokens = targetModel.includes('qwen') 
-      ? Math.min(maxTokens || 800, 800) 
-      : Math.min(maxTokens || 2048, 2048);
+    const effectiveMaxTokens = GenerationConfig.resolveMaxOutputTokens({
+      requestedTokens: maxTokens,
+      model: targetModel
+    });
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
@@ -269,6 +273,7 @@ export class GroqProvider extends BaseAIProvider {
       }
 
       let fullContent = '';
+      let streamFinishReason = 'stop';
       const reader = res.body.getReader();
       const decoder = new TextDecoder('utf-8');
       let buffer = '';
@@ -289,7 +294,13 @@ export class GroqProvider extends BaseAIProvider {
           if (trimmed.startsWith('data: ')) {
             try {
               const chunkJson = JSON.parse(trimmed.slice(6));
-              const delta = chunkJson.choices?.[0]?.delta?.content || '';
+              const choice = chunkJson.choices?.[0];
+              const delta = choice?.delta?.content || '';
+
+              if (choice?.finish_reason) {
+                streamFinishReason = choice.finish_reason;
+              }
+
               if (delta) {
                 fullContent += delta;
                 if (typeof onChunk === 'function') {
@@ -298,7 +309,8 @@ export class GroqProvider extends BaseAIProvider {
                     delta,
                     fullContent,
                     provider: 'groq',
-                    model: targetModel
+                    model: targetModel,
+                    finishReason: streamFinishReason
                   });
                 }
               }
@@ -311,6 +323,7 @@ export class GroqProvider extends BaseAIProvider {
       return this.normalizeResponse({
         content: fullContent,
         model: targetModel,
+        finishReason: streamFinishReason || 'stop',
         latency
       });
     } catch (err) {

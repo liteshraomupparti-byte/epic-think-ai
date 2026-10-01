@@ -1773,7 +1773,6 @@
     }
 
     /* Responsive Mobile Behavior */
-    /* Responsive Mobile Behavior */
     @media (max-width: 768px) {
       .sidebar {
         position: fixed;
@@ -2431,12 +2430,6 @@
         width: 100vw !important;
         max-width: 100vw !important;
         z-index: 10005 !important;
-      }
-
-      .builder-modal-card {
-        width: 95% !important;
-        margin: 10px auto !important;
-        max-height: 90vh !important;
       }
     }
 
@@ -3471,13 +3464,21 @@
       color: #ffffff !important;
     }
 
+    .builder-toolbar-left,
+    .builder-toolbar-center,
+    .builder-toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .builder-project-select {
       background: #18181e;
       border: 1px solid rgba(197, 160, 89, 0.3);
       color: #e5c98a;
-      font-size: 12px;
+      font-size: 12.5px;
       font-weight: 600;
-      padding: 5px 8px;
+      padding: 5px 10px;
       border-radius: var(--radius-sm);
       outline: none;
       cursor: pointer;
@@ -3542,7 +3543,7 @@
       color: #ffffff;
     }
 
-    /* Main 2-Column Work Area */
+    /* Main 3-Column Layout */
     .builder-main-row {
       display: flex;
       flex: 1;
@@ -3551,74 +3552,34 @@
       position: relative;
     }
 
-    /* Left Column: AI Builder Copilot */
+    /* Left Column: AI Builder Chat */
     .builder-col-chat {
-      width: 380px;
-      min-width: 340px;
-      max-width: 440px;
-      background: #0d0d11;
+      width: 330px;
+      min-width: 300px;
+      max-width: 420px;
+      background: #0d0d10;
       border-right: 1px solid rgba(255, 255, 255, 0.08);
       display: flex;
       flex-direction: column;
       min-height: 0;
-      position: relative;
-      z-index: 5;
     }
 
-    .builder-col-header {
-      padding: 10px 14px;
-      background: #121217;
+    .builder-chat-tabs {
+      display: flex;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      background: #121216;
     }
 
-    .builder-subtab-strip {
-      display: flex;
-      background: #181822;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: var(--radius-sm);
-      padding: 2px;
-      gap: 2px;
-    }
-
-    .builder-subtab-btn {
+    .builder-chat-tab {
       flex: 1;
-      background: transparent;
-      border: none;
-      color: #a1a1aa;
+      text-align: center;
+      padding: 8px;
       font-size: 11.5px;
       font-weight: 600;
-      padding: 6px 8px;
-      border-radius: 4px;
+      color: #a1a1aa;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
+      border-bottom: 2px solid transparent;
       transition: all 0.15s ease;
-      white-space: nowrap;
-    }
-
-    .builder-subtab-btn:hover {
-      color: #fff;
-      background: rgba(255, 255, 255, 0.05);
-    }
-
-    .builder-subtab-btn.active {
-      background: rgba(197, 160, 89, 0.2);
-      border: 1px solid rgba(197, 160, 89, 0.35);
-      color: #fef08a;
-    }
-
-    .builder-subtab-pane {
-      flex: 1;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-      overflow-y: auto;
-      padding: 12px;
     }
 
     .builder-chat-tab.active {
@@ -4206,28 +4167,16 @@
       font-family: var(--font-mono);
     }
 
-    /* Right Column: Visual Element Inspector (Slide-Over Drawer) */
+    /* Right Column: Visual Element Inspector */
     .builder-col-inspector {
-      position: absolute;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      width: 320px;
-      max-width: 90vw;
-      background: #111116;
-      border-left: 1px solid rgba(197, 160, 89, 0.3);
-      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.7);
+      width: 300px;
+      min-width: 270px;
+      background: #0d0d10;
+      border-left: 1px solid rgba(255, 255, 255, 0.08);
       display: flex;
       flex-direction: column;
       min-height: 0;
       overflow-y: auto;
-      z-index: 30;
-      transform: translateX(100%);
-      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .builder-col-inspector.open {
-      transform: translateX(0);
     }
 
     .builder-inspector-header {
@@ -4353,30 +4302,26 @@
       color: #a1a1aa;
     }
 
-    /* Bottom Expandable Drawer (Collapsed by default as clean 32px status bar) */
+    /* Bottom Expandable Drawer */
     .builder-drawer {
-      height: 32px;
-      min-height: 32px;
+      height: 180px;
+      min-height: 34px;
       background: #111116;
       border-top: 1px solid rgba(255, 255, 255, 0.08);
       display: flex;
       flex-direction: column;
-      transition: height 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: height 0.2s ease;
       z-index: 10;
     }
 
-    .builder-drawer.expanded {
-      height: 220px !important;
-    }
-
-    .builder-drawer:not(.expanded) .builder-drawer-content {
-      display: none !important;
+    .builder-drawer.collapsed {
+      height: 34px !important;
     }
 
     .builder-drawer-header {
-      height: 32px;
-      min-height: 32px;
-      background: #14141a;
+      height: 34px;
+      min-height: 34px;
+      background: #16161c;
       border-bottom: 1px solid rgba(255, 255, 255, 0.06);
       display: flex;
       align-items: center;
@@ -4948,7 +4893,6 @@
     <main class="main-content">
 
       <!-- Top Nav Header -->
-      <!-- Top Nav Header -->
       <header class="top-nav">
         <div class="top-nav-main-bar">
           <div class="top-nav-left">
@@ -5212,13 +5156,14 @@
               <option value="devika_collections" selected>Devika Collections</option>
               <option value="new_project">+ Create New Website...</option>
             </select>
+            <!-- Model Router Capability Dropdown -->
             <select class="builder-project-select" id="builderModelSelector" title="Capability-Based Model Router" style="background:#13131a; color:#a1a1aa; border-color:rgba(255,255,255,0.1);">
-              <option value="auto" selected>🤖 Auto Model</option>
-              <option value="epic-think-4o">⚡ Epic Think 4o</option>
-              <option value="epic-think-o1">🧠 Epic Think o1</option>
-              <option value="epic-think-fast">⚡ Epic Think Fast</option>
-              <option value="groq-llama33">🚀 Groq Llama 3.3</option>
-              <option value="qwen-local">💻 Local GPU (RTX 5050)</option>
+              <option value="auto" selected>🤖 Auto Model (Orchestrator)</option>
+              <option value="epic-think-4o">⚡ Epic Think 4o (Flagship)</option>
+              <option value="epic-think-o1">🧠 Epic Think o1 (Reasoning)</option>
+              <option value="epic-think-fast">⚡ Epic Think Fast (Fast LPU)</option>
+              <option value="groq-llama33">🚀 Groq Llama 3.3 70B</option>
+              <option value="qwen-local">💻 Qwen Local GPU (RTX 5050)</option>
             </select>
             <span id="builderSaveStatusBadge" style="display:inline-flex; align-items:center; gap:4px; font-size:10.5px; color:#10b981; background:rgba(16,185,129,0.08); padding:2px 7px; border-radius:10px; border:1px solid rgba(16,185,129,0.2);">
               <span style="width:5px; height:5px; border-radius:50%; background:#10b981;"></span> Saved ✓
@@ -5246,9 +5191,11 @@
             <button type="button" class="builder-btn active" id="builderInspectToggle" title="Toggle Visual Element Selection Mode" style="border-color:#c5a059; color:#e5c98a;">
               <span>🎯 Inspect: ON</span>
             </button>
+            <!-- Undo / Redo / Diff / Diagnostics / Deploy -->
             <button type="button" class="builder-btn" id="builderUndoBtn" title="Git Undo to previous checkpoint">↩ Undo</button>
             <button type="button" class="builder-btn" id="builderRedoBtn" title="Git Redo">↪ Redo</button>
             <button type="button" class="builder-btn" id="builderDiffReviewBtn" title="View Git Checkpoint Diff">🔀 Diff</button>
+            <button type="button" class="builder-btn" id="builderDiagnosticsBtn" title="Self-Healing Diagnostics" style="color:#34d399; border-color:rgba(16,185,129,0.3);">🩺 Healthy (0)</button>
             <button type="button" class="builder-btn btn-gold" id="builderDeployBtn" title="Deploy / Export Website">🚀 Deploy</button>
             <button type="button" class="builder-btn" id="builderExitBtn" title="Return to Epic Think AI Chat" style="border-color:rgba(255,255,255,0.2);">✕ Exit</button>
           </div>
@@ -5264,119 +5211,138 @@
           <button type="button" class="builder-btn" id="builderMobileRotateBtn" title="Rotate Orientation" style="padding:4px 8px; font-size:11px;">🔄 Rotate</button>
         </div>
 
-        <!-- Main 2-Column Work Area -->
+        <!-- Main 3-Column Work Area -->
         <div class="builder-main-row">
           
-          <!-- COLUMN 1: Left Navigation & AI Copilot Hub -->
-          <div class="builder-col-chat" id="builderChatCol">
-            <!-- Header: Project Identity & Subtabs -->
-            <div class="builder-col-header">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <span style="font-weight:700; font-size:13.5px; color:#fff;" id="builderHeroTitle">Devika Collections</span>
-                  <span id="builderLiveStatusBadge" style="display:inline-flex; align-items:center; gap:4px; font-size:10px; background:rgba(16,185,129,0.12); color:#34d399; padding:2px 7px; border-radius:10px; border:1px solid rgba(16,185,129,0.25);">
-                    <span style="width:5px; height:5px; border-radius:50%; background:#10b981;"></span> Live
-                  </span>
-                </div>
-              </div>
-              <!-- 3 Clean Tabs (Emergent / Lovable architecture) -->
-              <div class="builder-subtab-strip" id="builderSubtabStrip">
-                <button type="button" class="builder-subtab-btn active" data-subtab="ai">⚡ AI Copilot</button>
-                <button type="button" class="builder-subtab-btn" data-subtab="pages">📄 Pages & Files</button>
-                <button type="button" class="builder-subtab-btn" data-subtab="seo">🔍 SEO & Audits</button>
-              </div>
+          <!-- COLUMN 1: Left Navigation & Multi-Tab Feature Hub -->
+          <div class="builder-col-chat" id="builderChatCol" style="width:340px; min-width:320px;">
+            <!-- Subtab Navigation Strip -->
+            <div class="builder-subtab-strip" id="builderSubtabStrip">
+              <button type="button" class="builder-subtab-btn active" data-subtab="ai">⚡ AI</button>
+              <button type="button" class="builder-subtab-btn" data-subtab="pages">📄 Pages</button>
+              <button type="button" class="builder-subtab-btn" data-subtab="components">🧩 Comps</button>
+              <button type="button" class="builder-subtab-btn" data-subtab="assets">🖼️ Assets</button>
+              <button type="button" class="builder-subtab-btn" data-subtab="files">📁 Files</button>
+              <button type="button" class="builder-subtab-btn" data-subtab="plugins">🔌 Plugins</button>
+              <button type="button" class="builder-subtab-btn" data-subtab="seo">🔍 SEO</button>
+              <button type="button" class="builder-subtab-btn" data-subtab="settings">⚙️ Setup</button>
             </div>
 
             <!-- SUBTAB 1: AI Assistant & Planning -->
-            <div class="builder-subtab-pane" id="subtabPaneAI" style="display:flex; flex-direction:column; flex:1; min-height:0; padding:12px; gap:8px;">
-              <!-- Real AI Chat Stream -->
-              <div class="builder-chat-stream" id="builderChatStream">
-                <div class="builder-msg ai">
-                  <div style="font-weight:700; color:#e5c98a; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
-                    <span>✨</span> Epic Think AI Copilot
+            <div class="builder-subtab-pane" id="subtabPaneAI">
+              <!-- Dynamic Project Info Banner -->
+              <div class="builder-project-hero-card" id="builderProjectHeroCard">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+                  <div>
+                    <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.06em; color:#c5a059; font-weight:700;">ACTIVE WEBSITE</div>
+                    <div style="font-size:15px; font-weight:700; color:#fff;" id="builderHeroTitle">Devika Collections</div>
                   </div>
-                  <div style="color:#d4d4d8; font-size:12.5px; line-height:1.5;">
-                    I am your visual AI website builder. Instruct me to modify colors, update typography, add new components, generate images, or overhaul any section in real-time.
-                  </div>
+                  <span id="builderLiveStatusBadge" style="display:inline-flex; align-items:center; gap:5px; font-size:10.5px; background:rgba(16,185,129,0.12); color:#34d399; padding:2px 8px; border-radius:12px; border:1px solid rgba(16,185,129,0.3);">
+                    <span style="width:6px; height:6px; border-radius:50%; background:#10b981;"></span> Live
+                  </span>
+                </div>
+                <div id="builderHeroDesc" style="font-size:11.5px; color:#a1a1aa; line-height:1.45; margin-bottom:8px;">
+                  Luxury ecommerce website with black & gold aesthetic, product catalog, shopping bag, and responsive design.
+                </div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                  <span class="builder-tag" id="builderTagTheme">🎨 Luxury Gold</span>
+                  <span class="builder-tag" id="builderTagFramework">⚡ Reactive ES6 Store</span>
+                  <span class="builder-tag" id="builderTagFiles">📁 4 Files</span>
+                </div>
+              </div>
+
+              <!-- AI Activity & Execution Feed -->
+              <div id="builderActivityFeed" style="display:flex; flex-direction:column; gap:6px;">
+                <div class="builder-action-status">
+                  <span>●</span> <span id="builderFeedInitialMsg">Live preview ready at /preview/devika_collections/index.html</span>
                 </div>
               </div>
 
               <!-- Context-Aware Prompt Chips -->
-              <div class="builder-quick-chips" id="builderQuickChips">
+              <div class="builder-quick-chips" id="builderQuickChips" style="margin-top:auto;">
                 <!-- Populated dynamically -->
               </div>
 
               <!-- Builder Input Box -->
               <div class="builder-chat-input-box" style="margin:-12px -12px -12px -12px;">
-                <textarea id="builderPromptInput" class="builder-chat-textarea" placeholder="Instruct AI to edit styling, add components, or modify pages..."></textarea>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                <textarea id="builderPromptInput" class="builder-chat-textarea" placeholder="Instruct AI to redesign, add components, or modify pages..."></textarea>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
                   <span id="builderAiStatus" style="font-size:11px; color:#a1a1aa;">Ready</span>
-                  <button type="button" class="builder-btn btn-gold" id="builderSendBtn" style="padding:6px 14px;">⚡ Update Website</button>
+                  <button type="button" class="builder-btn btn-gold" id="builderSendBtn" style="padding:6px 14px;">⚡ Apply Changes</button>
                 </div>
               </div>
             </div>
 
-            <!-- SUBTAB 2: Pages & Project Files Manager -->
-            <div class="builder-subtab-pane" id="subtabPanePages" style="display:none; flex-direction:column; flex:1; min-height:0; padding:12px; gap:12px;">
-              <!-- Section A: Site Pages -->
-              <div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                  <span style="font-size:11.5px; font-weight:700; text-transform:uppercase; color:#e5c98a; letter-spacing:0.04em;">Site Pages</span>
-                  <button type="button" class="builder-btn btn-gold" id="builderNewPageBtn" style="padding:3px 8px; font-size:11px;">+ New Page</button>
-                </div>
-                <div id="builderPagesList" style="display:flex; flex-direction:column; gap:6px;">
-                  <!-- Dynamically populated from MultiPageManager -->
-                </div>
+            <!-- SUBTAB 2: Pages Manager -->
+            <div class="builder-subtab-pane" id="subtabPanePages" style="display:none;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <span style="font-size:11.5px; font-weight:700; text-transform:uppercase; color:#e5c98a; letter-spacing:0.04em;">Site Pages</span>
+                <button type="button" class="builder-btn btn-gold" id="builderNewPageBtn" style="padding:3px 8px; font-size:11px;">+ New Page</button>
               </div>
-
-              <!-- Section B: Components Library -->
-              <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:10px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                  <span style="font-size:11.5px; font-weight:700; text-transform:uppercase; color:#e5c98a; letter-spacing:0.04em;">Reusable Components</span>
-                  <button type="button" class="builder-btn" id="builderRefreshCompsBtn" style="padding:2px 7px; font-size:10.5px;">🔄 Refresh</button>
-                </div>
-                <div id="builderComponentsList" style="display:flex; flex-direction:column; gap:6px;">
-                  <!-- Dynamically populated from MultiPageManager -->
-                </div>
-              </div>
-
-              <!-- Section C: Files Explorer -->
-              <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:10px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                  <span style="font-size:11.5px; font-weight:700; text-transform:uppercase; color:#e5c98a; letter-spacing:0.04em;">Project Source Files</span>
-                </div>
-                <input type="text" id="builderFileSearchInput" placeholder="🔍 Search project files..." style="width:100%; background:#14141a; border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-size:11.5px; padding:6px 10px; outline:none; margin-bottom:6px;">
-                <div id="builderFilesTreeList" style="display:flex; flex-direction:column; gap:4px; max-height:160px; overflow-y:auto;">
-                  <!-- Populated dynamically -->
-                </div>
-              </div>
-
-              <!-- Section D: Creative AI Assets -->
-              <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:10px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                  <span style="font-size:11.5px; font-weight:700; text-transform:uppercase; color:#e5c98a; letter-spacing:0.04em;">AI Image Generator</span>
-                  <button type="button" class="builder-btn" id="builderRefreshAssetsBtn" style="padding:2px 7px; font-size:10.5px;">🔄 Assets</button>
-                </div>
-                <div style="background:#14141a; border:1px solid rgba(197,160,89,0.3); border-radius:6px; padding:8px; display:flex; flex-direction:column; gap:6px;">
-                  <input type="text" id="builderAssetPromptInput" placeholder="Describe asset: e.g. Royal emerald silk gown..." style="background:#0c0c10; border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-size:11.5px; padding:6px; outline:none;">
-                  <div style="display:flex; gap:6px;">
-                    <select id="builderAssetCategorySelect" style="flex:1; background:#0c0c10; border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#ccc; font-size:11px; padding:4px;">
-                      <option value="hero">Hero Banner (16:9)</option>
-                      <option value="product">Product Photo (1:1)</option>
-                      <option value="logo">Brand Logo</option>
-                      <option value="background">Texture</option>
-                    </select>
-                    <button type="button" class="builder-btn btn-gold" id="builderSubmitAssetGenBtn" style="padding:4px 10px; font-size:11px;">Generate</button>
-                  </div>
-                </div>
-                <div class="builder-asset-grid" id="builderAssetsList" style="margin-top:6px; max-height:120px; overflow-y:auto;">
-                  <!-- Populated dynamically -->
-                </div>
+              <div id="builderPagesList" style="display:flex; flex-direction:column; gap:6px;">
+                <!-- Dynamically populated from MultiPageManager -->
               </div>
             </div>
 
-            <!-- SUBTAB 3: SEO Engine & Audits -->
-            <div class="builder-subtab-pane" id="subtabPaneSEO" style="display:none; flex-direction:column; flex:1; min-height:0; padding:12px; gap:10px;">
+            <!-- SUBTAB 3: Reusable Components -->
+            <div class="builder-subtab-pane" id="subtabPaneComponents" style="display:none;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <span style="font-size:11.5px; font-weight:700; text-transform:uppercase; color:#e5c98a; letter-spacing:0.04em;">Components</span>
+                <button type="button" class="builder-btn" id="builderRefreshCompsBtn" style="padding:2px 7px; font-size:10.5px;">🔄 Refresh</button>
+              </div>
+              <div id="builderComponentsList" style="display:flex; flex-direction:column; gap:6px;">
+                <!-- Dynamically populated from MultiPageManager.listComponents -->
+              </div>
+            </div>
+
+            <!-- SUBTAB 4: Asset Manager (Images, Videos, Logos) -->
+            <div class="builder-subtab-pane" id="subtabPaneAssets" style="display:none;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <span style="font-size:11.5px; font-weight:700; text-transform:uppercase; color:#e5c98a; letter-spacing:0.04em;">Project Assets</span>
+                <button type="button" class="builder-btn" id="builderRefreshAssetsBtn" style="padding:2px 7px; font-size:10.5px;">🔄 Refresh</button>
+              </div>
+
+              <!-- AI Image Generator Input -->
+              <div style="background:#14141a; border:1px solid rgba(197,160,89,0.3); border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:11px; font-weight:700; color:#e5c98a;">✨ Generate AI Image</span>
+                <input type="text" id="builderAssetPromptInput" placeholder="e.g. Royal emerald silk gown on runway model..." style="background:#0c0c10; border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-size:11.5px; padding:6px; outline:none;">
+                <div style="display:flex; gap:6px;">
+                  <select id="builderAssetCategorySelect" style="flex:1; background:#0c0c10; border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#ccc; font-size:11px; padding:4px;">
+                    <option value="hero">Hero Banner (16:9)</option>
+                    <option value="product">Product Photography (1:1)</option>
+                    <option value="logo">Brand Logo</option>
+                    <option value="background">Ambient Texture</option>
+                  </select>
+                  <button type="button" class="builder-btn btn-gold" id="builderSubmitAssetGenBtn" style="padding:4px 10px; font-size:11px;">Generate</button>
+                </div>
+              </div>
+
+              <!-- Asset Grid -->
+              <div class="builder-asset-grid" id="builderAssetsList">
+                <!-- Dynamically populated from ImageGenerationService.listAssets -->
+              </div>
+            </div>
+
+            <!-- SUBTAB 5: Project Files Explorer -->
+            <div class="builder-subtab-pane" id="subtabPaneFiles" style="display:none;">
+              <input type="text" id="builderFileSearchInput" placeholder="🔍 Search project files..." style="width:100%; background:#14141a; border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-size:11.5px; padding:6px 10px; outline:none; margin-bottom:4px;">
+              <div id="builderFilesTreeList" style="display:flex; flex-direction:column; gap:4px;">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+
+            <!-- SUBTAB 6: Plugins / Connectors Runtime -->
+            <div class="builder-subtab-pane" id="subtabPanePlugins" style="display:none;">
+              <div style="font-size:11px; color:#a1a1aa; line-height:1.4; margin-bottom:6px;">
+                Connect external services via Epic Think AI TokenVault & OAuth runtime.
+              </div>
+              <div id="builderPluginsList" style="display:flex; flex-direction:column; gap:8px;">
+                <!-- Dynamically populated with GitHub, Gmail, Drive, Calendar, Notion, Telegram, Discord, WhatsApp, SerpAPI -->
+              </div>
+            </div>
+
+            <!-- SUBTAB 7: SEO Engine & Audits -->
+            <div class="builder-subtab-pane" id="subtabPaneSEO" style="display:none;">
               <div class="builder-seo-score-box" id="builderSeoScoreBox">
                 <div style="width:48px; height:48px; border-radius:50%; background:#10b981; color:#000; font-weight:800; display:flex; align-items:center; justify-content:center; font-size:16px;" id="builderSeoScoreVal">
                   92
@@ -5388,21 +5354,33 @@
               </div>
 
               <button type="button" class="builder-btn btn-gold" id="builderApplySeoBtn" style="width:100%; justify-content:center; padding:7px;">⚡ Apply 1-Click Automated SEO Fix</button>
-              <button type="button" class="builder-btn" id="builderTestResponsiveBtn" style="width:100%; justify-content:center; padding:7px; color:#e5c98a; border-color:rgba(197,160,89,0.3);">🔄 Test Multi-Device Responsive Health</button>
 
-              <div id="builderSeoChecklist" style="display:flex; flex-direction:column; gap:6px; font-size:11.5px; max-height:220px; overflow-y:auto;">
+              <div id="builderSeoChecklist" style="display:flex; flex-direction:column; gap:6px; font-size:11.5px;">
                 <!-- Dynamically populated from SeoAuditEngine -->
               </div>
+            </div>
 
-              <div class="inspector-prop-card" style="margin-top:auto;">
-                <div class="inspector-prop-title">Design Theme Tokens</div>
-                <select id="builderSettingsPresetSelect" class="builder-field-input" style="padding:6px; font-size:12px; width:100%; background:#1b1b22; color:#fff; border:1px solid rgba(255,255,255,0.1); border-radius:4px;">
+            <!-- SUBTAB 8: Settings & Hindsight Memory -->
+            <div class="builder-subtab-pane" id="subtabPaneSettings" style="display:none;">
+              <div class="inspector-prop-card">
+                <div class="inspector-prop-title">Design Theme Preset</div>
+                <select id="builderSettingsPresetSelect" class="builder-field-input" style="padding:6px; font-size:12px;">
                   <option value="luxury_gold" selected>Luxury Black & Gold</option>
                   <option value="modern_saas">Modern Deep Tech SaaS</option>
                   <option value="obsidian_minimal">Obsidian Minimal</option>
                   <option value="royal_emerald">Royal Emerald</option>
                 </select>
                 <button type="button" class="builder-btn" id="builderApplyThemePresetBtn" style="justify-content:center; margin-top:4px;">Apply Theme Tokens</button>
+              </div>
+
+              <div class="inspector-prop-card">
+                <div class="inspector-prop-title">🧠 Hindsight Semantic Memory</div>
+                <div style="font-size:11.5px; color:#a1a1aa; line-height:1.4;">
+                  Long-term project memory stores design choices, brand rules, and architecture state across sessions.
+                </div>
+                <div id="builderMemoryStatusText" style="font-size:11px; color:#34d399; font-family:var(--font-mono); margin-top:4px;">
+                  ● Memory Bank: project_devika_collections
+                </div>
               </div>
             </div>
 
@@ -5512,14 +5490,11 @@
             </div>
           </div>
 
-          <!-- COLUMN 3: Visual Element Inspector (Slide-Over Drawer) -->
+          <!-- COLUMN 3: Visual Element Inspector -->
           <div class="builder-col-inspector" id="builderInspectorCol">
             <div class="builder-inspector-header">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span class="builder-inspector-title">Visual Inspector</span>
-                <span id="selectedElementBadge" style="font-size:10px; background:rgba(255,255,255,0.06); color:#a1a1aa; padding:2px 6px; border-radius:4px;">No Selection</span>
-              </div>
-              <button type="button" class="icon-btn" id="inspectorCloseDrawerBtn" title="Close Inspector (Esc)" style="font-size:14px; width:22px; height:22px; cursor:pointer;">✕</button>
+              <span class="builder-inspector-title">Visual Inspector</span>
+              <span id="selectedElementBadge" style="font-size:10px; background:rgba(255,255,255,0.06); color:#a1a1aa; padding:2px 6px; border-radius:4px;">No Selection</span>
             </div>
 
             <div class="builder-inspector-body" id="builderInspectorBody">
@@ -5652,15 +5627,14 @@
         <div class="builder-drawer" id="builderBottomDrawer">
           <div class="builder-drawer-header">
             <div class="builder-drawer-tabs">
-              <div class="builder-drawer-tab" data-pane="terminal">💻 Terminal & Logs</div>
-              <div class="builder-drawer-tab" data-pane="files">📁 Project Files</div>
-              <div class="builder-drawer-tab" data-pane="diagnostics">🩺 Diagnostics</div>
-              <div class="builder-drawer-tab" data-pane="git">🔀 Git Diff</div>
-              <div class="builder-drawer-tab" data-pane="ailog">📊 AI Execution</div>
+              <div class="builder-drawer-tab active" data-pane="files">📁 Project Files</div>
+              <div class="builder-drawer-tab" data-pane="terminal">💻 Terminal & Dev Server</div>
+              <div class="builder-drawer-tab" data-pane="diagnostics">🩺 Self-Healing Diagnostics</div>
+              <div class="builder-drawer-tab" data-pane="git">🔀 Git Checkpoints & Diff</div>
+              <div class="builder-drawer-tab" data-pane="ailog">📊 AI Execution Details</div>
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-size:10.5px; color:#34d399; font-family:var(--font-mono);">● Dev Server :3001</span>
-              <button type="button" class="builder-btn" id="builderDrawerToggleBtn" style="padding:2px 8px; font-size:10.5px;" title="Toggle Developer Tools Drawer">↕ Dev Tools</button>
+              <button type="button" class="icon-btn" id="builderDrawerToggleBtn" title="Toggle Drawer Size" style="font-size:12px; width:20px; height:20px;">↕</button>
             </div>
           </div>
 
@@ -5803,7 +5777,7 @@
           </div>
         </div>
 
-        <!-- Mobile Bottom Tab Bar (Visible on screens <= 768px) -->
+        <!-- Mobile Viewport Bottom Tab Bar -->
         <div class="builder-mobile-tab-bar" id="builderMobileTabBar">
           <button type="button" class="builder-mobile-tab active" data-tab="preview" id="mTabPreview">
             <span class="m-tab-icon">👁️</span>
@@ -7415,6 +7389,23 @@
             <div class="assistant-content" id="msgContent-${idx}">
               ${parseMarkdown(msg.text)}
             </div>
+            ${(msg.isTruncated || msg.finishReason === 'length') ? `
+            <div class="truncation-continuation-banner" id="truncationBanner-${idx}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:rgba(234,179,8,0.12);border:1px solid rgba(234,179,8,0.3);border-radius:8px;padding:9px 13px;margin:8px 0 10px 0;font-size:12px;color:#fef08a;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#eab308;flex-shrink:0;">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>Response reached generation limit. Continue generating?</span>
+              </div>
+              <button type="button" class="continue-generating-btn" data-continue-msg="${idx}" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;flex-shrink:0;transition:opacity 0.2s;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <span>Continue generating</span>
+              </button>
+            </div>` : ''}
             <div class="message-actions">
               <button class="msg-action-btn" data-copy-msg="${idx}" title="Copy response">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -7449,6 +7440,11 @@
         `;
 
             // Message action listeners
+            const contBtn = row.querySelector(`[data-continue-msg="${idx}"]`);
+            if (contBtn) {
+              contBtn.onclick = () => continueGenerating(idx);
+            }
+
             row.querySelector('[data-copy-msg]').onclick = () => {
               navigator.clipboard.writeText(msg.text);
               showToast('Copied to clipboard');
@@ -7531,9 +7527,6 @@
       };
 
       async function selectChat(id) {
-        if (window.WebsiteBuilder && typeof window.WebsiteBuilder.closeWorkspace === 'function') {
-          window.WebsiteBuilder.closeWorkspace();
-        }
         state.activeChatId = id;
         if (window.innerWidth <= 768) {
           closeMobileDrawer();
@@ -7655,7 +7648,6 @@
         }
 
         // 2. Generate AI Response via Multi-Provider AI Engine (Groq, OpenRouter, Google Gemini)
-        // 2. Generate AI Response via Multi-Provider AI Engine (Groq, OpenRouter, Google Gemini)
         let aiResult = null;
 
         try {
@@ -7716,6 +7708,9 @@
               provider: aiRes.provider,
               model: aiRes.model,
               latency: aiRes.latency,
+              finishReason: aiRes.finishReason || 'stop',
+              isTruncated: Boolean(aiRes.isTruncated || aiRes.finishReason === 'length'),
+              canContinue: Boolean(aiRes.canContinue || aiRes.isTruncated || aiRes.finishReason === 'length'),
               builderProject: aiRes.builderProject
             };
           }
@@ -7734,7 +7729,10 @@
             if (agentRes && agentRes.text) {
               aiResult = {
                 text: agentRes.text,
-                thoughts: agentRes.thoughts || (agentRes.steps && agentRes.steps.length ? agentRes.steps.map(s => `Step ${s.iteration}: Executed tool "${s.tool}"`).join('\n') : null)
+                thoughts: agentRes.thoughts || (agentRes.steps && agentRes.steps.length ? agentRes.steps.map(s => `Step ${s.iteration}: Executed tool "${s.tool}"`).join('\n') : null),
+                finishReason: 'stop',
+                isTruncated: false,
+                canContinue: false
               };
             }
           } catch (agentErr) {
@@ -7756,6 +7754,9 @@
           provider: aiResult.provider,
           model: aiResult.model,
           latency: aiResult.latency,
+          finishReason: aiResult.finishReason || 'stop',
+          isTruncated: Boolean(aiResult.isTruncated || aiResult.finishReason === 'length'),
+          canContinue: Boolean(aiResult.canContinue || aiResult.isTruncated || aiResult.finishReason === 'length'),
           recalledMemories: recalledMemoriesCount,
           timestamp: Date.now()
         };
@@ -7789,6 +7790,11 @@
         if (contentEl) {
           contentEl.classList.remove('streaming-cursor');
           contentEl.innerHTML = parseMarkdown(aiMessage.text);
+        }
+
+        if (aiMessage.isTruncated) {
+          showToast('Response reached generation limit. Click "Continue generating" to continue.');
+          renderMessages();
         }
 
         scrollToBottom(true);
@@ -7830,6 +7836,100 @@
         }
 
         streamResponse(chat, lastUserMsg.text);
+      }
+
+      async function continueGenerating(msgIdx) {
+        if (state.isStreaming) return;
+        const chat = state.chats.find(c => c.id === state.activeChatId);
+        if (!chat || !chat.messages || !chat.messages[msgIdx]) return;
+
+        const targetMsg = chat.messages[msgIdx];
+
+        // Find preceding user prompt for context
+        let promptText = '';
+        for (let i = msgIdx - 1; i >= 0; i--) {
+          if (chat.messages[i].role === 'user') {
+            promptText = chat.messages[i].text;
+            break;
+          }
+        }
+        if (!promptText) promptText = 'Continue';
+
+        const continueBtn = document.querySelector(`[data-continue-msg="${msgIdx}"]`);
+        if (continueBtn) {
+          continueBtn.disabled = true;
+          continueBtn.innerHTML = `
+            <svg style="animation:spin 1s linear infinite;" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+            </svg>
+            <span>Continuing...</span>
+          `;
+        }
+
+        state.isStreaming = true;
+        state.stopRequested = false;
+        toggleStreamingButtons(true);
+
+        try {
+          showToast('Requesting continuation from AI engine...');
+          const contRes = await AiService.chat({
+            message: promptText,
+            conversationId: chat.id,
+            modelPreset: state.activeModel,
+            isContinuation: true,
+            partialResponse: targetMsg.text,
+            history: chat.messages.slice(0, msgIdx)
+          });
+
+          if (contRes && contRes.text) {
+            let addition = contRes.text.trim();
+            // Prevent accidental leading duplication if provider returned overlap
+            const tailEnd = targetMsg.text.slice(-80);
+            if (tailEnd && addition.startsWith(tailEnd)) {
+              addition = addition.slice(tailEnd.length).trimStart();
+            }
+
+            // Animate appending continuation to message
+            const contentEl = $(`#msgContent-${msgIdx}`);
+            if (contentEl) contentEl.classList.add('streaming-cursor');
+
+            const startLen = targetMsg.text.length;
+            const fullNewText = targetMsg.text + (targetMsg.text.endsWith(' ') || addition.startsWith(' ') || addition.startsWith('\n') ? '' : ' ') + addition;
+            const chunkSize = 3;
+
+            for (let i = startLen; i < fullNewText.length; i += chunkSize) {
+              if (state.stopRequested) break;
+              targetMsg.text = fullNewText.slice(0, i + chunkSize);
+              if (contentEl) {
+                contentEl.innerHTML = parseMarkdown(targetMsg.text);
+              }
+              scrollToBottom(false);
+              await new Promise(r => setTimeout(r, 16));
+            }
+
+            targetMsg.text = fullNewText;
+            targetMsg.finishReason = contRes.finishReason || 'stop';
+            targetMsg.isTruncated = Boolean(contRes.isTruncated || contRes.finishReason === 'length');
+            targetMsg.canContinue = targetMsg.isTruncated;
+
+            if (contentEl) {
+              contentEl.classList.remove('streaming-cursor');
+              contentEl.innerHTML = parseMarkdown(targetMsg.text);
+            }
+
+            showToast(targetMsg.isTruncated ? 'Continuation paused at token limit. You can continue again.' : 'Response completed naturally!');
+          }
+        } catch (err) {
+          console.error('[CONTINUE] Error continuing generation:', err);
+          showToast('Failed to continue generation: ' + (err.message || 'Network error'));
+        } finally {
+          state.isStreaming = false;
+          toggleStreamingButtons(false);
+          saveState(true);
+          updateSendButtonState();
+          renderMessages();
+          scrollToBottom(true);
+        }
       }
 
       function toggleStreamingButtons(isStreaming) {
@@ -7905,9 +8005,6 @@
 
       // New Chat
       $('#newChatBtn').addEventListener('click', () => {
-        if (window.WebsiteBuilder) {
-          window.WebsiteBuilder.closeWorkspace();
-        }
         state.activeChatId = null;
         renderHistory();
         renderMessages();
@@ -7925,9 +8022,6 @@
       }
 
       $('#homeBrandBtn').addEventListener('click', () => {
-        if (window.WebsiteBuilder && typeof window.WebsiteBuilder.closeWorkspace === 'function') {
-          window.WebsiteBuilder.closeWorkspace();
-        }
         state.activeChatId = null;
         renderHistory();
         renderMessages();
@@ -8232,9 +8326,6 @@
       const openPluginStoreModal = (e) => {
         if (e && e.preventDefault) e.preventDefault();
         closeMobileDrawer();
-        if (window.WebsiteBuilder && typeof window.WebsiteBuilder.closeWorkspace === 'function') {
-          window.WebsiteBuilder.closeWorkspace();
-        }
         renderPluginsGrid();
         pluginStoreModal.classList.add('open');
         refreshPluginsState().catch((err) => {
@@ -8615,9 +8706,6 @@
       const openAiStudioModal = (e) => {
         if (e && e.preventDefault) e.preventDefault();
         closeMobileDrawer();
-        if (window.WebsiteBuilder && typeof window.WebsiteBuilder.closeWorkspace === 'function') {
-          window.WebsiteBuilder.closeWorkspace();
-        }
         aiStudioModal.classList.add('open');
       };
 
@@ -9103,18 +9191,8 @@
           e.preventDefault();
           $('#newChatBtn').click();
         }
-        // Esc closes modals, inspector & website builder
+        // Esc closes modals & popovers
         if (e.key === 'Escape') {
-          const inspectorCol = document.getElementById('builderInspectorCol');
-          if (inspectorCol && inspectorCol.classList.contains('open')) {
-            if (window.WebsiteBuilder) window.WebsiteBuilder.clearSelection();
-            return;
-          }
-          const builderView = document.getElementById('websiteBuilderWorkspace');
-          if (builderView && builderView.style.display === 'flex') {
-            if (window.WebsiteBuilder) window.WebsiteBuilder.closeWorkspace();
-            return;
-          }
           memoryModal.classList.remove('open');
           settingsModal.classList.remove('open');
           modelPopover.classList.remove('open');

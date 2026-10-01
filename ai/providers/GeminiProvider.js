@@ -7,6 +7,7 @@
 
 import { BaseAIProvider } from './BaseAIProvider.js';
 import { AIAuthenticationError, AIModelUnavailableError, AIRateLimitError, AITimeoutError } from '../errors/AIErrors.js';
+import { GenerationConfig } from '../core/GenerationConfig.js';
 
 export class GeminiProvider extends BaseAIProvider {
   constructor(config = {}) {
@@ -15,9 +16,9 @@ export class GeminiProvider extends BaseAIProvider {
       name: 'Google Gemini AI Studio',
       apiKey: config.apiKey || process.env.GEMINI_API_KEY || '',
       baseUrl: config.baseUrl || 'https://generativelanguage.googleapis.com/v1beta',
-      timeoutMs: config.timeoutMs || parseInt(process.env.AI_REQUEST_TIMEOUT_MS, 10) || 30000
+      timeoutMs: config.timeoutMs || parseInt(process.env.AI_REQUEST_TIMEOUT_MS, 10) || 55000
     });
-    this.defaultModel = config.defaultModel || 'gemini-flash-latest';
+    this.defaultModel = config.defaultModel || 'gemini-3.5-flash';
   }
 
   /**
@@ -71,7 +72,7 @@ export class GeminiProvider extends BaseAIProvider {
     return contents;
   }
 
-  async generate({ prompt, messages, model, systemPrompt, temperature = 0.7, maxTokens = 2048, signal }) {
+  async generate({ prompt, messages, model, systemPrompt, temperature = 0.7, maxTokens = null, signal }) {
     if (!this.isConfigured) {
       throw new AIAuthenticationError('Gemini API key is not configured.');
     }
@@ -79,6 +80,11 @@ export class GeminiProvider extends BaseAIProvider {
     const targetModel = model || this.defaultModel;
     const contents = this.buildContents({ prompt, messages });
     const startTime = Date.now();
+
+    const effectiveMaxTokens = GenerationConfig.resolveMaxOutputTokens({
+      requestedTokens: maxTokens,
+      model: targetModel
+    });
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
@@ -88,7 +94,7 @@ export class GeminiProvider extends BaseAIProvider {
       contents,
       generationConfig: {
         temperature,
-        maxOutputTokens: maxTokens
+        maxOutputTokens: effectiveMaxTokens
       }
     };
 
@@ -130,7 +136,7 @@ export class GeminiProvider extends BaseAIProvider {
           completionTokens: data.usageMetadata?.candidatesTokenCount || 0,
           totalTokens: data.usageMetadata?.totalTokenCount || 0
         },
-        finishReason: candidate.finishReason?.toLowerCase() || 'stop',
+        finishReason: GenerationConfig.normalizeFinishReason(candidate.finishReason),
         latency,
         requestId: data.responseId,
         raw: data
@@ -141,7 +147,7 @@ export class GeminiProvider extends BaseAIProvider {
     }
   }
 
-  async generateWithTools({ prompt, messages, model, tools, systemPrompt, temperature = 0.5, maxTokens = 2048, signal }) {
+  async generateWithTools({ prompt, messages, model, tools, systemPrompt, temperature = 0.5, maxTokens = null, signal }) {
     if (!this.isConfigured) {
       throw new AIAuthenticationError('Gemini API key is not configured.');
     }
@@ -151,6 +157,11 @@ export class GeminiProvider extends BaseAIProvider {
     const geminiTools = this.convertTools(tools);
     const startTime = Date.now();
 
+    const effectiveMaxTokens = GenerationConfig.resolveMaxOutputTokens({
+      requestedTokens: maxTokens,
+      model: targetModel
+    });
+
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     const effectiveSignal = signal || controller.signal;
@@ -159,7 +170,7 @@ export class GeminiProvider extends BaseAIProvider {
       contents,
       generationConfig: {
         temperature,
-        maxOutputTokens: maxTokens
+        maxOutputTokens: effectiveMaxTokens
       }
     };
 
@@ -241,7 +252,7 @@ export class GeminiProvider extends BaseAIProvider {
     }
   }
 
-  async stream({ prompt, messages, model, systemPrompt, temperature = 0.7, maxTokens = 2048, signal }, onChunk) {
+  async stream({ prompt, messages, model, systemPrompt, temperature = 0.7, maxTokens = null, signal }, onChunk) {
     if (!this.isConfigured) {
       throw new AIAuthenticationError('Gemini API key is not configured.');
     }
@@ -249,6 +260,11 @@ export class GeminiProvider extends BaseAIProvider {
     const targetModel = model || this.defaultModel;
     const contents = this.buildContents({ prompt, messages });
     const startTime = Date.now();
+
+    const effectiveMaxTokens = GenerationConfig.resolveMaxOutputTokens({
+      requestedTokens: maxTokens,
+      model: targetModel
+    });
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
@@ -258,7 +274,7 @@ export class GeminiProvider extends BaseAIProvider {
       contents,
       generationConfig: {
         temperature,
-        maxOutputTokens: maxTokens
+        maxOutputTokens: effectiveMaxTokens
       }
     };
 
@@ -286,6 +302,7 @@ export class GeminiProvider extends BaseAIProvider {
       }
 
       let fullContent = '';
+      let streamFinishReason = 'stop';
       const reader = res.body.getReader();
       const decoder = new TextDecoder('utf-8');
       let buffer = '';
@@ -305,7 +322,12 @@ export class GeminiProvider extends BaseAIProvider {
           if (trimmed.startsWith('data: ')) {
             try {
               const chunkJson = JSON.parse(trimmed.slice(6));
-              const delta = chunkJson.candidates?.[0]?.content?.parts?.[0]?.text || '';
+              const candidate = chunkJson.candidates?.[0];
+              if (candidate?.finishReason) {
+                streamFinishReason = GenerationConfig.normalizeFinishReason(candidate.finishReason);
+              }
+
+              const delta = candidate?.content?.parts?.[0]?.text || '';
               if (delta) {
                 fullContent += delta;
                 if (typeof onChunk === 'function') {
@@ -314,7 +336,8 @@ export class GeminiProvider extends BaseAIProvider {
                     delta,
                     fullContent,
                     provider: 'gemini',
-                    model: targetModel
+                    model: targetModel,
+                    finishReason: streamFinishReason
                   });
                 }
               }
@@ -327,6 +350,7 @@ export class GeminiProvider extends BaseAIProvider {
       return this.normalizeResponse({
         content: fullContent,
         model: targetModel,
+        finishReason: streamFinishReason || 'stop',
         latency
       });
     } catch (err) {

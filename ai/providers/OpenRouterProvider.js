@@ -7,6 +7,7 @@
 
 import { BaseAIProvider } from './BaseAIProvider.js';
 import { AIAuthenticationError, AIModelUnavailableError, AIRateLimitError, AITimeoutError } from '../errors/AIErrors.js';
+import { GenerationConfig } from '../core/GenerationConfig.js';
 
 export class OpenRouterProvider extends BaseAIProvider {
   constructor(config = {}) {
@@ -15,7 +16,7 @@ export class OpenRouterProvider extends BaseAIProvider {
       name: 'OpenRouter Multi-Model Gateway',
       apiKey: config.apiKey || process.env.OPENROUTER_API_KEY || '',
       baseUrl: config.baseUrl || 'https://openrouter.ai/api/v1',
-      timeoutMs: config.timeoutMs || parseInt(process.env.AI_REQUEST_TIMEOUT_MS, 10) || 30000
+      timeoutMs: config.timeoutMs || parseInt(process.env.AI_REQUEST_TIMEOUT_MS, 10) || 55000
     });
     this.defaultModel = config.defaultModel || process.env.AI_FALLBACK_MODEL || 'meta-llama/llama-3.3-70b-instruct';
   }
@@ -62,7 +63,7 @@ export class OpenRouterProvider extends BaseAIProvider {
     return formatted;
   }
 
-  async generate({ prompt, messages, model, systemPrompt, temperature = 0.7, maxTokens = 2048, signal }) {
+  async generate({ prompt, messages, model, systemPrompt, temperature = 0.7, maxTokens = null, signal }) {
     if (!this.isConfigured) {
       throw new AIAuthenticationError('OpenRouter API key is not configured.');
     }
@@ -70,6 +71,11 @@ export class OpenRouterProvider extends BaseAIProvider {
     const targetModel = model || this.defaultModel;
     const bodyMessages = this.buildMessages({ prompt, messages, systemPrompt });
     const startTime = Date.now();
+
+    const effectiveMaxTokens = GenerationConfig.resolveMaxOutputTokens({
+      requestedTokens: maxTokens,
+      model: targetModel
+    });
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
@@ -83,7 +89,7 @@ export class OpenRouterProvider extends BaseAIProvider {
           model: targetModel,
           messages: bodyMessages,
           temperature,
-          max_tokens: maxTokens
+          max_tokens: effectiveMaxTokens
         }),
         signal: effectiveSignal
       });
@@ -103,7 +109,7 @@ export class OpenRouterProvider extends BaseAIProvider {
         content,
         model: data.model || targetModel,
         usage: data.usage,
-        finishReason: choice.finish_reason,
+        finishReason: GenerationConfig.normalizeFinishReason(choice.finish_reason),
         latency,
         requestId: data.id,
         raw: data
@@ -114,7 +120,7 @@ export class OpenRouterProvider extends BaseAIProvider {
     }
   }
 
-  async generateWithTools({ prompt, messages, model, tools, systemPrompt, temperature = 0.5, maxTokens = 2048, signal }) {
+  async generateWithTools({ prompt, messages, model, tools, systemPrompt, temperature = 0.5, maxTokens = null, signal }) {
     if (!this.isConfigured) {
       throw new AIAuthenticationError('OpenRouter API key is not configured.');
     }
@@ -124,6 +130,11 @@ export class OpenRouterProvider extends BaseAIProvider {
     const orTools = this.convertTools(tools);
     const startTime = Date.now();
 
+    const effectiveMaxTokens = GenerationConfig.resolveMaxOutputTokens({
+      requestedTokens: maxTokens,
+      model: targetModel
+    });
+
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     const effectiveSignal = signal || controller.signal;
@@ -132,7 +143,7 @@ export class OpenRouterProvider extends BaseAIProvider {
       model: targetModel,
       messages: bodyMessages,
       temperature,
-      max_tokens: maxTokens
+      max_tokens: effectiveMaxTokens
     };
 
     if (orTools && orTools.length > 0) {
@@ -205,7 +216,7 @@ export class OpenRouterProvider extends BaseAIProvider {
     }
   }
 
-  async stream({ prompt, messages, model, systemPrompt, temperature = 0.7, maxTokens = 2048, signal }, onChunk) {
+  async stream({ prompt, messages, model, systemPrompt, temperature = 0.7, maxTokens = null, signal }, onChunk) {
     if (!this.isConfigured) {
       throw new AIAuthenticationError('OpenRouter API key is not configured.');
     }
@@ -213,6 +224,11 @@ export class OpenRouterProvider extends BaseAIProvider {
     const targetModel = model || this.defaultModel;
     const bodyMessages = this.buildMessages({ prompt, messages, systemPrompt });
     const startTime = Date.now();
+
+    const effectiveMaxTokens = GenerationConfig.resolveMaxOutputTokens({
+      requestedTokens: maxTokens,
+      model: targetModel
+    });
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
@@ -226,7 +242,7 @@ export class OpenRouterProvider extends BaseAIProvider {
           model: targetModel,
           messages: bodyMessages,
           temperature,
-          max_tokens: maxTokens,
+          max_tokens: effectiveMaxTokens,
           stream: true
         }),
         signal: effectiveSignal
@@ -240,6 +256,7 @@ export class OpenRouterProvider extends BaseAIProvider {
       }
 
       let fullContent = '';
+      let streamFinishReason = 'stop';
       const reader = res.body.getReader();
       const decoder = new TextDecoder('utf-8');
       let buffer = '';
@@ -260,7 +277,13 @@ export class OpenRouterProvider extends BaseAIProvider {
           if (trimmed.startsWith('data: ')) {
             try {
               const chunkJson = JSON.parse(trimmed.slice(6));
-              const delta = chunkJson.choices?.[0]?.delta?.content || '';
+              const choice = chunkJson.choices?.[0];
+              const delta = choice?.delta?.content || '';
+
+              if (choice?.finish_reason) {
+                streamFinishReason = GenerationConfig.normalizeFinishReason(choice.finish_reason);
+              }
+
               if (delta) {
                 fullContent += delta;
                 if (typeof onChunk === 'function') {
@@ -269,7 +292,8 @@ export class OpenRouterProvider extends BaseAIProvider {
                     delta,
                     fullContent,
                     provider: 'openrouter',
-                    model: targetModel
+                    model: targetModel,
+                    finishReason: streamFinishReason
                   });
                 }
               }
@@ -282,6 +306,7 @@ export class OpenRouterProvider extends BaseAIProvider {
       return this.normalizeResponse({
         content: fullContent,
         model: targetModel,
+        finishReason: streamFinishReason || 'stop',
         latency
       });
     } catch (err) {

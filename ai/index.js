@@ -69,6 +69,9 @@ export const AIEngine = {
     recentMessages = [],
     modelPreset = 'Epic Think 4o',
     confirmationId = null,
+    isContinuation = false,
+    partialResponse = '',
+    maxTokens = null,
     streaming = false,
     onEvent = null,
     signal = null
@@ -80,6 +83,9 @@ export const AIEngine = {
       recentMessages,
       modelPreset,
       confirmationId,
+      isContinuation,
+      partialResponse,
+      maxTokens,
       signal,
       onEvent
     });

@@ -7389,6 +7389,23 @@
             <div class="assistant-content" id="msgContent-${idx}">
               ${parseMarkdown(msg.text)}
             </div>
+            ${(msg.isTruncated || msg.finishReason === 'length') ? `
+            <div class="truncation-continuation-banner" id="truncationBanner-${idx}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:rgba(234,179,8,0.12);border:1px solid rgba(234,179,8,0.3);border-radius:8px;padding:9px 13px;margin:8px 0 10px 0;font-size:12px;color:#fef08a;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#eab308;flex-shrink:0;">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>Response reached generation limit. Continue generating?</span>
+              </div>
+              <button type="button" class="continue-generating-btn" data-continue-msg="${idx}" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;flex-shrink:0;transition:opacity 0.2s;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <span>Continue generating</span>
+              </button>
+            </div>` : ''}
             <div class="message-actions">
               <button class="msg-action-btn" data-copy-msg="${idx}" title="Copy response">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -7423,6 +7440,11 @@
         `;
 
             // Message action listeners
+            const contBtn = row.querySelector(`[data-continue-msg="${idx}"]`);
+            if (contBtn) {
+              contBtn.onclick = () => continueGenerating(idx);
+            }
+
             row.querySelector('[data-copy-msg]').onclick = () => {
               navigator.clipboard.writeText(msg.text);
               showToast('Copied to clipboard');
@@ -7686,6 +7708,9 @@
               provider: aiRes.provider,
               model: aiRes.model,
               latency: aiRes.latency,
+              finishReason: aiRes.finishReason || 'stop',
+              isTruncated: Boolean(aiRes.isTruncated || aiRes.finishReason === 'length'),
+              canContinue: Boolean(aiRes.canContinue || aiRes.isTruncated || aiRes.finishReason === 'length'),
               builderProject: aiRes.builderProject
             };
           }
@@ -7704,7 +7729,10 @@
             if (agentRes && agentRes.text) {
               aiResult = {
                 text: agentRes.text,
-                thoughts: agentRes.thoughts || (agentRes.steps && agentRes.steps.length ? agentRes.steps.map(s => `Step ${s.iteration}: Executed tool "${s.tool}"`).join('\n') : null)
+                thoughts: agentRes.thoughts || (agentRes.steps && agentRes.steps.length ? agentRes.steps.map(s => `Step ${s.iteration}: Executed tool "${s.tool}"`).join('\n') : null),
+                finishReason: 'stop',
+                isTruncated: false,
+                canContinue: false
               };
             }
           } catch (agentErr) {
@@ -7726,6 +7754,9 @@
           provider: aiResult.provider,
           model: aiResult.model,
           latency: aiResult.latency,
+          finishReason: aiResult.finishReason || 'stop',
+          isTruncated: Boolean(aiResult.isTruncated || aiResult.finishReason === 'length'),
+          canContinue: Boolean(aiResult.canContinue || aiResult.isTruncated || aiResult.finishReason === 'length'),
           recalledMemories: recalledMemoriesCount,
           timestamp: Date.now()
         };
@@ -7759,6 +7790,11 @@
         if (contentEl) {
           contentEl.classList.remove('streaming-cursor');
           contentEl.innerHTML = parseMarkdown(aiMessage.text);
+        }
+
+        if (aiMessage.isTruncated) {
+          showToast('Response reached generation limit. Click "Continue generating" to continue.');
+          renderMessages();
         }
 
         scrollToBottom(true);
@@ -7800,6 +7836,100 @@
         }
 
         streamResponse(chat, lastUserMsg.text);
+      }
+
+      async function continueGenerating(msgIdx) {
+        if (state.isStreaming) return;
+        const chat = state.chats.find(c => c.id === state.activeChatId);
+        if (!chat || !chat.messages || !chat.messages[msgIdx]) return;
+
+        const targetMsg = chat.messages[msgIdx];
+
+        // Find preceding user prompt for context
+        let promptText = '';
+        for (let i = msgIdx - 1; i >= 0; i--) {
+          if (chat.messages[i].role === 'user') {
+            promptText = chat.messages[i].text;
+            break;
+          }
+        }
+        if (!promptText) promptText = 'Continue';
+
+        const continueBtn = document.querySelector(`[data-continue-msg="${msgIdx}"]`);
+        if (continueBtn) {
+          continueBtn.disabled = true;
+          continueBtn.innerHTML = `
+            <svg style="animation:spin 1s linear infinite;" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+            </svg>
+            <span>Continuing...</span>
+          `;
+        }
+
+        state.isStreaming = true;
+        state.stopRequested = false;
+        toggleStreamingButtons(true);
+
+        try {
+          showToast('Requesting continuation from AI engine...');
+          const contRes = await AiService.chat({
+            message: promptText,
+            conversationId: chat.id,
+            modelPreset: state.activeModel,
+            isContinuation: true,
+            partialResponse: targetMsg.text,
+            history: chat.messages.slice(0, msgIdx)
+          });
+
+          if (contRes && contRes.text) {
+            let addition = contRes.text.trim();
+            // Prevent accidental leading duplication if provider returned overlap
+            const tailEnd = targetMsg.text.slice(-80);
+            if (tailEnd && addition.startsWith(tailEnd)) {
+              addition = addition.slice(tailEnd.length).trimStart();
+            }
+
+            // Animate appending continuation to message
+            const contentEl = $(`#msgContent-${msgIdx}`);
+            if (contentEl) contentEl.classList.add('streaming-cursor');
+
+            const startLen = targetMsg.text.length;
+            const fullNewText = targetMsg.text + (targetMsg.text.endsWith(' ') || addition.startsWith(' ') || addition.startsWith('\n') ? '' : ' ') + addition;
+            const chunkSize = 3;
+
+            for (let i = startLen; i < fullNewText.length; i += chunkSize) {
+              if (state.stopRequested) break;
+              targetMsg.text = fullNewText.slice(0, i + chunkSize);
+              if (contentEl) {
+                contentEl.innerHTML = parseMarkdown(targetMsg.text);
+              }
+              scrollToBottom(false);
+              await new Promise(r => setTimeout(r, 16));
+            }
+
+            targetMsg.text = fullNewText;
+            targetMsg.finishReason = contRes.finishReason || 'stop';
+            targetMsg.isTruncated = Boolean(contRes.isTruncated || contRes.finishReason === 'length');
+            targetMsg.canContinue = targetMsg.isTruncated;
+
+            if (contentEl) {
+              contentEl.classList.remove('streaming-cursor');
+              contentEl.innerHTML = parseMarkdown(targetMsg.text);
+            }
+
+            showToast(targetMsg.isTruncated ? 'Continuation paused at token limit. You can continue again.' : 'Response completed naturally!');
+          }
+        } catch (err) {
+          console.error('[CONTINUE] Error continuing generation:', err);
+          showToast('Failed to continue generation: ' + (err.message || 'Network error'));
+        } finally {
+          state.isStreaming = false;
+          toggleStreamingButtons(false);
+          saveState(true);
+          updateSendButtonState();
+          renderMessages();
+          scrollToBottom(true);
+        }
       }
 
       function toggleStreamingButtons(isStreaming) {

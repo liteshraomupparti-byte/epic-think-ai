@@ -32,9 +32,22 @@ const optionalAuth = (req, res, next) => {
  * POST /api/ai/chat
  */
 router.post('/chat', optionalAuth, async (req, res) => {
-  const { prompt, text, message, conversationId, recentMessages, history, modelPreset, confirmationId } = req.body || {};
-  const userPrompt = prompt || text || message;
-  const effectiveMessages = recentMessages || history || [];
+  const {
+    prompt,
+    text,
+    message,
+    conversationId,
+    recentMessages,
+    history,
+    messages,
+    modelPreset,
+    confirmationId,
+    isContinuation = false,
+    partialResponse = '',
+    maxTokens = null
+  } = req.body || {};
+  const userPrompt = prompt || text || message || (Array.isArray(messages) ? messages[messages.length - 1]?.content : null);
+  const effectiveMessages = recentMessages || history || (Array.isArray(messages) ? messages.slice(0, -1) : []);
 
   if (!userPrompt && !confirmationId) {
     return res.status(400).json({
@@ -50,14 +63,23 @@ router.post('/chat', optionalAuth, async (req, res) => {
       conversationId,
       recentMessages: effectiveMessages,
       modelPreset: modelPreset || 'Epic Think 4o',
-      confirmationId
+      confirmationId,
+      isContinuation,
+      partialResponse,
+      maxTokens
     });
 
     res.json({
       success: true,
       text: result.text,
+      response: result.text,
+      content: result.text,
       provider: result.provider,
       model: result.model,
+      finishReason: result.finishReason || 'stop',
+      isTruncated: Boolean(result.isTruncated || result.finishReason === 'length'),
+      canContinue: Boolean(result.canContinue || result.isTruncated || result.finishReason === 'length'),
+      maxOutputTokens: result.maxOutputTokens,
       latency: result.latency || result.durationMs,
       recalledMemoriesCount: result.recalledMemoriesCount,
       executedToolCalls: result.executedToolCalls,
@@ -95,12 +117,25 @@ router.post('/chat', optionalAuth, async (req, res) => {
  * Server-Sent Events (SSE) Real-Time AI Streaming
  * POST /api/ai/stream
  */
-router.post('/stream', requireAuth, async (req, res) => {
-  const { prompt, text, conversationId, recentMessages, modelPreset } = req.body || {};
-  const userPrompt = prompt || text;
+router.post('/stream', optionalAuth, async (req, res) => {
+  const {
+    prompt,
+    text,
+    message,
+    conversationId,
+    recentMessages,
+    history,
+    messages,
+    modelPreset,
+    isContinuation = false,
+    partialResponse = '',
+    maxTokens = null
+  } = req.body || {};
+  const userPrompt = prompt || text || message || (Array.isArray(messages) ? messages[messages.length - 1]?.content : null);
+  const effectiveMessages = recentMessages || history || (Array.isArray(messages) ? messages.slice(0, -1) : []);
 
   if (!userPrompt) {
-    return res.status(400).json({ success: false, error: 'Missing required field: "prompt".' });
+    return res.status(400).json({ success: false, error: 'Missing required field: "prompt" or "message".' });
   }
 
   // Setup SSE Headers
@@ -115,24 +150,47 @@ router.post('/stream', requireAuth, async (req, res) => {
   };
 
   const abortController = new AbortController();
-  req.on('close', () => {
-    abortController.abort();
+  res.on('close', () => {
+    if (!res.writableEnded) {
+      abortController.abort();
+    }
   });
 
   try {
-    await AIEngine.chat({
+    const streamResult = await AIEngine.chat({
       uid: req.user.uid,
       prompt: userPrompt,
       conversationId,
-      recentMessages,
+      recentMessages: effectiveMessages,
       modelPreset: modelPreset || 'Epic Think 4o',
+      isContinuation,
+      partialResponse,
+      maxTokens,
       signal: abortController.signal,
       onEvent: (evt) => {
-        sendEvent(evt.event, evt);
+        if (evt.event === 'ai:chunk') {
+          const content = evt.content || evt.text || '';
+          sendEvent('chunk', { type: 'chunk', content, text: content });
+        } else if (evt.event === 'ai:complete') {
+          if (evt.text) {
+            sendEvent('chunk', { type: 'chunk', content: evt.text, text: evt.text });
+          }
+          sendEvent('ai:complete', evt);
+        } else {
+          sendEvent(evt.event, evt);
+        }
       }
     });
 
-    sendEvent('ai:done', { success: true });
+    sendEvent('ai:done', {
+      type: 'done',
+      done: true,
+      success: true,
+      finishReason: streamResult.finishReason || 'stop',
+      isTruncated: Boolean(streamResult.isTruncated || streamResult.finishReason === 'length'),
+      canContinue: Boolean(streamResult.canContinue || streamResult.isTruncated || streamResult.finishReason === 'length'),
+      maxOutputTokens: streamResult.maxOutputTokens
+    });
     res.end();
   } catch (err) {
     sendEvent('ai:error', {

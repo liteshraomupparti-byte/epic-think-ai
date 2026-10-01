@@ -12,6 +12,7 @@ import { modelRegistry } from './ModelRegistry.js';
 import { healthMonitor } from './HealthMonitor.js';
 import { SafeLogger } from '../../plugins/core/SafeLogger.js';
 import { AIProviderError, AITimeoutError, AICancellationError } from '../errors/AIErrors.js';
+import { GenerationConfig } from './GenerationConfig.js';
 
 export const TaskType = {
   CHAT: 'CHAT',
@@ -122,7 +123,7 @@ export class AIModelRouter {
         let m = provider.defaultModel;
         if (pId === 'groq') m = 'qwen/qwen3.8-27b';
         if (pId === 'openrouter') m = 'meta-llama/llama-3.3-70b-instruct';
-        if (pId === 'gemini') m = 'gemini-flash-latest';
+        if (pId === 'gemini') m = 'gemini-3.5-flash';
 
         candidates.push({ providerId: pId, model: m });
       }
@@ -167,7 +168,7 @@ export class AIModelRouter {
     tools = [],
     systemPrompt = null,
     temperature = 0.7,
-    maxTokens = 2048,
+    maxTokens = null,
     signal = null,
     streaming = false,
     onChunk = null
@@ -197,6 +198,13 @@ export class AIModelRouter {
         });
       }
 
+      // Calculate safe, generous token ceiling based on model and preset (e.g. 4096-8192)
+      const effectiveMaxTokens = GenerationConfig.resolveMaxOutputTokens({
+        preset: effectivePreset,
+        requestedTokens: maxTokens,
+        model: candidate.model
+      });
+
       // Retry loop per candidate (exponential backoff with jitter)
       for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
         if (signal && signal.aborted) {
@@ -214,7 +222,7 @@ export class AIModelRouter {
               model: candidate.model,
               systemPrompt,
               temperature,
-              maxTokens,
+              maxTokens: effectiveMaxTokens,
               signal
             }, onChunk);
           } else if (tools && tools.length > 0) {
@@ -225,7 +233,7 @@ export class AIModelRouter {
               tools,
               systemPrompt,
               temperature,
-              maxTokens,
+              maxTokens: effectiveMaxTokens,
               signal
             });
           } else {
@@ -235,7 +243,7 @@ export class AIModelRouter {
               model: candidate.model,
               systemPrompt,
               temperature,
-              maxTokens,
+              maxTokens: effectiveMaxTokens,
               signal
             });
           }
@@ -243,9 +251,16 @@ export class AIModelRouter {
           const latency = Date.now() - t0;
           healthMonitor.recordSuccess(candidate.providerId, latency);
 
+          const finishReason = GenerationConfig.normalizeFinishReason(result.finishReason);
+          const isTruncated = finishReason === 'length';
+
           return {
             success: true,
             ...result,
+            finishReason,
+            isTruncated,
+            canContinue: isTruncated,
+            maxOutputTokens: effectiveMaxTokens,
             providerUsed: candidate.providerId,
             modelUsed: candidate.model,
             isFallback,

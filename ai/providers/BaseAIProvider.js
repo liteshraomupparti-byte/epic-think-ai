@@ -22,7 +22,7 @@ export class BaseAIProvider {
    * @param {string} [config.baseUrl] - Base API URL
    * @param {number} [config.timeoutMs] - Default timeout
    */
-  constructor({ id, name, apiKey, baseUrl, timeoutMs = 25000 }) {
+  constructor({ id, name, apiKey, baseUrl, timeoutMs = 55000 }) {
     this.id = id;
     this.name = name;
     this.apiKey = apiKey || '';

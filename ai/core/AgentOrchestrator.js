@@ -14,6 +14,7 @@ import { SafeLogger } from '../../plugins/core/SafeLogger.js';
 import { recallMemory, retainMemory } from '../../services/hindsightService.js';
 import { AICancellationError, AITimeoutError } from '../errors/AIErrors.js';
 import { IntentDispatcher } from './IntentDispatcher.js';
+import { GenerationConfig } from './GenerationConfig.js';
 
 export class AgentOrchestrator {
   /**
@@ -23,7 +24,7 @@ export class AgentOrchestrator {
   constructor(router, config = {}) {
     this.router = router;
     this.maxIterations = parseInt(process.env.AI_MAX_TOOL_ITERATIONS, 10) || 5;
-    this.timeoutMs = parseInt(process.env.AI_REQUEST_TIMEOUT_MS, 10) || 25000;
+    this.timeoutMs = parseInt(process.env.AI_REQUEST_TIMEOUT_MS, 10) || 55000;
   }
 
   /**
@@ -50,6 +51,9 @@ export class AgentOrchestrator {
     recentMessages = [],
     modelPreset = 'Epic Think 4o',
     confirmationId = null,
+    isContinuation = false,
+    partialResponse = '',
+    maxTokens = null,
     signal = null,
     onEvent = null
   }) {
@@ -173,15 +177,29 @@ export class AgentOrchestrator {
       };
     }
 
-    // 3. Assemble Initial Context
-    const { systemPrompt, messages } = ContextManager.buildContext({
-      userPrompt,
-      recentMessages,
-      recalledMemories,
-      recalledPromptContext,
-      activeModelPreset: modelPreset,
-      builderProject
-    });
+    // 3. Assemble Initial Context (Supports continuation without duplication)
+    let systemPrompt, messages;
+    if (isContinuation && partialResponse) {
+      emit('ai:thinking', { thought: 'Continuing previous generation seamlessly from output limit boundary...' });
+      const contData = GenerationConfig.buildContinuationMessages({
+        userPrompt,
+        partialResponse,
+        history: recentMessages
+      });
+      systemPrompt = contData.systemPrompt;
+      messages = contData.messages;
+    } else {
+      const built = ContextManager.buildContext({
+        userPrompt,
+        recentMessages,
+        recalledMemories,
+        recalledPromptContext,
+        activeModelPreset: modelPreset,
+        builderProject
+      });
+      systemPrompt = built.systemPrompt;
+      messages = built.messages;
+    }
 
     // 4. Autonomous Agent Loop
     const executedToolCalls = [];
@@ -190,6 +208,10 @@ export class AgentOrchestrator {
     let requiresConfirmationTicket = null;
     let providerUsed = '';
     let modelUsed = '';
+    let finishReason = 'stop';
+    let isTruncated = false;
+    let canContinue = false;
+    let maxOutputTokens = null;
 
     for (let iteration = 1; iteration <= this.maxIterations; iteration++) {
       if (Date.now() - startTime > this.timeoutMs) {
@@ -203,17 +225,28 @@ export class AgentOrchestrator {
       emit('ai:thinking', { thought: `Iteration ${iteration}: Planning actions with ${toolsForRun.length} enabled tools...` });
 
       // Call Router with tools (or without tools if tools are not applicable)
+      const isStreamingRun = typeof onEvent === 'function' && (!toolsForRun || toolsForRun.length === 0);
       const aiResult = await this.router.execute({
         userPrompt,
         messages,
         preset: modelPreset,
         tools: toolsForRun.length > 0 ? toolsForRun : undefined,
         systemPrompt,
-        signal
+        maxTokens,
+        signal,
+        streaming: isStreamingRun,
+        onChunk: isStreamingRun ? (chunk) => {
+          const content = typeof chunk === 'string' ? chunk : (chunk.delta || chunk.content || chunk.text || '');
+          emit('ai:chunk', { content, text: content });
+        } : undefined
       });
 
       providerUsed = aiResult.providerUsed || aiResult.provider;
       modelUsed = aiResult.modelUsed || aiResult.model;
+      finishReason = aiResult.finishReason || 'stop';
+      isTruncated = Boolean(aiResult.isTruncated || finishReason === 'length');
+      canContinue = isTruncated;
+      maxOutputTokens = aiResult.maxOutputTokens || maxOutputTokens;
 
       const toolCalls = aiResult.toolCalls || [];
 
@@ -251,11 +284,16 @@ export class AgentOrchestrator {
             messages,
             preset: modelPreset,
             systemPrompt,
+            maxTokens,
             signal
           });
           finalAnswer = synthRes.content ? synthRes.content.trim() : '';
           if (synthRes.providerUsed) providerUsed = synthRes.providerUsed;
           if (synthRes.modelUsed) modelUsed = synthRes.modelUsed;
+          if (synthRes.finishReason) finishReason = synthRes.finishReason;
+          isTruncated = Boolean(synthRes.isTruncated || finishReason === 'length');
+          canContinue = isTruncated;
+          maxOutputTokens = synthRes.maxOutputTokens || maxOutputTokens;
         }
         break;
       }
@@ -386,11 +424,16 @@ export class AgentOrchestrator {
         messages,
         preset: modelPreset,
         systemPrompt,
+        maxTokens,
         signal
       });
       finalAnswer = synthRes.content ? synthRes.content.trim() : 'I have analyzed the request and provided the response.';
       providerUsed = synthRes.providerUsed || providerUsed;
       modelUsed = synthRes.modelUsed || modelUsed;
+      if (synthRes.finishReason) finishReason = synthRes.finishReason;
+      isTruncated = Boolean(synthRes.isTruncated || finishReason === 'length');
+      canContinue = isTruncated;
+      maxOutputTokens = synthRes.maxOutputTokens || maxOutputTokens;
     }
 
     // 6. Post-Response Hindsight Memory Retention
@@ -417,6 +460,10 @@ export class AgentOrchestrator {
       text: finalAnswer,
       provider: providerUsed,
       model: modelUsed,
+      finishReason,
+      isTruncated,
+      canContinue,
+      maxOutputTokens,
       durationMs
     });
 
@@ -425,6 +472,10 @@ export class AgentOrchestrator {
       text: finalAnswer,
       provider: providerUsed,
       model: modelUsed,
+      finishReason,
+      isTruncated,
+      canContinue,
+      maxOutputTokens,
       recalledMemoriesCount: recalledMemories.length,
       executedToolCalls,
       requiresConfirmation: Boolean(requiresConfirmationTicket),
