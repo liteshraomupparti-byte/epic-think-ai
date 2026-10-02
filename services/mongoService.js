@@ -275,12 +275,24 @@ async function syncFallbackToMongo() {
 }
 
 /**
+ * Ensure MongoDB connection is established (especially for serverless cold starts)
+ */
+export async function ensureConnected() {
+  if (isConnected) return;
+  try {
+    await initMongoDB();
+  } catch (_) {}
+}
+
+/**
  * Upsert authenticated user profile into users collection
  * 
  * @param {{ uid: string, email?: string, name?: string }} user
  */
 export async function upsertUser(user) {
   if (!user || !user.uid) return null;
+  await ensureConnected();
+
   const now = Date.now();
   const userDoc = {
     firebaseUid: String(user.uid),
@@ -321,6 +333,8 @@ export async function upsertUser(user) {
  * Get MongoDB Status
  */
 export async function getMongoStatus() {
+  await ensureConnected();
+
   const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/epic_think_ai';
   const dbName = process.env.MONGODB_DB_NAME || 'epic_think_ai';
 
@@ -358,10 +372,12 @@ export async function getMongoStatus() {
  * Get all conversations for an authenticated Firebase user (strictly isolated)
  * 
  * @param {string} uid - Firebase UID
+ * @param {string} [email] - User email
  * @returns {Promise<Array>} List of conversations sorted by updatedAt desc
  */
 export async function getConversations(uid, email = null) {
   if (!uid) throw new Error('A valid Firebase UID is required.');
+  await ensureConnected();
   const fUid = String(uid);
   const normEmail = email ? String(email).trim().toLowerCase() : null;
 
@@ -431,6 +447,7 @@ export async function getConversations(uid, email = null) {
  */
 export async function getConversation(uid, chatId, email = null) {
   if (!uid || !chatId) return null;
+  await ensureConnected();
   const fUid = String(uid);
   const strId = String(chatId);
   const normEmail = email ? String(email).trim().toLowerCase() : null;
@@ -508,6 +525,7 @@ export async function getConversationAnyUser(chatId) {
  */
 export async function getMessages(uid, chatId, email = null) {
   if (!uid || !chatId) throw new Error('UID and Chat ID are required.');
+  await ensureConnected();
   const fUid = String(uid);
   const strId = String(chatId);
   const normEmail = email ? String(email).trim().toLowerCase() : null;
@@ -561,6 +579,7 @@ export async function saveConversation(uid, conversationData, email = null) {
   if (!conversationData || !conversationData.id) {
     throw new Error('Conversation must have an "id" field.');
   }
+  await ensureConnected();
 
   const fUid = String(uid);
   const normEmail = email ? String(email).trim().toLowerCase() : (conversationData.email ? String(conversationData.email).trim().toLowerCase() : null);
@@ -795,6 +814,7 @@ export async function saveMessageFeedback(uid, chatId, messageIndex, feedback) {
  */
 export async function deleteConversation(uid, chatId, email = null) {
   if (!uid || !chatId) throw new Error('UID and Chat ID are required.');
+  await ensureConnected();
   const fUid = String(uid);
   const strId = String(chatId);
   const normEmail = email ? String(email).trim().toLowerCase() : null;
