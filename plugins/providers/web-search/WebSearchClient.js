@@ -16,9 +16,11 @@ export class WebSearchClient {
     let resolvedQuery = query.trim();
     let effectiveLocation = location || null;
 
-    // Detect "near me" or "nearby" queries and resolve location
-    const isLocalQuery = /\b(?:near me|nearby|around here|closest|in my area)\b/i.test(resolvedQuery);
-    if (isLocalQuery && !effectiveLocation) {
+    // Detect place queries (hostels, hotels, restaurants, cafes, attractions, near me)
+    const isPlaceQuery = /\b(?:near me|nearby|around here|closest|in my area|hostel|hostels|hotel|hotels|restaurant|restaurants|cafe|cafes|pg|paying guest|co-living|coliving|resort|resorts|lodge|lodges|hospital|hospitals|clinic|clinics|store|stores|shop|shops|pub|pubs|bar|bars|gym|gyms|cinema|theater|theatre|parks|park|places to visit|things to do)\b/i.test(resolvedQuery);
+    const hasNearMe = /\b(?:near me|nearby|around here|closest|in my area)\b/i.test(resolvedQuery);
+
+    if (hasNearMe && !effectiveLocation) {
       try {
         const ipRes = await fetch('https://ipwho.is/', { signal: AbortSignal.timeout(2000) });
         const ipData = await ipRes.json();
@@ -28,7 +30,7 @@ export class WebSearchClient {
       } catch (_) {}
     }
 
-    if (effectiveLocation && isLocalQuery) {
+    if (effectiveLocation && hasNearMe) {
       resolvedQuery = resolvedQuery.replace(/\b(?:near me|nearby|around here|closest|in my area)\b/gi, `in ${effectiveLocation}`).trim();
     }
 
@@ -45,16 +47,53 @@ export class WebSearchClient {
           serpImgUrl += `&location=${encodeURIComponent(effectiveLocation)}`;
         }
 
-        const [res, imgRes] = await Promise.all([
+        const fetchPromises = [
           fetch(serpUrl, { signal: AbortSignal.timeout(10000) }),
           fetch(serpImgUrl, { signal: AbortSignal.timeout(10000) }).catch(() => null)
-        ]);
+        ];
 
+        if (isPlaceQuery) {
+          const mapsUrl = `https://serpapi.com/search?engine=google_maps&q=${cleanQuery}&api_key=${serpApiKey}`;
+          fetchPromises.push(fetch(mapsUrl, { signal: AbortSignal.timeout(10000) }).catch(() => null));
+        }
+
+        const [res, imgRes, mapsRes] = await Promise.all(fetchPromises);
         const data = await res.json();
+
         let imgData = null;
         try {
           if (imgRes && imgRes.ok) imgData = await imgRes.json();
         } catch (_) {}
+
+        let mapsData = null;
+        try {
+          if (mapsRes && mapsRes.ok) mapsData = await mapsRes.json();
+        } catch (_) {}
+
+        const places = [];
+        if (mapsData && Array.isArray(mapsData.local_results)) {
+          for (const p of mapsData.local_results.slice(0, 8)) {
+            if (p.title) {
+              const lat = p.gps_coordinates?.latitude || null;
+              const lng = p.gps_coordinates?.longitude || null;
+              const placeUrl = p.website || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.title + ' ' + (p.address || ''))}`;
+              places.push({
+                id: String(places.length + 1),
+                title: p.title,
+                rating: p.rating || 4.5,
+                reviews: p.reviews || null,
+                category: p.type || (Array.isArray(p.types) ? p.types[0] : null) || 'Hostel',
+                address: p.address || '',
+                phone: p.phone || '',
+                lat,
+                lng,
+                thumbnail: p.thumbnail || p.serpapi_thumbnail || null,
+                status: p.open_state || 'Open',
+                url: placeUrl
+              });
+            }
+          }
+        }
 
         const images = [];
         if (imgData && Array.isArray(imgData.images_results)) {
@@ -100,7 +139,7 @@ export class WebSearchClient {
           }
         }
 
-        // Local places (e.g. hotels, restaurants, shops, clinics)
+        // Local places fallback from web search
         if (data.local_results && Array.isArray(data.local_results.places)) {
           for (const place of data.local_results.places) {
             results.push({
@@ -109,11 +148,20 @@ export class WebSearchClient {
               snippet: [place.type, place.address, place.phone, place.description].filter(Boolean).join(' • '),
               thumbnail: place.thumbnail || null
             });
-            if (place.thumbnail && images.length < 8) {
-              images.push({
+            if (places.length < 8 && place.title) {
+              places.push({
+                id: String(places.length + 1),
                 title: place.title,
-                url: place.thumbnail,
-                thumbnail: place.thumbnail
+                rating: place.rating || 4.5,
+                reviews: null,
+                category: place.type || 'Place',
+                address: place.address || '',
+                phone: place.phone || '',
+                lat: place.gps_coordinates?.latitude || null,
+                lng: place.gps_coordinates?.longitude || null,
+                thumbnail: place.thumbnail || null,
+                status: 'Open',
+                url: place.links?.website || place.links?.directions || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.title + ' ' + (place.address || ''))}`
               });
             }
           }
@@ -137,21 +185,16 @@ export class WebSearchClient {
               snippet: (r.snippet || r.description || '').slice(0, 300),
               thumbnail: r.thumbnail || null
             });
-            if (r.thumbnail && images.length < 8) {
-              images.push({
-                title: r.title || 'Search Result',
-                url: r.thumbnail,
-                thumbnail: r.thumbnail
-              });
-            }
           }
         }
 
-        if (results.length > 0) {
+        if (results.length > 0 || places.length > 0) {
           return {
-            source: 'serpapi_google',
+            source: places.length > 0 ? 'serpapi_google_maps' : 'serpapi_google',
             query: resolvedQuery,
             location: effectiveLocation,
+            isPlaceQuery,
+            places,
             results: results.slice(0, limit),
             images: images.slice(0, 6)
           };

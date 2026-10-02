@@ -190,32 +190,62 @@ export class AgentOrchestrator {
 
     // 2c. Proactive Web Search (if toggled by user or explicitly requested in query)
     let liveWebSearchContext = '';
-    const needsSearch = webSearch || /(?:search (?:the )?web|web search|browse the web|latest news|search online|search google|current news|near me|nearby)\b/i.test(userPrompt);
+    let mapCardBlock = '';
+    let mapCardEmitted = false;
+    const needsSearch = webSearch || /(?:search (?:the )?web|web search|browse the web|latest news|search online|search google|current news|near me|nearby|around here|closest|hostel|hostels|hotel|hotels|restaurant|restaurants|cafe|cafes|pg|paying guest|co-living|coliving|lodge|lodges)\b/i.test(userPrompt);
     if (needsSearch && !isContinuation) {
       const searchEngineName = process.env.SERPAPI_API_KEY ? 'Google (SerpAPI)' : 'DuckDuckGo';
       emit('ai:thinking', { thought: `Conducting live web search via ${searchEngineName} for: "${userPrompt.slice(0, 45)}"...` });
       try {
         const searchRes = await WebSearchClient.search({ query: userPrompt, location, maxResults: 6 });
-        if (searchRes && Array.isArray(searchRes.results) && searchRes.results.length > 0) {
-          const formattedResults = searchRes.results.map((r, i) =>
-            `[${i + 1}] ${r.title}\nURL: ${r.url}\nSnippet: ${r.snippet}`
-          ).join('\n\n');
+        if (searchRes) {
+          // If local places were discovered (e.g. hostels, hotels, cafes), create ChatGPT-style map widget
+          if (Array.isArray(searchRes.places) && searchRes.places.length > 0) {
+            const centerPlace = searchRes.places[0];
+            const mapData = {
+              center: {
+                lat: centerPlace.lat || 17.3850,
+                lng: centerPlace.lng || 78.4867,
+                label: searchRes.location || 'Local Area'
+              },
+              places: searchRes.places.slice(0, 8)
+            };
+            mapCardBlock = `:::map-card\n${JSON.stringify(mapData)}\n:::\n\n`;
 
-          let imageContext = '';
-          if (Array.isArray(searchRes.images) && searchRes.images.length > 0) {
-            imageContext = `\n\n[VERIFIED GOOGLE IMAGES (Include relevant ones as markdown images: ![Title](url))]:\n` +
-              searchRes.images.map(img => `- "${img.title}": ${img.url}`).join('\n');
+            liveWebSearchContext = `[LOCAL GOOGLE MAPS & PLACES INTELLIGENCE (${searchRes.location ? searchRes.location : ''})]:\nQuery: "${userPrompt}"\n\n` +
+              `Places found:\n` + searchRes.places.map((p, i) => `${i + 1}. ${p.title} (${p.category || 'Place'}) - ★ ${p.rating} | ${p.address}`).join('\n') +
+              `\n\n[MANDATORY CHATGPT-STYLE MAP PRESENTATION INSTRUCTIONS]:\n` +
+              `1. An interactive map widget is already rendered at the top displaying these places with pins, ratings, and photo cards.\n` +
+              `2. Below the map, write a clean, helpful, and natural response exactly like ChatGPT:\n` +
+              `   - Briefly state that you found options around the user's estimated area (${searchRes.location || 'the area'}).\n` +
+              `   - Provide a section: "**Nearby options**" with concise bullet points:\n` +
+              `     • **Place Name** — Area / neighborhood, key highlight or type\n` +
+              `   - Mention typical price ranges or room sharing details if relevant (e.g. for hostels: ₹3,000–₹12,000+ per month, for hotels: ₹2,000–₹8,000/night).\n` +
+              `   - End with a friendly, helpful prompt: "If you have a specific landmark, budget, or preferred room type (private vs dorm), let me know and I can narrow it down!"\n` +
+              `3. Do NOT output giant standalone photo blocks or messy table pipe syntax in the text; visual photos and directions are already embedded directly in the interactive map widget!`;
+
+            emit('ai:thinking', { thought: `Found ${searchRes.places.length} verified Google Maps places with GPS coordinates for ${searchRes.location || 'your area'}. Generating interactive map card...` });
+          } else if (Array.isArray(searchRes.results) && searchRes.results.length > 0) {
+            const formattedResults = searchRes.results.map((r, i) =>
+              `[${i + 1}] ${r.title}\nURL: ${r.url}\nSnippet: ${r.snippet}`
+            ).join('\n\n');
+
+            let imageContext = '';
+            if (Array.isArray(searchRes.images) && searchRes.images.length > 0) {
+              imageContext = `\n\n[VERIFIED GOOGLE IMAGES (Include relevant ones as markdown images: ![Title](url))]:\n` +
+                searchRes.images.map(img => `- "${img.title}": ${img.url}`).join('\n');
+            }
+
+            liveWebSearchContext = `[LIVE WEB SEARCH INTELLIGENCE (${searchRes.source.toUpperCase()}${searchRes.location ? ` - ${searchRes.location}` : ''})]:\nQuery: "${userPrompt}"\n\n${formattedResults}${imageContext}\n\n` +
+              `[PROFESSIONAL PRESENTATION GUIDELINES (LIKE CHATGPT & CLAUDE)]:\n` +
+              `1. Provide a natural, engaging, beautifully formatted, and professional answer without raw markdown artifacts or messy syntax.\n` +
+              `2. Include verified photos using standard markdown image syntax: ![Place or Subject Name](image_url) when describing visual entities.\n` +
+              `3. Always use the exact verified URLs provided in [VERIFIED GOOGLE IMAGES]. Do NOT fabricate or guess image URLs.\n` +
+              `4. When providing comparison or directory listings, format clean GitHub-Flavored Markdown tables with clear column headers.\n` +
+              `5. Use clean headings (##, ###), bullet points, and actionable details (pricing, addresses, contacts, ratings). Do not ask generic location questions when search results are already provided.`;
+
+            emit('ai:thinking', { thought: `Retrieved ${searchRes.results.length} live sources and ${searchRes.images?.length || 0} photos from ${searchRes.source}${searchRes.location ? ` for ${searchRes.location}` : ''}. Synthesizing answer...` });
           }
-
-          liveWebSearchContext = `[LIVE WEB SEARCH INTELLIGENCE (${searchRes.source.toUpperCase()}${searchRes.location ? ` - ${searchRes.location}` : ''})]:\nQuery: "${userPrompt}"\n\n${formattedResults}${imageContext}\n\n` +
-            `[PROFESSIONAL PRESENTATION GUIDELINES (LIKE CHATGPT & CLAUDE)]:\n` +
-            `1. Provide a natural, engaging, beautifully formatted, and professional answer without raw markdown artifacts or messy syntax.\n` +
-            `2. Include verified photos using standard markdown image syntax: ![Place or Subject Name](image_url) when describing visual entities (hotels, landmarks, places, products, etc.).\n` +
-            `3. Always use the exact verified URLs provided in [VERIFIED GOOGLE IMAGES]. Do NOT fabricate or guess image URLs.\n` +
-            `4. When providing comparison or directory listings, format clean GitHub-Flavored Markdown tables with clear column headers.\n` +
-            `5. Use clean headings (##, ###), bullet points, and actionable details (pricing, addresses, contacts, ratings). Do not ask generic location questions when search results are already provided.`;
-
-          emit('ai:thinking', { thought: `Retrieved ${searchRes.results.length} live sources and ${searchRes.images?.length || 0} photos from ${searchRes.source}${searchRes.location ? ` for ${searchRes.location}` : ''}. Synthesizing answer...` });
         }
       } catch (searchErr) {
         SafeLogger.warn('Proactive web search failed gracefully', { error: searchErr.message });
@@ -290,7 +320,12 @@ export class AgentOrchestrator {
         streaming: isStreamingRun,
         onChunk: isStreamingRun ? (chunk) => {
           const content = typeof chunk === 'string' ? chunk : (chunk.delta || chunk.content || chunk.text || '');
-          emit('ai:chunk', { content, text: content });
+          if (!mapCardEmitted && mapCardBlock) {
+            emit('ai:chunk', { content: mapCardBlock + content, text: mapCardBlock + content });
+            mapCardEmitted = true;
+          } else {
+            emit('ai:chunk', { content, text: content });
+          }
         } : undefined
       });
 
@@ -342,7 +377,12 @@ export class AgentOrchestrator {
             streaming: typeof onEvent === 'function',
             onChunk: typeof onEvent === 'function' ? (chunk) => {
               const content = typeof chunk === 'string' ? chunk : (chunk.delta || chunk.content || chunk.text || '');
-              emit('ai:chunk', { content, text: content });
+              if (!mapCardEmitted && mapCardBlock) {
+                emit('ai:chunk', { content: mapCardBlock + content, text: mapCardBlock + content });
+                mapCardEmitted = true;
+              } else {
+                emit('ai:chunk', { content, text: content });
+              }
             } : undefined
           });
           finalAnswer = synthRes.content ? synthRes.content.trim() : '';
@@ -511,6 +551,11 @@ export class AgentOrchestrator {
           })
           .catch(() => {});
       }
+    }
+
+    // If a map card block was generated, prepend to finalAnswer
+    if (mapCardBlock && !finalAnswer.includes(':::map-card')) {
+      finalAnswer = mapCardBlock + finalAnswer;
     }
 
     // If an autonomous builder project was created, append the Lovable preview card

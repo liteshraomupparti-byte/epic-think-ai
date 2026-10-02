@@ -11,6 +11,9 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet">
+  <!-- Leaflet CSS & JS for Interactive ChatGPT Map Cards -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <style>
     :root {
@@ -4781,6 +4784,486 @@
     .builder-breadcrumb-bar span {
       color: #c5a059;
     }
+
+    /* ==========================================================================
+       CHATGPT-STYLE INTERACTIVE MAP CARD & PLACES WIDGET
+       ========================================================================== */
+    .chatgpt-map-card {
+      position: relative;
+      width: 100%;
+      height: 380px;
+      min-height: 340px;
+      max-width: 100%;
+      border-radius: 18px;
+      overflow: hidden;
+      margin: 14px 0 16px 0;
+      background: #18181b;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+      user-select: none;
+    }
+
+    .chatgpt-map-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #121214;
+      z-index: 1;
+    }
+
+    /* Top Overlay Bar */
+    .chatgpt-map-top-bar {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      z-index: 500;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .chatgpt-map-location-badge {
+      pointer-events: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(24, 24, 27, 0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #f4f4f5;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 20px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    }
+    .chatgpt-map-location-badge svg {
+      color: #10a37f;
+    }
+
+    .chatgpt-map-expand-btn {
+      pointer-events: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(24, 24, 27, 0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #f4f4f5;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+      transition: all 0.18s ease;
+    }
+    .chatgpt-map-expand-btn:hover {
+      background: rgba(39, 39, 42, 0.95);
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: scale(1.02);
+    }
+
+    /* Custom Leaflet Map Markers */
+    .chatgpt-map-marker-container {
+      background: transparent !important;
+      border: none !important;
+    }
+    .chatgpt-map-marker {
+      background: rgba(24, 24, 27, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      color: #ffffff;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
+      cursor: pointer;
+      transform: translate(-50%, -100%);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .chatgpt-map-marker:hover,
+    .chatgpt-map-marker.active {
+      background: #10a37f;
+      border-color: #34d399;
+      color: #ffffff;
+      transform: translate(-50%, -105%) scale(1.08);
+      box-shadow: 0 6px 20px rgba(16, 163, 127, 0.5);
+      z-index: 9999 !important;
+    }
+    .chatgpt-map-marker .marker-star {
+      color: #fbbf24;
+      font-size: 11px;
+    }
+    .chatgpt-map-marker:hover .marker-star,
+    .chatgpt-map-marker.active .marker-star {
+      color: #ffffff;
+    }
+
+    /* Bottom Places Carousel */
+    .chatgpt-places-carousel {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      right: 12px;
+      z-index: 500;
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      padding-bottom: 2px;
+    }
+    .chatgpt-places-carousel::-webkit-scrollbar {
+      display: none;
+    }
+
+    .chatgpt-place-chip {
+      background: rgba(28, 28, 30, 0.94);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 14px;
+      padding: 9px 12px;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-width: 250px;
+      max-width: 280px;
+      flex-shrink: 0;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+      cursor: pointer;
+      transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+      text-decoration: none;
+      color: inherit;
+    }
+    .chatgpt-place-chip:hover,
+    .chatgpt-place-chip.active {
+      background: rgba(38, 38, 42, 0.98);
+      border-color: rgba(255, 255, 255, 0.35);
+      transform: translateY(-2px);
+    }
+
+    .chatgpt-place-chip-thumb {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      object-fit: cover;
+      background: #27272a;
+      flex-shrink: 0;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .chatgpt-place-chip-thumb-fallback {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      background: #27272a;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #71717a;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .chatgpt-place-chip-info {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      flex: 1;
+    }
+    .chatgpt-place-chip-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #f4f4f5;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.3;
+    }
+    .chatgpt-place-chip-meta {
+      font-size: 11.5px;
+      color: #a1a1aa;
+      margin-top: 2px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .chatgpt-place-chip-meta .star {
+      color: #fbbf24;
+      font-weight: 600;
+    }
+    .chatgpt-place-chip-meta .dot {
+      opacity: 0.5;
+    }
+    .chatgpt-place-chip-status-row {
+      margin-top: 2px;
+    }
+    .chip-status-open {
+      font-size: 11px;
+      font-weight: 600;
+      color: #22c55e;
+    }
+    .chip-status-closed {
+      font-size: 11px;
+      font-weight: 500;
+      color: #ef4444;
+    }
+    .chip-directions-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #d4d4d8;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+    .chip-directions-btn:hover {
+      background: #10a37f;
+      color: #ffffff;
+      border-color: #10a37f;
+      transform: scale(1.08);
+    }
+
+    /* ==========================================================================
+       CHATGPT MAP EXPANDED MODAL
+       ========================================================================== */
+    .chatgpt-map-expanded-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      padding: 24px;
+    }
+    .chatgpt-map-expanded-modal.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .chatgpt-map-expanded-dialog {
+      width: 95vw;
+      max-width: 1200px;
+      height: 88vh;
+      background: #1c1c1f;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: modalZoomIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .chatgpt-map-expanded-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #141416;
+    }
+    .chatgpt-map-expanded-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .chatgpt-map-expanded-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: rgba(16, 163, 127, 0.18);
+      color: #10a37f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .chatgpt-map-expanded-header h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0;
+    }
+    .chatgpt-map-expanded-subtitle {
+      font-size: 11.5px;
+      color: #a1a1aa;
+      margin-top: 1px;
+    }
+    .chatgpt-map-close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #d4d4d8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .chatgpt-map-close-btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+      color: #ffffff;
+      transform: scale(1.05);
+    }
+    .chatgpt-map-expanded-body {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+    }
+    .chatgpt-map-expanded-map-col {
+      flex: 1.3;
+      position: relative;
+      background: #121214;
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .chatgpt-expanded-canvas {
+      width: 100%;
+      height: 100%;
+    }
+    .chatgpt-map-expanded-sidebar {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #18181b;
+    }
+    .chatgpt-expanded-place-card {
+      background: #202024;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      gap: 14px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+    .chatgpt-expanded-place-card:hover,
+    .chatgpt-expanded-place-card.active {
+      background: #28282e;
+      border-color: rgba(16, 163, 127, 0.5);
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+    }
+    .expanded-place-thumb {
+      width: 72px;
+      height: 72px;
+      border-radius: 10px;
+      object-fit: cover;
+      background: #27272a;
+      flex-shrink: 0;
+    }
+    .expanded-place-content {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .expanded-place-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .expanded-place-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0;
+      line-height: 1.3;
+    }
+    .expanded-place-rating {
+      font-size: 12px;
+      font-weight: 600;
+      color: #fbbf24;
+      white-space: nowrap;
+    }
+    .expanded-place-category {
+      font-size: 11.5px;
+      color: #a1a1aa;
+    }
+    .expanded-place-address,
+    .expanded-place-phone {
+      font-size: 11.5px;
+      color: #a1a1aa;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .expanded-place-actions {
+      margin-top: 6px;
+    }
+    .expanded-directions-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 163, 127, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 163, 127, 0.4);
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 11.5px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+    .expanded-directions-btn:hover {
+      background: #10a37f;
+      color: #ffffff;
+      border-color: #10a37f;
+    }
+
+    @media (max-width: 768px) {
+      .chatgpt-map-card {
+        height: 320px;
+      }
+      .chatgpt-place-chip {
+        min-width: 220px;
+        max-width: 250px;
+      }
+      .chatgpt-map-expanded-body {
+        flex-direction: column;
+      }
+      .chatgpt-map-expanded-map-col {
+        height: 45%;
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .chatgpt-map-expanded-sidebar {
+        height: 55%;
+      }
+    }
   </style>
 </head>
 
@@ -6150,6 +6633,36 @@
   </div>
 
   <!-- ==========================================================================
+     CHATGPT-STYLE INTERACTIVE MAP EXPANDED MODAL
+     ========================================================================== -->
+  <div id="chatgptMapExpandedModal" class="chatgpt-map-expanded-modal" onclick="window.closeExpandedMapModal(event)">
+    <div class="chatgpt-map-expanded-dialog" onclick="event.stopPropagation()">
+      <div class="chatgpt-map-expanded-header">
+        <div class="chatgpt-map-expanded-title-group">
+          <div class="chatgpt-map-expanded-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <div>
+            <h3 id="expandedMapTitle">Local Places & Accommodations</h3>
+            <div class="chatgpt-map-expanded-subtitle" id="expandedMapSubtitle">Interactive Map View • Live Google Places & Directions</div>
+          </div>
+        </div>
+        <button type="button" class="chatgpt-map-close-btn" onclick="window.closeExpandedMapModal()" title="Close expanded map">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="chatgpt-map-expanded-body">
+        <div class="chatgpt-map-expanded-map-col">
+          <div id="chatgptExpandedCanvas" class="chatgpt-expanded-canvas"></div>
+        </div>
+        <div class="chatgpt-map-expanded-sidebar" id="expandedPlacesList">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
      RESPONSE FEEDBACK MODAL (Per-Message)
      ========================================================================== -->
   <div class="modal-overlay" id="responseFeedbackModal">
@@ -6860,6 +7373,88 @@
           }
         });
 
+        // 0-map. Extract ChatGPT-Style Interactive Map Cards (:::map-card ... :::)
+        const mapCards = [];
+        window.__mapCardData = window.__mapCardData || {};
+        processed = processed.replace(/:::map-card\s*([\s\S]*?)\s*:::/g, (match, jsonStr) => {
+          try {
+            const data = JSON.parse(jsonStr.trim());
+            const cardId = `chatgpt-map-${mapCards.length}-${Math.random().toString(36).substring(2, 9)}`;
+            window.__mapCardData[cardId] = data;
+
+            const places = Array.isArray(data.places) ? data.places : [];
+            const centerLabel = escapeHtml(data.center?.label || 'Nearby Area');
+
+            let chipsHtml = '';
+            places.forEach((p, idx) => {
+              const pTitle = escapeHtml(p.title || 'Place');
+              const pRating = p.rating ? (p.rating.toFixed ? p.rating.toFixed(1) : p.rating) : '4.5';
+              const pCategory = escapeHtml(p.category || 'Hostel');
+              const pStatus = p.status || 'Open';
+              const pStatusHtml = (pStatus.toLowerCase().includes('open') || pStatus === 'Open')
+                ? `<span class="chip-status-open">Open</span>`
+                : `<span class="chip-status-closed">${escapeHtml(pStatus)}</span>`;
+
+              const thumbUrl = p.thumbnail || p.serpapi_thumbnail || '';
+              const thumbHtml = thumbUrl
+                ? `<img src="${thumbUrl}" class="chatgpt-place-chip-thumb" alt="${pTitle}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=120&auto=format&fit=crop&q=80'">`
+                : `<div class="chatgpt-place-chip-thumb-fallback"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v14M21 7v14M6 11h2M10 11h2M14 11h2M6 15h2M10 15h2M14 15h2M9 3h6v4H9z"/></svg></div>`;
+
+              const pUrl = escapeHtml(p.url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.title + ' ' + (p.address || ''))}`);
+
+              chipsHtml += `
+                <div class="chatgpt-place-chip" data-card-id="${cardId}" data-place-idx="${idx}" onclick="window.panToPlace('${cardId}', ${idx})" title="${pTitle} - Click to focus on map">
+                  ${thumbHtml}
+                  <div class="chatgpt-place-chip-info">
+                    <div class="chatgpt-place-chip-title">${pTitle}</div>
+                    <div class="chatgpt-place-chip-meta">
+                      <span class="star">★ ${pRating}</span>
+                      <span class="dot">•</span>
+                      <span>${pCategory}</span>
+                    </div>
+                    <div class="chatgpt-place-chip-status-row">
+                      ${pStatusHtml}
+                    </div>
+                  </div>
+                  <a href="${pUrl}" target="_blank" rel="noopener noreferrer" class="chip-directions-btn" onclick="event.stopPropagation()" title="View on Google Maps">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                  </a>
+                </div>
+              `;
+            });
+
+            const cardHtml = `
+              <div class="chatgpt-map-card" id="${cardId}" data-card-id="${cardId}">
+                <div class="chatgpt-map-canvas" id="${cardId}-canvas"></div>
+                <div class="chatgpt-map-top-bar">
+                  <div class="chatgpt-map-location-badge">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                    <span>${centerLabel}</span>
+                  </div>
+                  <button type="button" class="chatgpt-map-expand-btn" onclick="window.expandMapCard('${cardId}')" title="Expand interactive map">
+                    <span>Expand</span>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                  </button>
+                </div>
+                <div class="chatgpt-places-carousel" id="${cardId}-carousel">
+                  ${chipsHtml}
+                </div>
+              </div>
+            `;
+            const idx = mapCards.length;
+            mapCards.push(cardHtml);
+
+            // Queue map initialization
+            if (typeof window.initMapCards === 'function') {
+              setTimeout(() => window.initMapCards(), 60);
+            }
+
+            return `\n\n__MAP_CARD_${idx}__\n\n`;
+          } catch (_) {
+            return '';
+          }
+        });
+
         // 0b. Extract Action Confirmation Cards (:::action-ticket ... :::)
         const actionCards = [];
         processed = processed.replace(/:::action-ticket\s*([\s\S]*?)\s*:::/g, (match, jsonStr) => {
@@ -6987,6 +7582,16 @@
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i];
           const trimmed = line.trim();
+
+          // Check for map card placeholder
+          const mapMatch = trimmed.match(/^__MAP_CARD_(\d+)__$/);
+          if (mapMatch) {
+            if (inList) { result.push('</ul>'); inList = false; }
+            if (inOrderedList) { result.push('</ol>'); inOrderedList = false; }
+            const cardIndex = parseInt(mapMatch[1], 10);
+            result.push(mapCards[cardIndex]);
+            continue;
+          }
 
           // Check for builder card placeholder
           const cardMatch = trimmed.match(/^__BUILDER_CARD_(\d+)__$/);
@@ -7787,6 +8392,11 @@
           container.appendChild(row);
         });
 
+        // Initialize any interactive ChatGPT map cards
+        if (typeof window.initMapCards === 'function') {
+          setTimeout(() => window.initMapCards(), 60);
+        }
+
         scrollToBottom();
       }
 
@@ -7991,6 +8601,9 @@
               aiMessage.text = accumulated;
               if (contentEl) {
                 contentEl.innerHTML = parseMarkdown(aiMessage.text);
+                if (aiMessage.text.includes(':::map-card') && typeof window.initMapCards === 'function') {
+                  setTimeout(() => window.initMapCards(), 60);
+                }
               }
               scrollToBottom(false);
             },
@@ -9155,9 +9768,263 @@
         if (modal) modal.classList.remove('active');
       };
 
+      // ======================================================================
+      // CHATGPT-STYLE INTERACTIVE MAP & PLACES WIDGET CONTROLLER
+      // ======================================================================
+      window.__mapCardData = window.__mapCardData || {};
+      window.__activeLeafletMaps = window.__activeLeafletMaps || {};
+      window.__expandedLeafletMap = null;
+
+      window.initMapCards = function() {
+        if (typeof L === 'undefined') return;
+        const cards = document.querySelectorAll('.chatgpt-map-card:not([data-initialized="true"])');
+        cards.forEach(cardEl => {
+          const cardId = cardEl.getAttribute('data-card-id') || cardEl.id;
+          const data = window.__mapCardData[cardId];
+          if (!data) return;
+
+          const canvasEl = document.getElementById(`${cardId}-canvas`);
+          if (!canvasEl) return;
+
+          try {
+            if (window.__activeLeafletMaps[cardId]) {
+              window.__activeLeafletMaps[cardId].remove();
+              delete window.__activeLeafletMaps[cardId];
+            }
+
+            const defaultCenter = [data.center?.lat || 17.3850, data.center?.lng || 78.4867];
+            const map = L.map(canvasEl, {
+              center: defaultCenter,
+              zoom: 13,
+              zoomControl: false,
+              attributionControl: false
+            });
+
+            // CartoDB Dark Matter tile layer
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+              subdomains: 'abcd',
+              maxZoom: 19
+            }).addTo(map);
+
+            window.__activeLeafletMaps[cardId] = map;
+            cardEl.setAttribute('data-initialized', 'true');
+
+            const places = Array.isArray(data.places) ? data.places : [];
+            const bounds = [];
+
+            places.forEach((p, idx) => {
+              if (p.lat && p.lng) {
+                const latLng = [p.lat, p.lng];
+                bounds.push(latLng);
+
+                const shortTitle = p.title.length > 20 ? (p.title.slice(0, 18) + '…') : p.title;
+                const ratingVal = p.rating ? (p.rating.toFixed ? p.rating.toFixed(1) : p.rating) : '4.5';
+
+                const icon = L.divIcon({
+                  className: 'chatgpt-map-marker-container',
+                  html: `
+                    <div class="chatgpt-map-marker" id="pin-${cardId}-${idx}">
+                      <span class="marker-star">★</span>
+                      <span class="marker-rating">${ratingVal}</span>
+                      <span class="marker-title">${escapeHtml(shortTitle)}</span>
+                    </div>
+                  `,
+                  iconSize: [null, null],
+                  iconAnchor: [45, 24]
+                });
+
+                const marker = L.marker(latLng, { icon }).addTo(map);
+
+                marker.on('click', () => {
+                  window.panToPlace(cardId, idx);
+                });
+              }
+            });
+
+            if (bounds.length > 0) {
+              map.fitBounds(bounds, {
+                padding: [45, 35],
+                maxZoom: 15
+              });
+            }
+
+            setTimeout(() => {
+              map.invalidateSize();
+            }, 180);
+
+          } catch (err) {
+            console.warn('[MAP:INIT:ERROR]', err);
+          }
+        });
+      };
+
+      window.panToPlace = function(cardId, placeIdx) {
+        const data = window.__mapCardData[cardId];
+        if (!data) return;
+        const place = data.places && data.places[placeIdx];
+        if (!place) return;
+
+        const map = window.__activeLeafletMaps[cardId];
+        if (map && place.lat && place.lng) {
+          map.flyTo([place.lat, place.lng], 15, { duration: 0.8 });
+        }
+
+        const cardEl = document.getElementById(cardId);
+        if (cardEl) {
+          cardEl.querySelectorAll('.chatgpt-map-marker').forEach(m => m.classList.remove('active'));
+          const targetPin = cardEl.querySelector(`#pin-${cardId}-${placeIdx}`);
+          if (targetPin) targetPin.classList.add('active');
+
+          const chips = cardEl.querySelectorAll('.chatgpt-place-chip');
+          chips.forEach(c => c.classList.remove('active'));
+          const targetChip = cardEl.querySelector(`.chatgpt-place-chip[data-place-idx="${placeIdx}"]`);
+          if (targetChip) {
+            targetChip.classList.add('active');
+            targetChip.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          }
+        }
+      };
+
+      window.expandMapCard = function(cardId) {
+        const data = window.__mapCardData[cardId];
+        if (!data) return;
+
+        const modal = document.getElementById('chatgptMapExpandedModal');
+        if (!modal) return;
+
+        const titleEl = document.getElementById('expandedMapTitle');
+        const subEl = document.getElementById('expandedMapSubtitle');
+        const placesListEl = document.getElementById('expandedPlacesList');
+        const canvasEl = document.getElementById('chatgptExpandedCanvas');
+
+        if (titleEl) titleEl.textContent = `${data.center?.label || 'Nearby Area'} — Places & Accommodations`;
+        if (subEl) subEl.textContent = `${data.places?.length || 0} places discovered with GPS & verified ratings`;
+
+        if (placesListEl) {
+          placesListEl.innerHTML = '';
+          (data.places || []).forEach((p, idx) => {
+            const pTitle = escapeHtml(p.title || 'Place');
+            const pRating = p.rating ? (p.rating.toFixed ? p.rating.toFixed(1) : p.rating) : '4.5';
+            const pReviews = p.reviews ? `(${p.reviews} reviews)` : '';
+            const pAddress = escapeHtml(p.address || '');
+            const pPhone = escapeHtml(p.phone || '');
+            const pCategory = escapeHtml(p.category || 'Hostel');
+            const pUrl = escapeHtml(p.url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.title + ' ' + (p.address || ''))}`);
+            const thumbUrl = p.thumbnail || p.serpapi_thumbnail || 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=200&auto=format&fit=crop&q=80';
+
+            const itemEl = document.createElement('div');
+            itemEl.className = 'chatgpt-expanded-place-card';
+            itemEl.id = `expanded-place-${idx}`;
+            itemEl.innerHTML = `
+              <img src="${thumbUrl}" class="expanded-place-thumb" alt="${pTitle}" onerror="this.src='https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=200&auto=format&fit=crop&q=80'">
+              <div class="expanded-place-content">
+                <div class="expanded-place-header">
+                  <h4 class="expanded-place-title">${pTitle}</h4>
+                  <span class="expanded-place-rating">★ ${pRating} <small style="color:#a1a1aa;font-weight:normal;">${pReviews}</small></span>
+                </div>
+                <div class="expanded-place-category">${pCategory}</div>
+                ${pAddress ? `<div class="expanded-place-address"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="10" r="3"/></svg><span>${pAddress}</span></div>` : ''}
+                ${pPhone ? `<div class="expanded-place-phone"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span>${pPhone}</span></div>` : ''}
+                <div class="expanded-place-actions">
+                  <a href="${pUrl}" target="_blank" rel="noopener noreferrer" class="expanded-directions-btn" onclick="event.stopPropagation()">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                    <span>Get Directions</span>
+                  </a>
+                </div>
+              </div>
+            `;
+
+            itemEl.onclick = () => {
+              if (window.__expandedLeafletMap && p.lat && p.lng) {
+                window.__expandedLeafletMap.flyTo([p.lat, p.lng], 16, { duration: 0.8 });
+              }
+              placesListEl.querySelectorAll('.chatgpt-expanded-place-card').forEach(c => c.classList.remove('active'));
+              itemEl.classList.add('active');
+            };
+
+            placesListEl.appendChild(itemEl);
+          });
+        }
+
+        modal.classList.add('active');
+
+        setTimeout(() => {
+          if (window.__expandedLeafletMap) {
+            window.__expandedLeafletMap.remove();
+            window.__expandedLeafletMap = null;
+          }
+
+          if (canvasEl && typeof L !== 'undefined') {
+            const defaultCenter = [data.center?.lat || 17.3850, data.center?.lng || 78.4867];
+            const expandedMap = L.map(canvasEl, {
+              center: defaultCenter,
+              zoom: 13,
+              zoomControl: true,
+              attributionControl: false
+            });
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+              subdomains: 'abcd',
+              maxZoom: 19
+            }).addTo(expandedMap);
+
+            window.__expandedLeafletMap = expandedMap;
+
+            const bounds = [];
+            (data.places || []).forEach((p, idx) => {
+              if (p.lat && p.lng) {
+                const latLng = [p.lat, p.lng];
+                bounds.push(latLng);
+
+                const ratingVal = p.rating ? (p.rating.toFixed ? p.rating.toFixed(1) : p.rating) : '4.5';
+                const icon = L.divIcon({
+                  className: 'chatgpt-map-marker-container',
+                  html: `
+                    <div class="chatgpt-map-marker" id="expanded-pin-${idx}">
+                      <span class="marker-star">★</span>
+                      <span class="marker-rating">${ratingVal}</span>
+                      <span class="marker-title">${escapeHtml(p.title.length > 20 ? (p.title.slice(0, 18) + '…') : p.title)}</span>
+                    </div>
+                  `,
+                  iconSize: [null, null],
+                  iconAnchor: [45, 24]
+                });
+
+                const m = L.marker(latLng, { icon }).addTo(expandedMap);
+                m.on('click', () => {
+                  const cardEl = document.getElementById(`expanded-place-${idx}`);
+                  if (cardEl && placesListEl) {
+                    placesListEl.querySelectorAll('.chatgpt-expanded-place-card').forEach(c => c.classList.remove('active'));
+                    cardEl.classList.add('active');
+                    cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                  }
+                });
+              }
+            });
+
+            if (bounds.length > 0) {
+              expandedMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+            }
+
+            expandedMap.invalidateSize();
+          }
+        }, 120);
+      };
+
+      window.closeExpandedMapModal = function(e) {
+        if (e && e.target && e.target.closest('.chatgpt-map-expanded-dialog') && !e.target.classList.contains('chatgpt-map-close-btn') && !e.target.closest('.chatgpt-map-close-btn')) return;
+        const modal = document.getElementById('chatgptMapExpandedModal');
+        if (modal) modal.classList.remove('active');
+        if (window.__expandedLeafletMap) {
+          window.__expandedLeafletMap.remove();
+          window.__expandedLeafletMap = null;
+        }
+      };
+
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
           window.closeImageModal();
+          window.closeExpandedMapModal();
         }
       });
 
