@@ -3082,19 +3082,46 @@
     }
 
     /* ==========================================================================
-       PLUGIN STORE & AGENT TOOLS STYLING
+       PLUGIN STORE & AGENT TOOLS STYLING (PRO 2.0 - CHATGPT & CLAUDE STYLE)
        ========================================================================== */
     .plugin-modal-content {
-      max-width: 880px !important;
+      max-width: 960px !important;
       width: 95vw !important;
-      max-height: 88vh !important;
+      max-height: 90vh !important;
       display: flex;
       flex-direction: column;
-      border: 1px solid var(--border-main);
-      border-radius: var(--radius-lg);
-      background-color: var(--bg-modal);
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      border-radius: 18px !important;
+      background: radial-gradient(circle at 50% 0%, rgba(30, 36, 45, 0.96), rgba(15, 17, 21, 0.98)) !important;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.8), 0 0 1px rgba(255, 255, 255, 0.2) !important;
+      backdrop-filter: blur(24px) !important;
+      -webkit-backdrop-filter: blur(24px) !important;
       overflow: hidden;
+    }
+
+    .plugin-store-header-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(16, 163, 127, 0.2), rgba(14, 165, 233, 0.2));
+      border: 1px solid rgba(16, 163, 127, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #10a37f;
+      flex-shrink: 0;
+    }
+
+    .pro-ecosystem-tag {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(16, 163, 127, 0.2), rgba(6, 182, 212, 0.2));
+      color: #34d399;
+      border: 1px solid rgba(16, 163, 127, 0.3);
     }
 
     .plugin-filter-row {
@@ -3102,106 +3129,280 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
       flex-wrap: wrap;
+    }
+
+    .plugin-search-box {
+      flex: 1;
+      min-width: 260px;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .plugin-search-box svg {
+      position: absolute;
+      left: 12px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .plugin-search-box input {
+      width: 100%;
+      height: 38px;
+      padding: 0 34px 0 36px;
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      font-size: 13px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .plugin-search-box input:focus {
+      border-color: rgba(16, 163, 127, 0.5);
+      background: rgba(0, 0, 0, 0.5);
+      box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.15);
+    }
+
+    .plugin-search-box input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .clear-search-btn {
+      position: absolute;
+      right: 10px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 16px;
+      padding: 0 4px;
+      line-height: 1;
+    }
+
+    .clear-search-btn:hover {
+      color: var(--text-main);
+    }
+
+    .plugin-cat-bar {
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
 
     .plugin-cat-tabs {
       display: flex;
       gap: 6px;
-      background: rgba(0, 0, 0, 0.25);
+      background: rgba(0, 0, 0, 0.3);
       padding: 4px;
-      border-radius: var(--radius-md);
-      border: 1px solid var(--border-main);
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .plugin-cat-tabs::-webkit-scrollbar {
+      display: none;
     }
 
     .plugin-cat-btn {
       background: transparent;
       border: none;
       color: var(--text-secondary);
-      font-size: 12.5px;
+      font-size: 12px;
       font-weight: 500;
-      padding: 6px 14px;
-      border-radius: var(--radius-sm);
+      padding: 6px 12px;
+      border-radius: 7px;
       cursor: pointer;
       transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
     }
 
     .plugin-cat-btn:hover {
       color: var(--text-main);
-      background: var(--bg-subtle);
+      background: rgba(255, 255, 255, 0.05);
     }
 
     .plugin-cat-btn.active {
       background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(16, 163, 127, 0.3);
+    }
+
+    .cat-pill {
+      font-size: 10px;
+      opacity: 0.8;
+      padding: 1px 5px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    .plugin-cat-btn.active .cat-pill {
+      background: rgba(255, 255, 255, 0.25);
       color: #fff;
     }
 
     .active-tools-indicator {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 7px;
       font-size: 12px;
       color: var(--text-secondary);
-      background: var(--bg-card);
-      border: 1px solid var(--border-light);
-      padding: 6px 12px;
-      border-radius: var(--radius-md);
+      background: rgba(16, 163, 127, 0.08);
+      border: 1px solid rgba(16, 163, 127, 0.25);
+      padding: 6px 14px;
+      border-radius: 10px;
+      white-space: nowrap;
     }
 
     .active-tools-indicator .pulse-dot {
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 6px var(--accent);
+      background: #10a37f;
+      box-shadow: 0 0 8px #10a37f;
+      animation: pulseGreen 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseGreen {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.6; }
     }
 
     .plugins-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
       gap: 16px;
       overflow-y: auto;
-      padding-right: 4px;
-      max-height: calc(88vh - 200px);
+      padding-right: 6px;
+      padding-bottom: 24px;
+      max-height: calc(88vh - 210px);
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+    }
+
+    .plugins-grid::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .plugins-grid::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
     }
 
     .plugin-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-main);
-      border-radius: var(--radius-lg);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.025) 0%, rgba(255, 255, 255, 0.008) 100%), #17191e;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
       padding: 18px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      transition: all 0.2s ease;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
       position: relative;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
     }
 
     .plugin-card:hover {
-      border-color: var(--border-focus);
-      background: var(--bg-card-hover);
-      transform: translateY(-1px);
+      transform: translateY(-2px);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.015) 100%), #1c1e24;
+      border-color: rgba(255, 255, 255, 0.18);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
     }
+
+    /* Brand-Specific Glows */
+    .plugin-card[data-brand="github"]:hover { border-color: rgba(255, 255, 255, 0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(255,255,255,0.06); }
+    .plugin-card[data-brand="google-calendar"]:hover { border-color: rgba(66, 133, 244, 0.45); box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 24px rgba(66, 133, 244, 0.12); }
+    .plugin-card[data-brand="gmail"]:hover { border-color: rgba(234, 67, 53, 0.45); box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 24px rgba(234, 67, 53, 0.12); }
+    .plugin-card[data-brand="google-drive"]:hover { border-color: rgba(0, 172, 71, 0.45); box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 24px rgba(0, 172, 71, 0.12); }
+    .plugin-card[data-brand="discord"]:hover { border-color: rgba(88, 101, 242, 0.5); box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 24px rgba(88, 101, 242, 0.16); }
+    .plugin-card[data-brand="telegram"]:hover { border-color: rgba(42, 171, 238, 0.5); box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 24px rgba(42, 171, 238, 0.16); }
+    .plugin-card[data-brand="whatsapp"]:hover { border-color: rgba(37, 211, 102, 0.45); box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 24px rgba(37, 211, 102, 0.16); }
+    .plugin-card[data-brand="web-search"]:hover { border-color: rgba(14, 165, 233, 0.5); box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 24px rgba(14, 165, 233, 0.16); }
+    .plugin-card[data-brand="notion"]:hover { border-color: rgba(255, 255, 255, 0.28); box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(255,255,255,0.06); }
 
     .plugin-card-header {
       display: flex;
       align-items: flex-start;
-      gap: 12px;
+      gap: 14px;
       margin-bottom: 12px;
     }
 
-    .plugin-icon-wrap {
-      width: 44px;
-      height: 44px;
-      border-radius: var(--radius-md);
-      background: var(--bg-main);
-      border: 1px solid var(--border-light);
+    /* REAL BRAND BADGES (48x48px) */
+    .plugin-brand-badge {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative;
       flex-shrink: 0;
-      color: var(--accent);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      overflow: hidden;
+    }
+
+    .plugin-card:hover .plugin-brand-badge {
+      transform: scale(1.04);
+    }
+
+    .brand-github {
+      background: linear-gradient(135deg, #24292e 0%, #171a1d 100%);
+      border-color: rgba(255, 255, 255, 0.16);
+    }
+
+    .brand-gmail {
+      background: #ffffff;
+      border-color: rgba(234, 67, 53, 0.25);
+    }
+
+    .brand-google-calendar {
+      background: #ffffff;
+      border-color: rgba(66, 133, 244, 0.25);
+    }
+
+    .brand-google-drive {
+      background: #ffffff;
+      border-color: rgba(0, 172, 71, 0.25);
+    }
+
+    .brand-notion {
+      background: linear-gradient(135deg, #1f1f1f 0%, #0d0d0d 100%);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    .brand-web-search {
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #10b981 100%);
+      box-shadow: 0 4px 16px rgba(14, 165, 233, 0.35);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .brand-telegram {
+      background: linear-gradient(135deg, #2AABEE 0%, #229ED9 100%);
+      box-shadow: 0 4px 16px rgba(42, 171, 238, 0.35);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .brand-discord {
+      background: linear-gradient(135deg, #6875f5 0%, #5865F2 100%);
+      box-shadow: 0 4px 16px rgba(88, 101, 242, 0.35);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .brand-whatsapp {
+      background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+      box-shadow: 0 4px 16px rgba(37, 211, 102, 0.35);
+      border-color: rgba(255, 255, 255, 0.2);
     }
 
     .plugin-meta {
@@ -3216,49 +3417,89 @@
       gap: 8px;
     }
 
+    .plugin-name-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+
     .plugin-name {
       font-size: 15px;
       font-weight: 600;
-      color: var(--text-main);
+      color: #f1f5f9;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .plugin-version {
-      font-size: 11px;
-      color: var(--text-muted);
-      font-family: var(--font-mono);
+    .verified-partner-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 1px 6px;
+      border-radius: 999px;
+      flex-shrink: 0;
     }
 
-    .plugin-category {
+    .plugin-publisher-row {
       font-size: 11.5px;
       color: var(--text-muted);
-      text-transform: capitalize;
       margin-top: 2px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .plugin-publisher {
+      color: #94a3b8;
+      font-weight: 500;
     }
 
     .plugin-desc {
       font-size: 12.5px;
-      color: var(--text-secondary);
-      line-height: 1.45;
+      color: #94a3b8;
+      line-height: 1.5;
       margin-bottom: 14px;
+      min-height: 38px;
     }
 
     .plugin-tools-section {
-      background: rgba(0, 0, 0, 0.2);
-      border: 1px solid var(--border-main);
-      border-radius: var(--radius-md);
-      padding: 10px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 10px 12px;
       margin-bottom: 14px;
     }
 
-    .plugin-tools-title {
-      font-size: 11px;
+    .plugin-tools-header {
+      font-size: 10.5px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: var(--text-muted);
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       display: flex;
       justify-content: space-between;
+      align-items: center;
+    }
+
+    .tools-count-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: #94a3b8;
+    }
+
+    .tools-security-note {
+      font-size: 9.5px;
+      color: #64748b;
+      letter-spacing: 0.02em;
     }
 
     .plugin-tools-tags {
@@ -3270,28 +3511,36 @@
     .tool-chip {
       font-family: var(--font-mono);
       font-size: 10.5px;
-      padding: 3px 7px;
-      border-radius: var(--radius-sm);
-      background: var(--bg-main);
-      border: 1px solid var(--border-light);
-      color: var(--text-secondary);
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
+      cursor: default;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .tool-chip:hover {
+      background: rgba(255, 255, 255, 0.07);
+      border-color: rgba(255, 255, 255, 0.16);
     }
 
     .risk-badge {
       font-size: 9px;
       font-weight: 700;
-      padding: 1px 4px;
+      padding: 1px 5px;
       border-radius: 3px;
       text-transform: uppercase;
+      letter-spacing: 0.03em;
     }
 
-    .risk-badge.read { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
-    .risk-badge.write { background: rgba(234, 179, 8, 0.15); color: #facc15; }
-    .risk-badge.external_action { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
-    .risk-badge.destructive { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .risk-badge.read { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.25); }
+    .risk-badge.write { background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.25); }
+    .risk-badge.external_action { background: rgba(251, 146, 60, 0.18); color: #fb923c; border: 1px solid rgba(251, 146, 60, 0.28); }
+    .risk-badge.destructive { background: rgba(248, 113, 113, 0.2); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3); }
 
     .plugin-status-badge {
       display: inline-flex;
@@ -3299,69 +3548,110 @@
       gap: 5px;
       font-size: 11px;
       font-weight: 600;
-      padding: 3px 8px;
-      border-radius: var(--radius-sm);
+      padding: 3px 9px;
+      border-radius: 999px;
       text-transform: uppercase;
-      letter-spacing: 0.03em;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
     }
 
-    .plugin-status-badge.available { background: rgba(142, 142, 142, 0.15); color: var(--text-muted); }
-    .plugin-status-badge.installed { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
-    .plugin-status-badge.connected { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
-    .plugin-status-badge.enabled { background: rgba(16, 163, 127, 0.18); color: var(--accent); }
-    .plugin-status-badge.disabled { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+    .plugin-status-badge.available {
+      background: rgba(148, 163, 184, 0.12);
+      color: #94a3b8;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    .plugin-status-badge.installed {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .plugin-status-badge.connected {
+      background: rgba(168, 85, 247, 0.15);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+
+    .plugin-status-badge.enabled {
+      background: rgba(16, 163, 127, 0.18);
+      color: #34d399;
+      border: 1px solid rgba(16, 163, 127, 0.35);
+      box-shadow: 0 0 10px rgba(16, 163, 127, 0.2);
+    }
+
+    .plugin-status-badge.disabled {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
 
     .plugin-card-actions {
       display: flex;
       align-items: center;
       gap: 8px;
       margin-top: auto;
-      padding-top: 10px;
-      border-top: 1px solid var(--border-main);
+      padding-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
       flex-wrap: wrap;
     }
 
     .plugin-action-btn {
-      padding: 7px 12px;
-      border-radius: var(--radius-md);
-      font-size: 12px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12.5px;
       font-weight: 500;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
-      transition: all 0.15s ease;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
       border: 1px solid transparent;
+      outline: none;
     }
 
     .plugin-action-btn.primary {
-      background: var(--accent);
+      background: linear-gradient(135deg, #10a37f 0%, #059669 100%);
       color: #fff;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(16, 163, 127, 0.25);
     }
 
     .plugin-action-btn.primary:hover {
       filter: brightness(1.1);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(16, 163, 127, 0.35);
     }
 
     .plugin-action-btn.secondary {
-      background: var(--bg-subtle);
-      border-color: var(--border-light);
-      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.1);
+      color: #e2e8f0;
     }
 
     .plugin-action-btn.secondary:hover {
-      background: var(--bg-subtle-hover);
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.18);
     }
 
     .plugin-action-btn.danger {
-      background: rgba(239, 68, 68, 0.12);
-      border-color: rgba(239, 68, 68, 0.3);
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.25);
       color: #f87171;
     }
 
     .plugin-action-btn.danger:hover {
-      background: rgba(239, 68, 68, 0.22);
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+
+    .security-vault-indicator {
+      font-size: 11.5px;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     /* ACTION CONFIRMATION MODAL */
@@ -6781,9 +7071,9 @@
   <div class="modal-overlay" id="pluginStoreModal">
     <div class="modal-dialog modal-content plugin-modal-content">
       <div class="modal-header">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:34px;height:34px;border-radius:8px;background:rgba(16,163,127,0.15);display:flex;align-items:center;justify-content:center;color:var(--accent);">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="plugin-store-header-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="3" width="7" height="7"></rect>
               <rect x="14" y="3" width="7" height="7"></rect>
               <rect x="14" y="14" width="7" height="7"></rect>
@@ -6791,8 +7081,11 @@
             </svg>
           </div>
           <div>
-            <h3 class="modal-title" style="margin:0;">Plugin Store & Tools</h3>
-            <p style="font-size:12px;color:var(--text-muted);margin:2px 0 0;">Equip your AI Agent with external OAuth tools and messaging capabilities</p>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <h3 class="modal-title" style="margin:0;">Plugin & Tool Store</h3>
+              <span class="pro-ecosystem-tag">Ecosystem 2.0</span>
+            </div>
+            <p style="font-size:12.5px;color:var(--text-muted);margin:2px 0 0;">Equip your AI Agent with verified OAuth tools, developer APIs, and messaging capabilities</p>
           </div>
         </div>
         <button class="icon-btn" id="closePluginStoreBtn" title="Close" type="button">
@@ -6805,16 +7098,28 @@
 
       <div class="modal-body" style="padding: 16px 20px;">
         <div class="plugin-filter-row">
-          <div class="plugin-cat-tabs" id="pluginCategoryTabs">
-            <button class="plugin-cat-btn active" data-category="all">All</button>
-            <button class="plugin-cat-btn" data-category="developer">Developer</button>
-            <button class="plugin-cat-btn" data-category="productivity">Productivity</button>
-            <button class="plugin-cat-btn" data-category="web">Web</button>
-            <button class="plugin-cat-btn" data-category="messaging">Messaging</button>
+          <div class="plugin-search-box">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="pluginSearchInput" placeholder="Search by name, tools, capabilities..." autocomplete="off" />
+            <button type="button" id="clearPluginSearchBtn" class="clear-search-btn" title="Clear search" style="display:none;">&times;</button>
           </div>
           <div class="active-tools-indicator" id="activeToolsIndicator">
             <span class="pulse-dot"></span>
-            <span><strong id="activeToolsCountModal">4</strong> Active Tools Available</span>
+            <span><strong id="activeToolsCountModal">4</strong> Active Tools Connected</span>
+          </div>
+        </div>
+
+        <div class="plugin-cat-bar">
+          <div class="plugin-cat-tabs" id="pluginCategoryTabs">
+            <button class="plugin-cat-btn active" data-category="all">All <span class="cat-pill">9</span></button>
+            <button class="plugin-cat-btn" data-category="developer">Developer <span class="cat-pill">1</span></button>
+            <button class="plugin-cat-btn" data-category="productivity">Productivity <span class="cat-pill">4</span></button>
+            <button class="plugin-cat-btn" data-category="web">Web <span class="cat-pill">1</span></button>
+            <button class="plugin-cat-btn" data-category="messaging">Messaging <span class="cat-pill">3</span></button>
+            <button class="plugin-cat-btn" data-category="connected">Connected <span class="cat-pill" id="connectedCatCount">1</span></button>
           </div>
         </div>
 
@@ -6825,9 +7130,9 @@
       </div>
 
       <div class="modal-footer" style="justify-content:space-between;align-items:center;">
-        <span style="font-size:11.5px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
+        <span class="security-vault-indicator">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-          Credentials encrypted via AES-256-GCM in Token Vault
+          Credentials encrypted via AES-256-GCM in Token Vault • Zero Plaintext Storage
         </span>
         <button type="button" class="secondary-btn" id="donePluginStoreBtn">Done</button>
       </div>
@@ -7136,10 +7441,12 @@
     const DEFAULT_PLUGINS = [
       {
         id: 'web-search',
-        name: 'Web Search',
+        name: 'Web Search & Browsing',
+        brand: 'web-search',
+        publisher: 'Epic Think AI',
         category: 'web',
         version: '1.0.0',
-        description: 'Real-time web search, content scraping, and news exploration powered by DuckDuckGo.',
+        description: 'Real-time internet queries, live webpage scraping, news discovery, and deep research synthesis.',
         authType: 'none',
         status: 'enabled',
         state: 'ENABLED',
@@ -7153,9 +7460,11 @@
       {
         id: 'github',
         name: 'GitHub',
+        brand: 'github',
+        publisher: 'GitHub, Inc.',
         category: 'developer',
         version: '1.0.0',
-        description: 'Explore repositories, read source code files, inspect pull requests, and file issues.',
+        description: 'Inspect repositories, browse source trees, review pull requests, and file issues directly from chat.',
         authType: 'oauth2',
         status: 'available',
         state: 'AVAILABLE',
@@ -7169,9 +7478,11 @@
       {
         id: 'gmail',
         name: 'Gmail',
+        brand: 'gmail',
+        publisher: 'Google Workspace',
         category: 'productivity',
         version: '1.0.0',
-        description: 'Search personal emails, read full conversation threads, create email drafts, and send verified emails.',
+        description: 'Search personal email threads, view message contexts, prepare drafts, and send verified emails.',
         authType: 'oauth2',
         status: 'available',
         state: 'AVAILABLE',
@@ -7185,9 +7496,11 @@
       {
         id: 'google-calendar',
         name: 'Google Calendar',
+        brand: 'google-calendar',
+        publisher: 'Google Workspace',
         category: 'productivity',
         version: '1.0.0',
-        description: 'List scheduled calendar events, find open time slots, and schedule meetings.',
+        description: 'View upcoming calendar events, check schedule availability, and create appointments.',
         authType: 'oauth2',
         status: 'available',
         state: 'AVAILABLE',
@@ -7200,9 +7513,11 @@
       {
         id: 'google-drive',
         name: 'Google Drive',
+        brand: 'google-drive',
+        publisher: 'Google Workspace',
         category: 'productivity',
         version: '1.0.0',
-        description: 'Search Drive files, read document contents, inspect folders, and upload files.',
+        description: 'Search cloud files, read documents and sheets, navigate folders, and upload assets.',
         authType: 'oauth2',
         status: 'available',
         state: 'AVAILABLE',
@@ -7216,9 +7531,11 @@
       {
         id: 'notion',
         name: 'Notion',
+        brand: 'notion',
+        publisher: 'Notion Labs',
         category: 'productivity',
         version: '1.0.0',
-        description: 'Search workspace pages, read page contents, query structured databases, and create new pages.',
+        description: 'Query Notion workspace pages, read document databases, query records, and write new pages.',
         authType: 'oauth2',
         status: 'available',
         state: 'AVAILABLE',
@@ -7232,9 +7549,11 @@
       {
         id: 'telegram',
         name: 'Telegram',
+        brand: 'telegram',
+        publisher: 'Telegram FZ-LLC',
         category: 'messaging',
         version: '1.0.0',
-        description: 'Interact with Telegram bots, inspect updates, and send messages to chats.',
+        description: 'Interact with Telegram channels, monitor incoming bot updates, and send broadcast alerts.',
         authType: 'bot_token',
         status: 'available',
         state: 'AVAILABLE',
@@ -7247,9 +7566,11 @@
       {
         id: 'discord',
         name: 'Discord',
+        brand: 'discord',
+        publisher: 'Discord, Inc.',
         category: 'messaging',
         version: '1.0.0',
-        description: 'Send messages to Discord channels and inspect guild channels using a bot token.',
+        description: 'Connect Discord guilds, read channel activity, and dispatch notifications with bot authorization.',
         authType: 'bot_token',
         status: 'available',
         state: 'AVAILABLE',
@@ -7262,9 +7583,11 @@
       {
         id: 'whatsapp',
         name: 'WhatsApp',
+        brand: 'whatsapp',
+        publisher: 'Meta Platforms',
         category: 'messaging',
         version: '1.0.0',
-        description: 'Send verified WhatsApp Cloud API messages and inspect registered phone numbers.',
+        description: 'Send notifications and updates via verified WhatsApp Cloud API and check registered phone lines.',
         authType: 'bot_token',
         status: 'available',
         state: 'AVAILABLE',
@@ -7290,6 +7613,7 @@
       plugins: DEFAULT_PLUGINS,
       activeToolsCount: 4,
       pluginCategoryFilter: 'all',
+      pluginSearchQuery: '',
       pendingBotTokenPluginId: null
     };
 
@@ -9364,7 +9688,7 @@
       const actionConfirmationModal = $('#actionConfirmationModal');
 
       // Category tab click
-      $('#pluginCategoryTabs').addEventListener('click', (e) => {
+      $('#pluginCategoryTabs')?.addEventListener('click', (e) => {
         const btn = e.target.closest('.plugin-cat-btn');
         if (!btn) return;
         $('#pluginCategoryTabs').querySelectorAll('.plugin-cat-btn').forEach(b => b.classList.remove('active'));
@@ -9372,6 +9696,30 @@
         state.pluginCategoryFilter = btn.dataset.category || 'all';
         renderPluginsGrid();
       });
+
+      // Search input handler
+      const pluginSearchInput = $('#pluginSearchInput');
+      const clearPluginSearchBtn = $('#clearPluginSearchBtn');
+      if (pluginSearchInput) {
+        pluginSearchInput.addEventListener('input', (e) => {
+          state.pluginSearchQuery = e.target.value;
+          if (clearPluginSearchBtn) {
+            clearPluginSearchBtn.style.display = e.target.value ? 'block' : 'none';
+          }
+          renderPluginsGrid();
+        });
+      }
+      if (clearPluginSearchBtn) {
+        clearPluginSearchBtn.addEventListener('click', () => {
+          if (pluginSearchInput) {
+            pluginSearchInput.value = '';
+            state.pluginSearchQuery = '';
+            clearPluginSearchBtn.style.display = 'none';
+            renderPluginsGrid();
+            pluginSearchInput.focus();
+          }
+        });
+      }
 
       // Open / Close Plugin Store
       const openPluginStoreModal = (e) => {
@@ -9459,11 +9807,16 @@
             }));
           }
 
-          // Calculate active tools
+          // Calculate active tools & connected plugins
           let count = 0;
+          let connectedCount = 0;
           state.plugins.forEach(p => {
-            if (p.status === 'enabled') {
+            const s = (p.status || p.state || '').toLowerCase();
+            if (s === 'enabled') {
               count += (p.tools ? p.tools.length : 0);
+              connectedCount++;
+            } else if (s === 'connected' || s === 'installed') {
+              connectedCount++;
             }
           });
           state.activeToolsCount = count;
@@ -9474,6 +9827,8 @@
           if (sidebarBadge) sidebarBadge.textContent = count;
           const modalBadge = $('#activeToolsCountModal');
           if (modalBadge) modalBadge.textContent = count;
+          const connBadge = $('#connectedCatCount');
+          if (connBadge) connBadge.textContent = connectedCount;
 
           renderPluginsGrid();
         } catch (err) {
@@ -9483,19 +9838,28 @@
       }
 
       function getPluginIcon(pluginId) {
+        const id = (pluginId || '').toLowerCase().replace(/_/g, '-');
         const icons = {
-          'github': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>',
-          'gmail': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>',
-          'google-calendar': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>',
-          'google-drive': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>',
-          'notion': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>',
-          'web-search': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>',
-          'telegram': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>',
-          'discord': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6h0a14.5 14.5 0 0 0-4-1.5 9.6 9.6 0 0 0-.4 1A14.2 14.2 0 0 0 10.4 5.5 14.5 14.5 0 0 0 6 6c-2.4 4.5-2.2 9 0 12a14.8 14.8 0 0 0 4.5 2.3c.4-.6.8-1.2 1.1-1.8a9.4 9.4 0 0 1-1.7-.8c.1-.1.3-.2.4-.3a10.6 10.6 0 0 0 8 0c.1.1.3.2.4.3-.5.3-1.1.6-1.7.8.3.6.7 1.2 1.1 1.8 1.6-.7 3.1-1.5 4.5-2.3 2.4-3.5 2.4-8 0-12z"></path></svg>',
-          'whatsapp': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>'
+          'github': `<div class="plugin-brand-badge brand-github" title="GitHub"><svg viewBox="0 0 24 24" width="28" height="28" fill="#ffffff"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg></div>`,
+
+          'gmail': `<div class="plugin-brand-badge brand-gmail" title="Gmail"><svg viewBox="0 0 48 48" width="30" height="30"><path fill="#4285F4" d="M42 38c0 1.1-.9 2-2 2H34V24.5L42 18.5V38z"/><path fill="#34A853" d="M6 38c0 1.1.9 2 2 2h8V24.5L6 18.5V38z"/><path fill="#EA4335" d="M34 10l-10 7.5L14 10H8c-1.1 0-2 .9-2 2v6.5l18 13.5 18-13.5V12c0-1.1-.9-2-2-2h-6z"/><path fill="#FBBC04" d="M34 24.5V10l-10 7.5L14 10v14.5l10 7.5 10-7.5z"/><path fill="#C5221F" d="M6 12v6.5l10-6.5H8c-1.1 0-2-.9-2-2z"/><path fill="#C5221F" d="M42 12v6.5l-10-6.5h8c1.1 0 2 .9 2 2z"/></svg></div>`,
+
+          'google-calendar': `<div class="plugin-brand-badge brand-google-calendar" title="Google Calendar"><svg viewBox="0 0 48 48" width="30" height="30"><rect width="48" height="48" rx="10" fill="#ffffff"/><path fill="#4285F4" d="M35 12H13c-1.7 0-3 1.3-3 3v5h28v-5c0-1.7-1.3-3-3-3z"/><text x="24" y="34" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#1a73e8" text-anchor="middle">31</text><path fill="#EA4335" d="M38 32v5c0 1.7-1.3 3-3 3h-5l8-8z"/><path fill="#FBBC04" d="M10 32l8 8h-5c-1.7 0-3-1.3-3-3v-5z"/><path fill="#34A853" d="M30 40H18l6-6 6 6z"/><path fill="#1a73e8" d="M14 9h3v4h-3zm17 0h3v4h-3z"/></svg></div>`,
+
+          'google-drive': `<div class="plugin-brand-badge brand-google-drive" title="Google Drive"><svg viewBox="0 0 48 48" width="30" height="30"><rect width="48" height="48" rx="10" fill="#ffffff"/><g transform="translate(6, 6) scale(0.75)"><path fill="#FFC107" d="M17 5L31 5 45 29 31 29z"/><path fill="#0066DA" d="M17 5L3 29 10 41.5 24 17z"/><path fill="#00AC47" d="M31 29L45 29 38 41.5 10 41.5z"/></g></svg></div>`,
+
+          'notion': `<div class="plugin-brand-badge brand-notion" title="Notion"><svg viewBox="0 0 24 24" width="28" height="28"><path fill="#ffffff" d="M4.459 4.208c.746.606 1.026.56 2.428.466l11.455-.7c.373 0 .466-.186.373-.466L17.8 2.342c-.28-.373-.84-.56-1.4-.56L3.992 2.715c-.466 0-.653.28-.466.653zm.56 3.078v13.526c0 .653.373.933 1.026.84l12.78-1.026c.746-.093.933-.653.933-1.213V5.887c0-.56-.28-.84-.84-.746l-13.06 1.026c-.56.093-.84.466-.84 1.119zm11.38 1.026c.093.466 0 .933-.373 1.026l-.84.56v7.743c-.466.373-1.026.653-1.586.653-.84 0-1.12-.28-1.773-1.12l-4.29-6.623v6.343l1.4.373c.093.466 0 .933-.466 1.026l-3.36.186c-.093-.466 0-.933.373-1.026l.933-.28V9.338l-1.306-.186c-.093-.466 0-.933.466-1.026l3.453-.28 4.663 7.09V9.058l-1.213-.28c-.093-.466 0-.933.466-1.026z"/></svg></div>`,
+
+          'web-search': `<div class="plugin-brand-badge brand-web-search" title="Web Search"><svg viewBox="0 0 48 48" width="30" height="30" fill="none"><circle cx="21" cy="21" r="10" stroke="#ffffff" stroke-width="3"/><line x1="28.5" y1="28.5" x2="38" y2="38" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/><circle cx="21" cy="21" r="5" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" stroke-dasharray="2 3"/><path d="M12 21h18M21 12v18" stroke="rgba(255,255,255,0.4)" stroke-width="1"/></svg></div>`,
+
+          'telegram': `<div class="plugin-brand-badge brand-telegram" title="Telegram"><svg viewBox="0 0 48 48" width="30" height="30"><path fill="#ffffff" d="M11 23.6l23.5-9.6c1.1-.4 2.1.3 1.7 1.9l-4 18.9c-.3 1.3-1.1 1.6-2.2 1l-6.1-4.5-2.9 2.8c-.3.3-.6.6-1.2.6l.4-6.2 11.3-10.2c.5-.4-.1-.7-.7-.3L16.7 27.8l-6-1.9c-1.3-.4-1.3-1.3.3-1.9z"/></svg></div>`,
+
+          'discord': `<div class="plugin-brand-badge brand-discord" title="Discord"><svg viewBox="0 0 48 48" width="30" height="30"><path fill="#ffffff" d="M34.8 14.5a24.3 24.3 0 0 0-6-1.9c-.3.5-.6 1.1-.8 1.6-2.3-.3-4.6-.3-6.9 0-.2-.5-.5-1.1-.8-1.6-2.2.4-4.2 1-6 1.9-3.8 5.7-4.8 11.2-4.3 16.6 2.5 1.9 4.9 3 7.3 3.7.6-.8 1.1-1.6 1.6-2.5-1.4-.5-2.6-1.2-3.8-2 .3-.2.6-.4.9-.7 4.6 2.2 9.7 2.2 14.3 0 .3.3.6.5.9.7-1.1.8-2.4 1.5-3.8 2 .5.9 1 1.7 1.6 2.5 2.4-.7 4.8-1.8 7.3-3.7.6-6.2-.9-11.7-4.3-16.6zM18.5 26.5c-1.4 0-2.6-1.3-2.6-2.9 0-1.6 1.2-2.9 2.6-2.9 1.5 0 2.6 1.3 2.6 2.9 0 1.6-1.1 2.9-2.6 2.9zm11 0c-1.4 0-2.6-1.3-2.6-2.9 0-1.6 1.2-2.9 2.6-2.9 1.5 0 2.6 1.3 2.6 2.9 0 1.6-1.1 2.9-2.6 2.9z"/></svg></div>`,
+
+          'whatsapp': `<div class="plugin-brand-badge brand-whatsapp" title="WhatsApp"><svg viewBox="0 0 48 48" width="30" height="30"><path fill="#ffffff" fill-rule="evenodd" clip-rule="evenodd" d="M24 10C16.3 10 10 16.3 10 24c0 2.6.7 5.1 2.1 7.3L10.5 37l5.9-1.5c2.1 1.2 4.5 1.8 7.6 1.8 7.7 0 14-6.3 14-14S31.7 10 24 10zm7.1 19.8c-.3.8-1.7 1.6-2.4 1.7-.7.1-1.5.2-4.9-1.2-4-1.7-6.6-5.8-6.8-6.1-.2-.3-1.6-2.2-1.6-4.1 0-2 1-2.9 1.4-3.4.4-.4.8-.5 1.1-.5.3 0 .5 0 .8.1.3.1.6.1.9.8.3.7 1.1 2.7 1.2 2.9.1.2.2.4.1.7-.1.2-.2.4-.4.6-.2.2-.4.4-.6.6-.2.2-.4.4-.6.6-.2.2-.4.4-.2.8.2.4 1 1.7 2.2 2.7 1.5 1.3 2.7 1.7 3.1 1.9.4.2.6.2.9-.1.2-.3 1-1.2 1.3-1.6.3-.4.6-.3.9-.2.4.1 2.3 1.1 2.7 1.3.4.2.7.3.8.5.1.3.1 1.4-.2 2.2z"/></svg></div>`
         };
-        const id = (pluginId || '').toLowerCase();
-        return icons[id] || icons[id.replace(/_/g, '-')] || icons[id.replace(/-/g, '_')] || '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>';
+
+        return icons[id] || icons[id.replace(/_/g, '-')] || icons[id.replace(/-/g, '_')] || `<div class="plugin-brand-badge" style="background:#24292e;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg></div>`;
       }
 
       function renderPluginsGrid() {
@@ -9504,29 +9868,91 @@
         grid.innerHTML = '';
 
         const filter = state.pluginCategoryFilter || 'all';
-        const filtered = state.plugins.filter(p => filter === 'all' || p.category === filter);
+        const searchQuery = (state.pluginSearchQuery || '').toLowerCase().trim();
+
+        // Update category counts
+        let connectedCount = 0;
+        state.plugins.forEach(p => {
+          const s = (p.status || p.state || '').toLowerCase();
+          if (s === 'enabled' || s === 'connected' || s === 'installed') {
+            connectedCount++;
+          }
+        });
+        const connBadge = $('#connectedCatCount');
+        if (connBadge) connBadge.textContent = connectedCount;
+
+        const filtered = state.plugins.filter(p => {
+          // Category filter
+          if (filter === 'installed' || filter === 'connected') {
+            const s = (p.status || p.state || '').toLowerCase();
+            if (s !== 'enabled' && s !== 'connected' && s !== 'installed') return false;
+          } else if (filter !== 'all' && p.category !== filter) {
+            return false;
+          }
+
+          // Search query filter
+          if (searchQuery) {
+            const nameMatch = (p.name || '').toLowerCase().includes(searchQuery);
+            const descMatch = (p.description || '').toLowerCase().includes(searchQuery);
+            const pubMatch = (p.publisher || '').toLowerCase().includes(searchQuery);
+            const toolMatch = (p.tools || []).some(t => 
+              (t.name || '').toLowerCase().includes(searchQuery) || 
+              (t.description || '').toLowerCase().includes(searchQuery)
+            );
+            if (!nameMatch && !descMatch && !pubMatch && !toolMatch) return false;
+          }
+
+          return true;
+        });
 
         if (!filtered.length) {
-          grid.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--text-muted);">No plugins found in this category.</div>`;
+          grid.innerHTML = `
+            <div class="empty-state" style="grid-column: 1 / -1; padding: 48px 20px; text-align: center;">
+              <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:12px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;color:var(--text-muted);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              </div>
+              <div style="font-size:15px;font-weight:600;color:var(--text-main);margin-bottom:4px;">No plugins found</div>
+              <div style="font-size:12.5px;color:var(--text-muted);">Try adjusting your search query or filter category.</div>
+            </div>
+          `;
           return;
         }
 
         filtered.forEach(p => {
           const card = document.createElement('div');
           card.className = 'plugin-card';
+          const brand = (p.brand || p.id || '').toLowerCase().replace(/_/g, '-');
+          card.setAttribute('data-brand', brand);
 
           const status = (p.status || p.state || 'available').toLowerCase();
-          const statusText = status.charAt(0).toUpperCase() + status.slice(1);
+          let statusText = status.charAt(0).toUpperCase() + status.slice(1);
+          if (status === 'available') statusText = 'Ready';
+          if (status === 'enabled') statusText = 'Active';
 
           // Action buttons
           let actionButtons = '';
           if (status === 'available') {
             if (p.authType === 'oauth2') {
-              actionButtons = `<button type="button" class="plugin-action-btn primary" data-plugin-action="connect-oauth" data-plugin-id="${p.id}">Connect</button>`;
+              actionButtons = `
+                <button type="button" class="plugin-action-btn primary" data-plugin-action="connect-oauth" data-plugin-id="${p.id}">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+                  Connect
+                </button>
+              `;
             } else if (p.authType === 'bot_token') {
-              actionButtons = `<button type="button" class="plugin-action-btn primary" data-plugin-action="connect-token" data-plugin-id="${p.id}">Configure</button>`;
+              actionButtons = `
+                <button type="button" class="plugin-action-btn primary" data-plugin-action="connect-token" data-plugin-id="${p.id}">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  Configure
+                </button>
+              `;
             } else {
-              actionButtons = `<button type="button" class="plugin-action-btn primary" data-plugin-action="install" data-plugin-id="${p.id}">Install</button>`;
+              actionButtons = `
+                <button type="button" class="plugin-action-btn primary" data-plugin-action="install" data-plugin-id="${p.id}">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  Enable
+                </button>
+              `;
             }
           } else if (status === 'installed') {
             if (p.authType === 'oauth2') {
@@ -9547,7 +9973,7 @@
             }
           } else if (status === 'connected') {
             actionButtons = `
-              <button type="button" class="plugin-action-btn primary" data-plugin-action="enable" data-plugin-id="${p.id}">Enable</button>
+              <button type="button" class="plugin-action-btn primary" data-plugin-action="enable" data-plugin-id="${p.id}">Enable Tools</button>
               <button type="button" class="plugin-action-btn danger" data-plugin-action="disconnect" data-plugin-id="${p.id}">Disconnect</button>
             `;
           } else if (status === 'enabled') {
@@ -9557,7 +9983,7 @@
             `;
           } else if (status === 'disabled') {
             actionButtons = `
-              <button type="button" class="plugin-action-btn primary" data-plugin-action="enable" data-plugin-id="${p.id}">Enable</button>
+              <button type="button" class="plugin-action-btn primary" data-plugin-action="enable" data-plugin-id="${p.id}">Re-Enable</button>
               <button type="button" class="plugin-action-btn danger" data-plugin-action="disconnect" data-plugin-id="${p.id}">Disconnect</button>
             `;
           }
@@ -9567,15 +9993,18 @@
           if (p.tools && p.tools.length > 0) {
             toolsHtml = `
               <div class="plugin-tools-section">
-                <div class="plugin-tools-title">
-                  <span>Declared Tools (${p.tools.length})</span>
-                  <span>Risk Tier</span>
+                <div class="plugin-tools-header">
+                  <span class="tools-count-pill">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                    Declared Tools (${p.tools.length})
+                  </span>
+                  <span class="tools-security-note">Sandboxed</span>
                 </div>
                 <div class="plugin-tools-tags">
                   ${p.tools.map(t => {
                     const tier = t.permissionTier || t.risk || 'READ';
                     return `
-                    <span class="tool-chip" title="${escapeHtml(t.description || '')}">
+                    <span class="tool-chip" title="${escapeHtml(t.description || t.name)}">
                       ${escapeHtml(t.name)}
                       <span class="risk-badge ${tier.toLowerCase()}">${tier}</span>
                     </span>`;
@@ -9585,18 +10014,26 @@
             `;
           }
 
+          const publisher = p.publisher || (brand === 'github' ? 'GitHub, Inc.' : (brand.includes('google') || brand === 'gmail') ? 'Google Workspace' : brand === 'notion' ? 'Notion Labs' : brand === 'discord' ? 'Discord, Inc.' : brand === 'telegram' ? 'Telegram FZ-LLC' : brand === 'whatsapp' ? 'Meta Platforms' : 'Epic Think AI');
+
           card.innerHTML = `
             <div>
               <div class="plugin-card-header">
-                <div class="plugin-icon-wrap">
-                  ${getPluginIcon(p.id)}
-                </div>
+                ${getPluginIcon(p.id)}
                 <div class="plugin-meta">
                   <div class="plugin-title-row">
-                    <span class="plugin-name">${escapeHtml(p.name)}</span>
+                    <div class="plugin-name-wrap">
+                      <span class="plugin-name">${escapeHtml(p.name)}</span>
+                      <span class="verified-partner-pill" title="Verified Integration">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                        Verified
+                      </span>
+                    </div>
                     <span class="plugin-status-badge ${status}">${statusText}</span>
                   </div>
-                  <div class="plugin-category">${escapeHtml(p.category || 'General')} • v${escapeHtml(p.version || '1.0.0')}</div>
+                  <div class="plugin-publisher-row">
+                    <span class="plugin-publisher">${escapeHtml(publisher)}</span> • <span>${escapeHtml(p.category || 'General')}</span> • <span>v${escapeHtml(p.version || '1.0.0')}</span>
+                  </div>
                 </div>
               </div>
 
