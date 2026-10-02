@@ -24,7 +24,10 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const FALLBACK_STORE_PATH = path.resolve(__dirname, '../.mongo_resilient_store.json');
+const BUNDLED_STORE_PATH = path.resolve(__dirname, '../.mongo_resilient_store.json');
+const WRITABLE_STORE_PATH = process.env.VERCEL
+  ? path.resolve('/tmp', '.mongo_resilient_store.json')
+  : BUNDLED_STORE_PATH;
 
 let client = null;
 let db = null;
@@ -42,10 +45,10 @@ let fallbackStore = {
   messages: {}       // { [chatId]: [messageDoc] }
 };
 
-// Load existing fallback cache from disk if available
+// Load existing fallback cache from disk (bundled first, then /tmp if exists)
 try {
-  if (fs.existsSync(FALLBACK_STORE_PATH)) {
-    const raw = fs.readFileSync(FALLBACK_STORE_PATH, 'utf8');
+  if (fs.existsSync(BUNDLED_STORE_PATH)) {
+    const raw = fs.readFileSync(BUNDLED_STORE_PATH, 'utf8');
     const parsed = JSON.parse(raw) || {};
     fallbackStore = {
       users: parsed.users || {},
@@ -54,14 +57,34 @@ try {
     };
   }
 } catch (err) {
-  console.warn('[DB:FALLBACK] Failed to read fallback store from disk:', err.message);
+  console.warn('[DB:FALLBACK] Note reading bundled store:', err.message);
 }
+
+try {
+  if (WRITABLE_STORE_PATH !== BUNDLED_STORE_PATH && fs.existsSync(WRITABLE_STORE_PATH)) {
+    const raw = fs.readFileSync(WRITABLE_STORE_PATH, 'utf8');
+    const parsed = JSON.parse(raw) || {};
+    if (parsed.conversations) {
+      fallbackStore.conversations = { ...fallbackStore.conversations, ...parsed.conversations };
+    }
+    if (parsed.users) {
+      fallbackStore.users = { ...fallbackStore.users, ...parsed.users };
+    }
+    if (parsed.messages) {
+      fallbackStore.messages = { ...fallbackStore.messages, ...parsed.messages };
+    }
+  }
+} catch (_) {}
 
 function persistFallbackStore() {
   try {
-    fs.writeFileSync(FALLBACK_STORE_PATH, JSON.stringify(fallbackStore, null, 2), 'utf8');
+    fs.writeFileSync(WRITABLE_STORE_PATH, JSON.stringify(fallbackStore, null, 2), 'utf8');
   } catch (err) {
-    console.warn('[DB:FALLBACK] Failed to persist fallback store to disk:', err.message);
+    if (WRITABLE_STORE_PATH !== '/tmp/.mongo_resilient_store.json') {
+      try {
+        fs.writeFileSync('/tmp/.mongo_resilient_store.json', JSON.stringify(fallbackStore, null, 2), 'utf8');
+      } catch (_) {}
+    }
   }
 }
 
@@ -77,74 +100,85 @@ function sanitizeUri(uri) {
  * Initialize connection to MongoDB with auto-reconnection and index verification
  */
 export async function initMongoDB() {
-  if (isConnected || isConnecting) return;
+  if (isConnected) return;
+  if (isConnecting && global._mongoClientPromise) {
+    return global._mongoClientPromise;
+  }
 
   const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/epic_think_ai';
   const dbName = process.env.MONGODB_DB_NAME || 'epic_think_ai';
 
   isConnecting = true;
 
-  try {
-    console.log(`[DB] Connecting to MongoDB: ${sanitizeUri(uri)} (Database: "${dbName}")...`);
+  const connectTask = async () => {
+    try {
+      console.log(`[DB] Connecting to MongoDB: ${sanitizeUri(uri)} (Database: "${dbName}")...`);
 
-    client = new MongoClient(uri, {
-      serverSelectionTimeoutMS: 2500,
-      connectTimeoutMS: 3000,
-      socketTimeoutMS: 10000,
-      maxPoolSize: 20
-    });
+      client = new MongoClient(uri, {
+        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: 5000,
+        socketTimeoutMS: 30000,
+        maxPoolSize: 20
+      });
 
-    await client.connect();
-    db = client.db(dbName);
+      await client.connect();
+      db = client.db(dbName);
 
-    usersCol = db.collection('users');
-    conversationsCol = db.collection('conversations');
-    messagesCol = db.collection('messages');
+      usersCol = db.collection('users');
+      conversationsCol = db.collection('conversations');
+      messagesCol = db.collection('messages');
 
-    // Create / verify compound and query indexes for maximum performance and data integrity
-    await Promise.allSettled([
-      // Users collection indexes
-      usersCol.createIndex({ firebaseUid: 1 }, { unique: true }),
-      usersCol.createIndex({ email: 1 }),
+      // Create / verify compound and query indexes for maximum performance and data integrity
+      await Promise.allSettled([
+        // Users collection indexes
+        usersCol.createIndex({ firebaseUid: 1 }, { unique: true }),
+        usersCol.createIndex({ email: 1 }),
 
-      // Conversations collection indexes
-      conversationsCol.createIndex({ firebaseUid: 1, updatedAt: -1 }),
-      conversationsCol.createIndex({ firebaseUid: 1, id: 1 }, { unique: true }),
-      conversationsCol.createIndex({ uid: 1, updatedAt: -1 }),
-      conversationsCol.createIndex({ uid: 1, id: 1 }),
+        // Conversations collection indexes
+        conversationsCol.createIndex({ firebaseUid: 1, updatedAt: -1 }),
+        conversationsCol.createIndex({ firebaseUid: 1, id: 1 }, { unique: true }),
+        conversationsCol.createIndex({ uid: 1, updatedAt: -1 }),
+        conversationsCol.createIndex({ uid: 1, id: 1 }),
+        conversationsCol.createIndex({ email: 1, updatedAt: -1 }),
+        conversationsCol.createIndex({ email: 1, id: 1 }),
 
-      // Messages collection indexes
-      messagesCol.createIndex({ conversationId: 1, createdAt: 1 }),
-      messagesCol.createIndex({ firebaseUid: 1, conversationId: 1 }),
-      messagesCol.createIndex({ id: 1 }, { unique: true, sparse: true })
-    ]);
+        // Messages collection indexes
+        messagesCol.createIndex({ conversationId: 1, createdAt: 1 }),
+        messagesCol.createIndex({ firebaseUid: 1, conversationId: 1 }),
+        messagesCol.createIndex({ email: 1, conversationId: 1 }),
+        messagesCol.createIndex({ id: 1 }, { unique: true, sparse: true })
+      ]);
 
-    isConnected = true;
-    isConnecting = false;
-    console.log(`[DB] Connected successfully to MongoDB database: "${db.databaseName}"`);
+      isConnected = true;
+      isConnecting = false;
+      console.log(`[DB] Connected successfully to MongoDB database: "${db.databaseName}"`);
 
-    // Sync any pending fallback data into MongoDB
-    await syncFallbackToMongo();
+      // Sync any pending fallback data into MongoDB
+      await syncFallbackToMongo();
 
-    // Connection lifecycle listeners
-    client.on('close', () => {
-      console.warn('[DB] MongoDB connection closed. Switching to resilient offline cache.');
+      // Connection lifecycle listeners
+      client.on('close', () => {
+        console.warn('[DB] MongoDB connection closed. Switching to resilient offline cache.');
+        isConnected = false;
+        scheduleReconnect();
+      });
+
+      client.on('error', (err) => {
+        console.warn('[DB] MongoDB connection error:', err.message);
+        isConnected = false;
+        scheduleReconnect();
+      });
+
+    } catch (err) {
       isConnected = false;
+      isConnecting = false;
+      console.warn(`[DB] Live connection not established (${err.message}). Resilient offline cache active. Retrying in background...`);
       scheduleReconnect();
-    });
+    }
+  };
 
-    client.on('error', (err) => {
-      console.warn('[DB] MongoDB connection error:', err.message);
-      isConnected = false;
-      scheduleReconnect();
-    });
-
-  } catch (err) {
-    isConnected = false;
-    isConnecting = false;
-    console.warn(`[DB] Live connection not established (${err.message}). Resilient offline cache active. Retrying in background...`);
-    scheduleReconnect();
-  }
+  global._mongoClientPromise = connectTask();
+  return global._mongoClientPromise;
 }
 
 /**
@@ -326,14 +360,20 @@ export async function getMongoStatus() {
  * @param {string} uid - Firebase UID
  * @returns {Promise<Array>} List of conversations sorted by updatedAt desc
  */
-export async function getConversations(uid) {
+export async function getConversations(uid, email = null) {
   if (!uid) throw new Error('A valid Firebase UID is required.');
   const fUid = String(uid);
+  const normEmail = email ? String(email).trim().toLowerCase() : null;
 
   if (isConnected && conversationsCol) {
     try {
+      const orConditions = [{ firebaseUid: fUid }, { uid: fUid }];
+      if (normEmail) {
+        orConditions.push({ email: normEmail });
+      }
+
       const docs = await conversationsCol
-        .find({ $or: [{ firebaseUid: fUid }, { uid: fUid }] }, { projection: { _id: 0 } })
+        .find({ $or: orConditions }, { projection: { _id: 0 } })
         .sort({ updatedAt: -1 })
         .toArray();
 
@@ -341,7 +381,8 @@ export async function getConversations(uid) {
       const normalized = docs.map(d => ({
         ...d,
         firebaseUid: d.firebaseUid || fUid,
-        uid: d.uid || fUid
+        uid: d.uid || fUid,
+        email: d.email || normEmail || null
       }));
 
       // Update local memory cache with latest from MongoDB
@@ -351,16 +392,34 @@ export async function getConversations(uid) {
       }
       persistFallbackStore();
 
-      console.log(`[CONVERSATION] Retrieved ${normalized.length} conversations for user: ${fUid}`);
+      console.log(`[CONVERSATION] Retrieved ${normalized.length} conversations for user: ${fUid} (${normEmail || 'no email'})`);
       return normalized;
     } catch (err) {
       console.warn('[CONVERSATION] MongoDB getConversations read error, falling back to cache:', err.message);
     }
   }
 
-  // Fallback cache
-  const userChats = Object.values(fallbackStore.conversations[fUid] || {});
-  return userChats.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  // Fallback cache: query by fUid and normEmail
+  const chatsMap = new Map();
+  const uidChats = Object.values(fallbackStore.conversations[fUid] || {});
+  for (const c of uidChats) {
+    if (c && c.id) chatsMap.set(c.id, c);
+  }
+
+  if (normEmail) {
+    for (const otherUid of Object.keys(fallbackStore.conversations || {})) {
+      if (otherUid === fUid) continue;
+      const otherChats = Object.values(fallbackStore.conversations[otherUid] || {});
+      for (const c of otherChats) {
+        if (c && c.email && c.email.toLowerCase() === normEmail) {
+          chatsMap.set(c.id, c);
+        }
+      }
+    }
+  }
+
+  const userChats = Array.from(chatsMap.values());
+  return userChats.sort((a, b) => (Number(b.updatedAt) || Number(b.createdAt) || 0) - (Number(a.updatedAt) || Number(a.createdAt) || 0));
 }
 
 /**
@@ -368,22 +427,29 @@ export async function getConversations(uid) {
  * 
  * @param {string} uid - Firebase UID
  * @param {string} chatId - Conversation ID
+ * @param {string} [email] - User email
  */
-export async function getConversation(uid, chatId) {
+export async function getConversation(uid, chatId, email = null) {
   if (!uid || !chatId) return null;
   const fUid = String(uid);
+  const strId = String(chatId);
+  const normEmail = email ? String(email).trim().toLowerCase() : null;
 
   if (isConnected && conversationsCol) {
     try {
+      const orConditions = [{ firebaseUid: fUid }, { uid: fUid }];
+      if (normEmail) orConditions.push({ email: normEmail });
+
       const doc = await conversationsCol.findOne(
-        { id: String(chatId), $or: [{ firebaseUid: fUid }, { uid: fUid }] },
+        { id: strId, $or: orConditions },
         { projection: { _id: 0 } }
       );
       if (doc) {
         return {
           ...doc,
           firebaseUid: doc.firebaseUid || fUid,
-          uid: doc.uid || fUid
+          uid: doc.uid || fUid,
+          email: doc.email || normEmail || null
         };
       }
     } catch (err) {
@@ -391,7 +457,19 @@ export async function getConversation(uid, chatId) {
     }
   }
 
-  return fallbackStore.conversations[fUid]?.[chatId] || null;
+  const direct = fallbackStore.conversations[fUid]?.[strId];
+  if (direct) return direct;
+
+  if (normEmail) {
+    for (const otherUid of Object.keys(fallbackStore.conversations || {})) {
+      const c = fallbackStore.conversations[otherUid]?.[strId];
+      if (c && c.email && c.email.toLowerCase() === normEmail) {
+        return c;
+      }
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -428,13 +506,14 @@ export async function getConversationAnyUser(chatId) {
  * @param {string} chatId - Conversation ID
  * @returns {Promise<Array>}
  */
-export async function getMessages(uid, chatId) {
+export async function getMessages(uid, chatId, email = null) {
   if (!uid || !chatId) throw new Error('UID and Chat ID are required.');
   const fUid = String(uid);
   const strId = String(chatId);
+  const normEmail = email ? String(email).trim().toLowerCase() : null;
 
   // 1. Verify conversation ownership
-  const convo = await getConversation(fUid, strId);
+  const convo = await getConversation(fUid, strId, normEmail);
   if (!convo) {
     const existsOther = await getConversationAnyUser(strId);
     if (existsOther && existsOther.firebaseUid !== fUid) {
@@ -450,8 +529,11 @@ export async function getMessages(uid, chatId) {
   // 2. Query messages collection first if live
   if (isConnected && messagesCol) {
     try {
+      const orConditions = [{ firebaseUid: fUid }, { uid: fUid }];
+      if (normEmail) orConditions.push({ email: normEmail });
+
       const docs = await messagesCol
-        .find({ conversationId: strId, $or: [{ firebaseUid: fUid }, { uid: fUid }] }, { projection: { _id: 0 } })
+        .find({ conversationId: strId, $or: orConditions }, { projection: { _id: 0 } })
         .sort({ createdAt: 1 })
         .toArray();
 
@@ -472,14 +554,16 @@ export async function getMessages(uid, chatId) {
  * 
  * @param {string} uid - Firebase UID
  * @param {object} conversationData - Conversation object
+ * @param {string} [email] - User email
  */
-export async function saveConversation(uid, conversationData) {
+export async function saveConversation(uid, conversationData, email = null) {
   if (!uid) throw new Error('A valid Firebase UID is required.');
   if (!conversationData || !conversationData.id) {
     throw new Error('Conversation must have an "id" field.');
   }
 
   const fUid = String(uid);
+  const normEmail = email ? String(email).trim().toLowerCase() : (conversationData.email ? String(conversationData.email).trim().toLowerCase() : null);
   const now = Date.now();
   const messages = Array.isArray(conversationData.messages) ? conversationData.messages : [];
   const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
@@ -489,6 +573,7 @@ export async function saveConversation(uid, conversationData) {
     id: String(conversationData.id),
     firebaseUid: fUid,
     uid: fUid,
+    email: normEmail,
     title: (conversationData.title || 'New Chat').trim(),
     createdAt: Number(conversationData.createdAt) || now,
     updatedAt: now,
@@ -509,8 +594,11 @@ export async function saveConversation(uid, conversationData) {
   let savedToMongo = false;
   if (isConnected && conversationsCol) {
     try {
+      const orConditions = [{ firebaseUid: fUid }, { uid: fUid }];
+      if (normEmail) orConditions.push({ email: normEmail });
+
       await conversationsCol.updateOne(
-        { id: doc.id, $or: [{ firebaseUid: fUid }, { uid: fUid }] },
+        { id: doc.id, $or: orConditions },
         { $set: doc },
         { upsert: true }
       );
@@ -529,6 +617,7 @@ export async function saveConversation(uid, conversationData) {
                   conversationId: doc.id,
                   firebaseUid: fUid,
                   uid: fUid,
+                  email: normEmail,
                   role: m.role || 'user',
                   content: m.text || m.content || '',
                   text: m.text || m.content || '',
@@ -554,7 +643,7 @@ export async function saveConversation(uid, conversationData) {
         await messagesCol.bulkWrite(bulkOps, { ordered: false }).catch(() => {});
       }
 
-      console.log(`[CONVERSATION] Saved conversation "${doc.title}" (${doc.id}) for user: ${fUid}`);
+      console.log(`[CONVERSATION] Saved conversation "${doc.title}" (${doc.id}) for user: ${fUid} (${normEmail || 'no email'})`);
     } catch (err) {
       console.warn('[CONVERSATION] MongoDB save error, cached in resilient storage:', err.message);
     }
@@ -704,10 +793,11 @@ export async function saveMessageFeedback(uid, chatId, messageIndex, feedback) {
 /**
  * Delete a single conversation and its associated messages
  */
-export async function deleteConversation(uid, chatId) {
+export async function deleteConversation(uid, chatId, email = null) {
   if (!uid || !chatId) throw new Error('UID and Chat ID are required.');
   const fUid = String(uid);
   const strId = String(chatId);
+  const normEmail = email ? String(email).trim().toLowerCase() : null;
 
   // Delete from fallback store
   if (fallbackStore.conversations[fUid]?.[strId]) {
@@ -715,13 +805,25 @@ export async function deleteConversation(uid, chatId) {
     persistFallbackStore();
   }
 
+  if (normEmail) {
+    for (const otherUid of Object.keys(fallbackStore.conversations || {})) {
+      if (fallbackStore.conversations[otherUid]?.[strId]?.email === normEmail) {
+        delete fallbackStore.conversations[otherUid][strId];
+        persistFallbackStore();
+      }
+    }
+  }
+
   if (isConnected) {
     try {
+      const orConditions = [{ firebaseUid: fUid }, { uid: fUid }];
+      if (normEmail) orConditions.push({ email: normEmail });
+
       if (conversationsCol) {
-        await conversationsCol.deleteOne({ id: strId, $or: [{ firebaseUid: fUid }, { uid: fUid }] });
+        await conversationsCol.deleteOne({ id: strId, $or: orConditions });
       }
       if (messagesCol) {
-        await messagesCol.deleteMany({ conversationId: strId, $or: [{ firebaseUid: fUid }, { uid: fUid }] });
+        await messagesCol.deleteMany({ conversationId: strId, $or: orConditions });
       }
       console.log(`[CONVERSATION] Deleted conversation ${strId} for user: ${fUid}`);
     } catch (err) {

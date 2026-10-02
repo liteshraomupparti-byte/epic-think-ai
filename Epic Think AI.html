@@ -10844,26 +10844,45 @@
             currentUser = user;
             updateProfileUI(user);
 
-            // Restore isolated chats from MongoDB real-time service (with localStorage cache fallback)
-            try { await MongoChatService.init(user); } catch (e) { console.warn('[MongoChatService:Init]', e); }
-            let serverChats = null;
-            try { serverChats = await MongoChatService.getConversations(user.uid); } catch (e) { console.warn('[MongoChatService:Get]', e); }
-            if (Array.isArray(serverChats)) {
-              state.chats = serverChats;
-              storage.set('eta_chats_' + user.uid, serverChats);
-            } else {
-              state.chats = storage.get('eta_chats_' + user.uid, []);
+            // 1. Immediately load local cached chats for zero UI latency & zero flicker
+            let localChats = storage.get('eta_chats_' + user.uid, []);
+            // Migrate legacy anonymous chats if this user has none yet
+            if (localChats.length === 0) {
+              const anonChats = storage.get('eta_chats', []);
+              if (anonChats.length > 0) {
+                localChats = anonChats;
+                storage.set('eta_chats_' + user.uid, anonChats);
+              }
             }
-            try { state.memories = await MemoryService.getMemories(user.uid); } catch (e) { state.memories = []; }
+            state.chats = localChats;
             state.activeChatId = state.chats.length > 0 ? state.chats[0].id : null;
 
             authOverlay.style.display = 'none';
             appView.style.display = 'flex';
 
             renderHistory();
-            renderMemoryCounter();
             renderMessages();
             updateSendButtonState();
+
+            // 2. Initialize real-time cloud sync and fetch/merge server conversations
+            try { await MongoChatService.init(user); } catch (e) { console.warn('[MongoChatService:Init]', e); }
+            try {
+              const mergedChats = await MongoChatService.getConversations(user.uid);
+              if (Array.isArray(mergedChats) && mergedChats.length > 0) {
+                state.chats = mergedChats;
+                storage.set('eta_chats_' + user.uid, mergedChats);
+                if (!state.activeChatId || !state.chats.some(c => c.id === state.activeChatId)) {
+                  state.activeChatId = state.chats[0].id;
+                }
+                renderHistory();
+                renderMessages();
+              }
+            } catch (e) {
+              console.warn('[MongoChatService:Get]', e);
+            }
+
+            try { state.memories = await MemoryService.getMemories(user.uid); } catch (e) { state.memories = []; }
+            renderMemoryCounter();
 
             // Load active plugins & tools
             try { await refreshPluginsState(); } catch (e) { console.warn('[Plugins:Refresh]', e); }

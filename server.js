@@ -127,10 +127,11 @@ app.get('/api/conversations', requireAuth, async (req, res) => {
     // Automatically record / refresh authenticated user profile in users collection
     upsertUser(req.user).catch(() => {});
 
-    const conversations = await getConversations(req.user.uid);
+    const conversations = await getConversations(req.user.uid, req.user.email);
     res.json({
       success: true,
       uid: req.user.uid,
+      email: req.user.email || null,
       conversations,
       count: conversations.length
     });
@@ -149,7 +150,7 @@ app.get('/api/conversations', requireAuth, async (req, res) => {
  */
 app.get('/api/conversations/:id', requireAuth, async (req, res) => {
   try {
-    const conversation = await getConversation(req.user.uid, req.params.id);
+    const conversation = await getConversation(req.user.uid, req.params.id, req.user.email);
     if (!conversation) {
       const existsOther = await getConversationAnyUser(req.params.id);
       if (existsOther && existsOther.firebaseUid !== req.user.uid) {
@@ -182,7 +183,7 @@ app.get('/api/conversations/:id', requireAuth, async (req, res) => {
  */
 app.get('/api/conversations/:id/messages', requireAuth, async (req, res) => {
   try {
-    const messages = await getMessages(req.user.uid, req.params.id);
+    const messages = await getMessages(req.user.uid, req.params.id, req.user.email);
     res.json({
       success: true,
       conversationId: req.params.id,
@@ -213,7 +214,7 @@ app.post('/api/conversations', requireAuth, async (req, res) => {
   }
 
   try {
-    const result = await saveConversation(req.user.uid, conversation);
+    const result = await saveConversation(req.user.uid, conversation, req.user.email);
 
     // Broadcast update in real time to any other active tabs/sessions of this user
     broadcastToUser(req.user.uid, {
@@ -338,7 +339,7 @@ app.post('/api/conversations/:id/feedback', requireAuth, async (req, res) => {
  */
 app.delete('/api/conversations/:id', requireAuth, async (req, res) => {
   try {
-    const result = await deleteConversation(req.user.uid, req.params.id);
+    const result = await deleteConversation(req.user.uid, req.params.id, req.user.email);
 
     broadcastToUser(req.user.uid, {
       type: 'chat_deleted',

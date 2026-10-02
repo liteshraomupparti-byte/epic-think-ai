@@ -199,6 +199,20 @@ class MongoChatServiceClient {
       if (raw) cached = JSON.parse(raw) || [];
     } catch (_) {}
 
+    // Check anonymous legacy chats if user-specific cache is empty
+    if (cached.length === 0 && targetUid) {
+      try {
+        const anonRaw = localStorage.getItem('eta_chats');
+        if (anonRaw) {
+          const anon = JSON.parse(anonRaw) || [];
+          if (anon.length > 0) {
+            cached = anon;
+            localStorage.setItem(cacheKey, JSON.stringify(cached));
+          }
+        }
+      } catch (_) {}
+    }
+
     try {
       const token = await this.getToken();
       if (!token) return cached;
@@ -210,18 +224,67 @@ class MongoChatServiceClient {
       });
 
       if (!res.ok) {
-        console.warn(`[MongoChatService] HTTP ${res.status} fetching conversations`);
+        console.warn(`[MongoChatService] HTTP ${res.status} fetching conversations, returning ${cached.length} cached chats`);
         return cached;
       }
 
       const data = await res.json();
       if (data && Array.isArray(data.conversations)) {
-        // Source of truth from MongoDB
+        const serverChats = data.conversations;
+
+        // Intelligent 2-way merge to ensure NO chats are ever wiped
+        const mergedMap = new Map();
+
+        // 1. Index server conversations
+        for (const chat of serverChats) {
+          if (chat && chat.id) {
+            mergedMap.set(chat.id, chat);
+          }
+        }
+
+        // 2. Merge local cached conversations (preserve local if missing or newer)
+        const missingOnServer = [];
+        for (const localChat of cached) {
+          if (!localChat || !localChat.id) continue;
+          if (!mergedMap.has(localChat.id)) {
+            mergedMap.set(localChat.id, localChat);
+            missingOnServer.push(localChat);
+          } else {
+            const serverChat = mergedMap.get(localChat.id);
+            const localUpdated = Number(localChat.updatedAt) || Number(localChat.createdAt) || 0;
+            const serverUpdated = Number(serverChat.updatedAt) || Number(serverChat.createdAt) || 0;
+            const localMsgCount = Array.isArray(localChat.messages) ? localChat.messages.length : 0;
+            const serverMsgCount = Array.isArray(serverChat.messages) ? serverChat.messages.length : 0;
+
+            if (localUpdated > serverUpdated || localMsgCount > serverMsgCount) {
+              mergedMap.set(localChat.id, { ...serverChat, ...localChat });
+              missingOnServer.push(localChat);
+            }
+          }
+        }
+
+        const merged = Array.from(mergedMap.values()).sort((a, b) => {
+          return (Number(b.updatedAt) || Number(b.createdAt) || 0) - (Number(a.updatedAt) || Number(a.createdAt) || 0);
+        });
+
+        // Persist merged chats back to local cache
         try {
-          localStorage.setItem(cacheKey, JSON.stringify(data.conversations));
+          localStorage.setItem(cacheKey, JSON.stringify(merged));
         } catch (_) {}
+
+        // Background-sync any local chats missing from the server
+        if (missingOnServer.length > 0) {
+          setTimeout(async () => {
+            for (const chatToUpload of missingOnServer) {
+              try {
+                await this.saveConversation(chatToUpload, true);
+              } catch (_) {}
+            }
+          }, 300);
+        }
+
         this.setSyncStatus('saved');
-        return data.conversations;
+        return merged;
       }
 
       return cached;
