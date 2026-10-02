@@ -224,13 +224,13 @@ export class AgentOrchestrator {
 
       emit('ai:thinking', { thought: `Iteration ${iteration}: Planning actions with ${toolsForRun.length} enabled tools...` });
 
-      // Call Router with tools (or without tools if tools are not applicable)
-      const isStreamingRun = typeof onEvent === 'function' && (!toolsForRun || toolsForRun.length === 0);
+      // Call Router with tools (or streaming if tools are not applicable or during continuation)
+      const isStreamingRun = typeof onEvent === 'function' && (!toolsForRun || toolsForRun.length === 0 || isContinuation);
       const aiResult = await this.router.execute({
         userPrompt,
         messages,
         preset: modelPreset,
-        tools: toolsForRun.length > 0 ? toolsForRun : undefined,
+        tools: (toolsForRun.length > 0 && !isContinuation) ? toolsForRun : undefined,
         systemPrompt,
         maxTokens,
         signal,
@@ -285,7 +285,12 @@ export class AgentOrchestrator {
             preset: modelPreset,
             systemPrompt,
             maxTokens,
-            signal
+            signal,
+            streaming: typeof onEvent === 'function',
+            onChunk: typeof onEvent === 'function' ? (chunk) => {
+              const content = typeof chunk === 'string' ? chunk : (chunk.delta || chunk.content || chunk.text || '');
+              emit('ai:chunk', { content, text: content });
+            } : undefined
           });
           finalAnswer = synthRes.content ? synthRes.content.trim() : '';
           if (synthRes.providerUsed) providerUsed = synthRes.providerUsed;
@@ -425,7 +430,12 @@ export class AgentOrchestrator {
         preset: modelPreset,
         systemPrompt,
         maxTokens,
-        signal
+        signal,
+        streaming: typeof onEvent === 'function',
+        onChunk: typeof onEvent === 'function' ? (chunk) => {
+          const content = typeof chunk === 'string' ? chunk : (chunk.delta || chunk.content || chunk.text || '');
+          emit('ai:chunk', { content, text: content });
+        } : undefined
       });
       finalAnswer = synthRes.content ? synthRes.content.trim() : 'I have analyzed the request and provided the response.';
       providerUsed = synthRes.providerUsed || providerUsed;

@@ -15,7 +15,28 @@ export class WebSearchClient {
     const limit = Math.min(Math.max(1, Number(maxResults) || 5), 15);
     const cleanQuery = encodeURIComponent(query.trim());
 
-    // 1. Tavily API check if configured
+    // 1. SerpAPI (Google Search) check if configured
+    const serpApiKey = process.env.SERPAPI_API_KEY;
+    if (serpApiKey) {
+      try {
+        const serpUrl = `https://serpapi.com/search?engine=google&q=${cleanQuery}&api_key=${serpApiKey}&num=${limit}`;
+        const res = await fetch(serpUrl);
+        const data = await res.json();
+        if (data && Array.isArray(data.organic_results) && data.organic_results.length > 0) {
+          return {
+            source: 'serpapi_google',
+            query,
+            results: data.organic_results.slice(0, limit).map(r => ({
+              title: r.title || 'Search Result',
+              url: r.link || '',
+              snippet: (r.snippet || r.description || '').slice(0, 300)
+            }))
+          };
+        }
+      } catch (_) {}
+    }
+
+    // 2. Tavily API check if configured
     if (process.env.TAVILY_API_KEY) {
       try {
         const res = await fetch('https://api.tavily.com/search', {
@@ -40,7 +61,7 @@ export class WebSearchClient {
       } catch (_) {}
     }
 
-    // 2. DuckDuckGo Instant API / HTML fallback
+    // 3. DuckDuckGo Instant API / HTML fallback
     try {
       const ddgUrl = `https://html.duckduckgo.com/html/?q=${cleanQuery}`;
       const response = await fetch(ddgUrl, {

@@ -18,7 +18,7 @@ export class GroqProvider extends BaseAIProvider {
       baseUrl: config.baseUrl || 'https://api.groq.com/openai/v1',
       timeoutMs: config.timeoutMs || parseInt(process.env.AI_REQUEST_TIMEOUT_MS, 10) || 55000
     });
-    this.defaultModel = config.defaultModel || 'qwen/qwen3.8-27b';
+    this.defaultModel = config.defaultModel || process.env.AI_DEFAULT_MODEL || 'openai/gpt-oss-120b';
   }
 
   /**

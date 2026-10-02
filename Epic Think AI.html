@@ -7647,116 +7647,19 @@
           }
         }
 
-        // 2. Generate AI Response via Multi-Provider AI Engine (Groq, OpenRouter, Google Gemini)
-        let aiResult = null;
-
-        try {
-          console.log(`[AI:CLIENT] Sending prompt to Multi-Provider Engine (Preset: ${state.activeModel})...`);
-          let aiRes = await AiService.chat({
-            message: userPrompt,
-            conversationId: chat.id,
-            modelPreset: state.activeModel,
-            history: chat.messages,
-            reasoning: state.isReasoningEnabled,
-            webSearch: state.isWebSearchEnabled
-          });
-
-          // Handle Human Confirmation required for EXTERNAL_ACTION or DESTRUCTIVE tools
-          const pendingTicket = aiRes ? (aiRes.ticket || aiRes.confirmationTicket) : null;
-          if (aiRes && (aiRes.requiresConfirmation || pendingTicket) && pendingTicket) {
-            pendingTicket.id = pendingTicket.id || pendingTicket.confirmationId;
-            pendingTicket.tool = pendingTicket.tool || pendingTicket.toolName;
-            pendingTicket.risk = pendingTicket.risk || pendingTicket.riskTier;
-            pendingTicket.params = pendingTicket.params || pendingTicket.parameters;
-
-            const confirmation = await openConfirmationModal(pendingTicket);
-            if (confirmation.approved) {
-              showToast('Action confirmed! Executing tool on Google Workspace...');
-              aiRes = await AiService.chat({
-                message: userPrompt,
-                conversationId: chat.id,
-                modelPreset: state.activeModel,
-                history: chat.messages,
-                reasoning: state.isReasoningEnabled,
-                webSearch: state.isWebSearchEnabled,
-                confirmationId: pendingTicket.id
-              });
-            } else {
-              showToast('Action denied by user.');
-              aiRes = {
-                success: false,
-                text: 'I cancelled the execution of that action as requested.',
-                thoughts: 'User denied confirmation ticket.'
-              };
-            }
-          }
-
-          if (aiRes && aiRes.text) {
-            let finalText = aiRes.text;
-            if (aiRes.builderProject && !finalText.includes(':::builder-card')) {
-              finalText += '\n\n:::builder-card\n' + JSON.stringify(aiRes.builderProject) + '\n:::';
-            }
-            if (aiRes.builderProject && aiRes.builderProject.projectId) {
-              window.activeBuilderProjectId = aiRes.builderProject.projectId;
-              if (window.WebsiteBuilder) {
-                window.WebsiteBuilder.projectId = aiRes.builderProject.projectId;
-              }
-            }
-            aiResult = {
-              text: finalText,
-              thoughts: aiRes.thoughts || (aiRes.steps && aiRes.steps.length ? aiRes.steps.map(s => `Step ${s.iteration}: Executed tool "${s.tool}"`).join('\n') : null),
-              provider: aiRes.provider,
-              model: aiRes.model,
-              latency: aiRes.latency,
-              finishReason: aiRes.finishReason || 'stop',
-              isTruncated: Boolean(aiRes.isTruncated || aiRes.finishReason === 'length'),
-              canContinue: Boolean(aiRes.canContinue || aiRes.isTruncated || aiRes.finishReason === 'length'),
-              builderProject: aiRes.builderProject
-            };
-          }
-        } catch (aiErr) {
-          console.warn('[AI:CLIENT] Multi-provider engine request error, trying fallback:', aiErr.message);
-        }
-
-        // Secondary fallback to Plugin Agent Planner if multi-provider threw an error
-        if (!aiResult && currentUser && currentUser.uid && state.activeToolsCount > 0) {
-          try {
-            console.log('[AGENT:CLIENT] Executing prompt via AgentPlanner fallback...');
-            let agentRes = await PluginService.executeAgentChat({
-              prompt: userPrompt,
-              conversationId: chat.id
-            });
-            if (agentRes && agentRes.text) {
-              aiResult = {
-                text: agentRes.text,
-                thoughts: agentRes.thoughts || (agentRes.steps && agentRes.steps.length ? agentRes.steps.map(s => `Step ${s.iteration}: Executed tool "${s.tool}"`).join('\n') : null),
-                finishReason: 'stop',
-                isTruncated: false,
-                canContinue: false
-              };
-            }
-          } catch (agentErr) {
-            console.warn('[AGENT:CLIENT] AgentPlanner fallback to local generator:', agentErr.message);
-          }
-        }
-
-        if (!aiResult) {
-          aiResult = await generateAIResponse(userPrompt, recalledMemories, {
-            reasoning: state.isReasoningEnabled,
-            webSearch: state.isWebSearchEnabled
-          }, recalledPromptContext);
-        }
-
+        // 2. Setup Assistant Message & Real-Time SSE Streaming
         const aiMessage = {
           role: 'assistant',
           text: '',
-          thoughts: aiResult.thoughts,
-          provider: aiResult.provider,
-          model: aiResult.model,
-          latency: aiResult.latency,
-          finishReason: aiResult.finishReason || 'stop',
-          isTruncated: Boolean(aiResult.isTruncated || aiResult.finishReason === 'length'),
-          canContinue: Boolean(aiResult.canContinue || aiResult.isTruncated || aiResult.finishReason === 'length'),
+          thoughts: null,
+          provider: null,
+          model: null,
+          latency: null,
+          finishReason: 'stop',
+          isTruncated: false,
+          canContinue: false,
+          maxOutputTokens: null,
+          status: 'streaming',
           recalledMemories: recalledMemoriesCount,
           timestamp: Date.now()
         };
@@ -7770,21 +7673,108 @@
           contentEl.classList.add('streaming-cursor');
         }
 
-        // Token-by-token streaming animation
-        const fullText = aiResult.text;
-        const chunkSize = 3;
-        for (let i = 0; i < fullText.length; i += chunkSize) {
-          if (state.stopRequested) break;
-          aiMessage.text = fullText.slice(0, i + chunkSize);
-          if (contentEl) {
-            contentEl.innerHTML = parseMarkdown(aiMessage.text);
-          }
-          scrollToBottom(false);
-          await new Promise(r => setTimeout(r, 16));
-        }
+        state.activeAbortController = new AbortController();
 
-        if (!state.stopRequested) {
-          aiMessage.text = fullText;
+        try {
+          console.log(`[AI:CLIENT] Streaming prompt to Multi-Provider Engine (Preset: ${state.activeModel})...`);
+          
+          let streamedAnyChunks = false;
+          const streamResult = await AiService.stream({
+            prompt: userPrompt,
+            conversationId: chat.id,
+            modelPreset: state.activeModel,
+            recentMessages: chat.messages.slice(0, -1),
+            reasoning: state.isReasoningEnabled,
+            webSearch: state.isWebSearchEnabled,
+            signal: state.activeAbortController.signal
+          }, {
+            onChunk: ({ text, content, accumulated }) => {
+              if (state.stopRequested) return;
+              streamedAnyChunks = true;
+              aiMessage.text = accumulated;
+              if (contentEl) {
+                contentEl.innerHTML = parseMarkdown(aiMessage.text);
+              }
+              scrollToBottom(false);
+            },
+            onThinking: (data) => {
+              if (data && (data.content || data.thoughts)) {
+                const thoughtText = data.content || data.thoughts;
+                aiMessage.thoughts = (aiMessage.thoughts ? aiMessage.thoughts + '\n' : '') + thoughtText;
+              }
+            },
+            onDone: (doneData) => {
+              aiMessage.provider = doneData.provider || aiMessage.provider;
+              aiMessage.model = doneData.model || aiMessage.model;
+              aiMessage.finishReason = doneData.finishReason || 'stop';
+              aiMessage.isTruncated = Boolean(doneData.isTruncated || doneData.finishReason === 'length');
+              aiMessage.canContinue = Boolean(doneData.canContinue || aiMessage.isTruncated);
+              aiMessage.maxOutputTokens = doneData.maxOutputTokens || null;
+              aiMessage.latency = doneData.durationMs || doneData.latency;
+              aiMessage.status = aiMessage.isTruncated ? 'interrupted' : 'completed';
+            }
+          });
+
+          if (streamResult) {
+            aiMessage.provider = streamResult.provider || aiMessage.provider;
+            aiMessage.model = streamResult.model || aiMessage.model;
+            aiMessage.finishReason = streamResult.finishReason || aiMessage.finishReason || 'stop';
+            aiMessage.isTruncated = Boolean(streamResult.isTruncated || streamResult.finishReason === 'length');
+            aiMessage.canContinue = Boolean(streamResult.canContinue || aiMessage.isTruncated);
+            aiMessage.maxOutputTokens = streamResult.maxOutputTokens || aiMessage.maxOutputTokens;
+            aiMessage.status = aiMessage.isTruncated ? 'interrupted' : 'completed';
+
+            if (!aiMessage.text && streamResult.text) {
+              aiMessage.text = streamResult.text;
+            }
+
+            if (streamResult.builderProject && !aiMessage.text.includes(':::builder-card')) {
+              aiMessage.text += '\n\n:::builder-card\n' + JSON.stringify(streamResult.builderProject) + '\n:::';
+              if (streamResult.builderProject.projectId) {
+                window.activeBuilderProjectId = streamResult.builderProject.projectId;
+                if (window.WebsiteBuilder) {
+                  window.WebsiteBuilder.projectId = streamResult.builderProject.projectId;
+                }
+              }
+            }
+          }
+        } catch (streamErr) {
+          if (streamErr.name === 'AbortError' || state.stopRequested) {
+            console.log('[AI:CLIENT] Streaming was aborted by user.');
+            aiMessage.finishReason = 'interrupted';
+            aiMessage.status = 'interrupted';
+          } else {
+            console.warn('[AI:CLIENT] Stream failed, falling back to chat request:', streamErr.message);
+            // If stream failed before any chunk arrived, attempt non-streaming fallback
+            if (!aiMessage.text) {
+              try {
+                const fallbackRes = await AiService.chat({
+                  message: userPrompt,
+                  conversationId: chat.id,
+                  modelPreset: state.activeModel,
+                  history: chat.messages.slice(0, -1),
+                  reasoning: state.isReasoningEnabled,
+                  webSearch: state.isWebSearchEnabled
+                });
+
+                if (fallbackRes && fallbackRes.text) {
+                  aiMessage.text = fallbackRes.text;
+                  aiMessage.provider = fallbackRes.provider;
+                  aiMessage.model = fallbackRes.model;
+                  aiMessage.finishReason = fallbackRes.finishReason || 'stop';
+                  aiMessage.isTruncated = Boolean(fallbackRes.isTruncated || fallbackRes.finishReason === 'length');
+                  aiMessage.canContinue = Boolean(fallbackRes.canContinue || aiMessage.isTruncated);
+                  aiMessage.thoughts = fallbackRes.thoughts;
+                  aiMessage.status = aiMessage.isTruncated ? 'interrupted' : 'completed';
+                }
+              } catch (fallbackErr) {
+                console.error('[AI:CLIENT] Fallback also failed:', fallbackErr);
+                aiMessage.text = 'I encountered an error processing your request. Please try again.';
+                aiMessage.status = 'error';
+                aiMessage.finishReason = 'error';
+              }
+            }
+          }
         }
 
         if (contentEl) {
@@ -7794,9 +7784,9 @@
 
         if (aiMessage.isTruncated) {
           showToast('Response reached generation limit. Click "Continue generating" to continue.');
-          renderMessages();
         }
 
+        renderMessages();
         scrollToBottom(true);
 
         state.isStreaming = false;
@@ -7805,8 +7795,7 @@
         updateSendButtonState();
 
         // 3. Post-Response Hindsight Memory Retention
-        // Automatically retain durable user preferences, tech specs, or decisions
-        if (currentUser && currentUser.uid && !state.stopRequested) {
+        if (currentUser && currentUser.uid && !state.stopRequested && aiMessage.text) {
           const isDurableFact = /(?:i prefer|always use|never use|remember that|my name is|note that|my project is|we are using|i am using|i want to use|stack is|database is|tech stack|default to|framework is|my client|i like)/i.test(userPrompt);
           if (isDurableFact) {
             console.log('[HINDSIGHT:CLIENT] Retaining durable user preference/fact to Hindsight...');
@@ -7869,60 +7858,84 @@
         state.isStreaming = true;
         state.stopRequested = false;
         toggleStreamingButtons(true);
+        state.activeAbortController = new AbortController();
+
+        const contentEl = $(`#msgContent-${msgIdx}`);
+        if (contentEl) contentEl.classList.add('streaming-cursor');
+
+        const startBaseText = targetMsg.text || '';
+        let streamedContinuation = '';
 
         try {
-          showToast('Requesting continuation from AI engine...');
-          const contRes = await AiService.chat({
-            message: promptText,
+          showToast('Streaming continuation from AI engine...');
+          const contRes = await AiService.stream({
+            prompt: promptText,
             conversationId: chat.id,
             modelPreset: state.activeModel,
             isContinuation: true,
-            partialResponse: targetMsg.text,
-            history: chat.messages.slice(0, msgIdx)
-          });
+            partialResponse: startBaseText,
+            recentMessages: chat.messages.slice(0, msgIdx),
+            signal: state.activeAbortController.signal
+          }, {
+            onChunk: ({ text, content, accumulated }) => {
+              if (state.stopRequested) return;
+              let rawChunk = content || text || '';
+              // Deduplicate leading overlap with tail end of startBaseText if returned by model
+              if (!streamedContinuation) {
+                const tailEnd = startBaseText.slice(-80);
+                if (tailEnd && accumulated.startsWith(tailEnd)) {
+                  rawChunk = accumulated.slice(tailEnd.length).trimStart();
+                }
+              }
+              streamedContinuation += rawChunk;
 
-          if (contRes && contRes.text) {
-            let addition = contRes.text.trim();
-            // Prevent accidental leading duplication if provider returned overlap
-            const tailEnd = targetMsg.text.slice(-80);
-            if (tailEnd && addition.startsWith(tailEnd)) {
-              addition = addition.slice(tailEnd.length).trimStart();
-            }
+              const sep = (startBaseText.endsWith(' ') || startBaseText.endsWith('\n') || streamedContinuation.startsWith(' ') || streamedContinuation.startsWith('\n')) ? '' : ' ';
+              targetMsg.text = startBaseText + sep + streamedContinuation;
 
-            // Animate appending continuation to message
-            const contentEl = $(`#msgContent-${msgIdx}`);
-            if (contentEl) contentEl.classList.add('streaming-cursor');
-
-            const startLen = targetMsg.text.length;
-            const fullNewText = targetMsg.text + (targetMsg.text.endsWith(' ') || addition.startsWith(' ') || addition.startsWith('\n') ? '' : ' ') + addition;
-            const chunkSize = 3;
-
-            for (let i = startLen; i < fullNewText.length; i += chunkSize) {
-              if (state.stopRequested) break;
-              targetMsg.text = fullNewText.slice(0, i + chunkSize);
               if (contentEl) {
                 contentEl.innerHTML = parseMarkdown(targetMsg.text);
               }
               scrollToBottom(false);
-              await new Promise(r => setTimeout(r, 16));
+            },
+            onDone: (doneData) => {
+              targetMsg.finishReason = doneData.finishReason || 'stop';
+              targetMsg.isTruncated = Boolean(doneData.isTruncated || doneData.finishReason === 'length');
+              targetMsg.canContinue = targetMsg.isTruncated;
+              targetMsg.status = targetMsg.isTruncated ? 'interrupted' : 'completed';
             }
+          });
 
-            targetMsg.text = fullNewText;
-            targetMsg.finishReason = contRes.finishReason || 'stop';
+          if (contRes) {
+            targetMsg.finishReason = contRes.finishReason || targetMsg.finishReason || 'stop';
             targetMsg.isTruncated = Boolean(contRes.isTruncated || contRes.finishReason === 'length');
             targetMsg.canContinue = targetMsg.isTruncated;
-
-            if (contentEl) {
-              contentEl.classList.remove('streaming-cursor');
-              contentEl.innerHTML = parseMarkdown(targetMsg.text);
+            targetMsg.status = targetMsg.isTruncated ? 'interrupted' : 'completed';
+            if (contRes.text && !streamedContinuation) {
+              let addition = contRes.text.trim();
+              const tailEnd = startBaseText.slice(-80);
+              if (tailEnd && addition.startsWith(tailEnd)) {
+                addition = addition.slice(tailEnd.length).trimStart();
+              }
+              const sep = (startBaseText.endsWith(' ') || startBaseText.endsWith('\n') || addition.startsWith(' ') || addition.startsWith('\n')) ? '' : ' ';
+              targetMsg.text = startBaseText + sep + addition;
             }
-
-            showToast(targetMsg.isTruncated ? 'Continuation paused at token limit. You can continue again.' : 'Response completed naturally!');
           }
+
+          showToast(targetMsg.isTruncated ? 'Continuation paused at token limit. Click Continue to proceed.' : 'Response completed naturally!');
         } catch (err) {
-          console.error('[CONTINUE] Error continuing generation:', err);
-          showToast('Failed to continue generation: ' + (err.message || 'Network error'));
+          if (err.name === 'AbortError' || state.stopRequested) {
+            console.log('[CONTINUE] Aborted by user');
+            targetMsg.finishReason = 'interrupted';
+            targetMsg.status = 'interrupted';
+          } else {
+            console.error('[CONTINUE] Error continuing generation:', err);
+            showToast('Failed to continue generation: ' + (err.message || 'Network error'));
+          }
         } finally {
+          if (contentEl) {
+            contentEl.classList.remove('streaming-cursor');
+            contentEl.innerHTML = parseMarkdown(targetMsg.text);
+          }
           state.isStreaming = false;
           toggleStreamingButtons(false);
           saveState(true);
@@ -7987,6 +8000,9 @@
 
           if (state.isStreaming) {
             state.stopRequested = true;
+            if (state.activeAbortController) {
+              try { state.activeAbortController.abort(); } catch (_) {}
+            }
           } else {
             submitPrompt(textarea.value);
           }
@@ -7998,6 +8014,9 @@
         e.preventDefault();
         if (state.isStreaming) {
           state.stopRequested = true;
+          if (state.activeAbortController) {
+            try { state.activeAbortController.abort(); } catch (_) {}
+          }
         } else {
           submitPrompt(textarea.value);
         }
@@ -8080,6 +8099,105 @@
           }
         });
       }
+
+      // Developer AI Diagnostics Modal (Requirement 19)
+      window.openAiDiagnostics = async function openDiagnosticsModal() {
+        let existing = document.getElementById('aiDiagnosticsModal');
+        if (!existing) {
+          existing = document.createElement('div');
+          existing.id = 'aiDiagnosticsModal';
+          existing.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,0.78);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;';
+          existing.innerHTML = `
+            <div style="background:#111827;border:1px solid rgba(255,255,255,0.15);border-radius:12px;width:100%;max-width:860px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
+              <div style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:space-between;background:#1f2937;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <span style="font-size:18px;">🩺</span>
+                  <div>
+                    <h3 style="margin:0;font-size:15px;font-weight:600;color:#f9fafb;">AI Generation Diagnostics</h3>
+                    <p style="margin:0;font-size:11px;color:#9ca3af;">Safe developer telemetry • Zero credentials logged • Multi-Provider Router</p>
+                  </div>
+                </div>
+                <div style="display:flex;gap:8px;">
+                  <button id="refreshAiDiagBtn" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">Refresh</button>
+                  <button id="closeAiDiagBtn" style="background:#ef4444;border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">Close (Esc)</button>
+                </div>
+              </div>
+              <div id="aiDiagContent" style="padding:16px 20px;overflow-y:auto;flex:1;font-family:monospace;font-size:12px;color:#e5e7eb;">
+                Loading telemetry...
+              </div>
+            </div>
+          `;
+          document.body.appendChild(existing);
+
+          document.getElementById('closeAiDiagBtn').onclick = () => { existing.style.display = 'none'; };
+          document.getElementById('refreshAiDiagBtn').onclick = () => window.openAiDiagnostics();
+          existing.onclick = (e) => { if (e.target === existing) existing.style.display = 'none'; };
+        }
+
+        existing.style.display = 'flex';
+        const content = document.getElementById('aiDiagContent');
+        content.innerHTML = '<div style="text-align:center;padding:20px;color:#9ca3af;">Fetching real-time diagnostics from Multi-Provider Router...</div>';
+
+        try {
+          const res = await AiService.getDiagnostics();
+          const items = res.recent || res.diagnostics || [];
+          const summary = res.summary || {};
+          if (!items.length) {
+            content.innerHTML = '<div style="text-align:center;padding:30px;color:#9ca3af;">No AI generations recorded yet in this session. Send a prompt to see telemetry!</div>';
+            return;
+          }
+
+          content.innerHTML = `
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 12px;font-size:11px;">
+                <div><span style="color:#9ca3af;">Total Generations:</span> <strong style="color:#60a5fa;">${summary.totalGenerations || items.length}</strong></div>
+                <div><span style="color:#9ca3af;">Completed:</span> <strong style="color:#10b981;">${summary.completedNatural || items.filter(i => !i.isTruncated).length}</strong></div>
+                <div><span style="color:#9ca3af;">Truncated:</span> <strong style="color:#f59e0b;">${summary.truncatedHits || items.filter(i => i.isTruncated).length}</strong></div>
+                <div><span style="color:#9ca3af;">Avg Latency:</span> <strong>${summary.avgLatencyMs || 0}ms</strong></div>
+              </div>
+              ${items.map((item, idx) => {
+                const finishBadgeColor = item.finishReason === 'stop' ? '#10b981' : (item.finishReason === 'length' ? '#f59e0b' : '#ef4444');
+                const truncatedColor = item.isTruncated ? '#f59e0b' : '#10b981';
+                return `
+                  <div style="background:#1f2937;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px 14px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                      <span style="font-weight:600;color:#60a5fa;">#${idx + 1} Req: ${item.requestId}</span>
+                      <div style="display:flex;gap:6px;">
+                        <span style="background:${finishBadgeColor}22;color:${finishBadgeColor};border:1px solid ${finishBadgeColor}55;padding:2px 7px;border-radius:4px;font-size:11px;">finish: ${item.finishReason || 'unknown'}</span>
+                        <span style="background:${truncatedColor}22;color:${truncatedColor};border:1px solid ${truncatedColor}55;padding:2px 7px;border-radius:4px;font-size:11px;">${item.isTruncated ? 'TRUNCATED (Limit hit)' : 'COMPLETE (Natural)'}</span>
+                      </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:8px;font-size:11px;color:#d1d5db;">
+                      <div><strong>Provider:</strong> ${item.provider || 'default'}</div>
+                      <div><strong>Model:</strong> ${item.model || 'unknown'}</div>
+                      <div><strong>Tokens:</strong> ${item.generatedTokens || 0} / ${item.configuredOutputLimit || 'unlimited'}</div>
+                      <div><strong>Latency:</strong> ${item.latency || 0}ms ${item.firstTokenLatency ? `(1st: ${item.firstTokenLatency}ms)` : ''}</div>
+                      <div><strong>Can Continue:</strong> ${item.canContinue ? 'Yes' : 'No'}</div>
+                      <div><strong>User Hash:</strong> ${item.userHash || 'anonymous'}</div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `;
+        } catch (err) {
+          content.innerHTML = `<div style="color:#ef4444;padding:20px;">Failed to load diagnostics: ${err.message}</div>`;
+        }
+      };
+
+      // Keyboard shortcut Ctrl+Shift+D or Cmd+Shift+D for Diagnostics
+      window.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+          e.preventDefault();
+          window.openAiDiagnostics();
+        }
+        if (e.key === 'Escape') {
+          const diagModal = document.getElementById('aiDiagnosticsModal');
+          if (diagModal && diagModal.style.display !== 'none') {
+            diagModal.style.display = 'none';
+          }
+        }
+      });
 
       // Search History Input
       $('#chatSearchInput').addEventListener('input', renderHistory);

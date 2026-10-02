@@ -16,6 +16,9 @@ import { AIModelRouter } from './core/AIModelRouter.js';
 import { AgentOrchestrator } from './core/AgentOrchestrator.js';
 import { SafeLogger } from '../plugins/core/SafeLogger.js';
 
+import { diagnosticsStore } from './core/GenerationDiagnostics.js';
+import { GenerationConfig } from './core/GenerationConfig.js';
+
 // Instantiate Providers
 export const groqProvider = new GroqProvider();
 export const openRouterProvider = new OpenRouterProvider();
@@ -33,7 +36,7 @@ export const providers = {
 export const aiRouter = new AIModelRouter(providers);
 export const agentOrchestrator = new AgentOrchestrator(aiRouter);
 
-export { modelRegistry, healthMonitor };
+export { modelRegistry, healthMonitor, diagnosticsStore, GenerationConfig };
 
 /**
  * Initialize engine and discover models in background

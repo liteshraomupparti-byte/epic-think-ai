@@ -13,6 +13,7 @@ import { healthMonitor } from './HealthMonitor.js';
 import { SafeLogger } from '../../plugins/core/SafeLogger.js';
 import { AIProviderError, AITimeoutError, AICancellationError } from '../errors/AIErrors.js';
 import { GenerationConfig } from './GenerationConfig.js';
+import { diagnosticsStore } from './GenerationDiagnostics.js';
 
 export const TaskType = {
   CHAT: 'CHAT',
@@ -36,18 +37,18 @@ export class AIModelRouter {
       this.healthMonitor = providersOrOptions.healthMonitor || healthMonitor;
       this.registry = providersOrOptions.registry || modelRegistry;
       this.defaultProvider = providersOrOptions.defaultProvider || config.defaultProvider || process.env.AI_DEFAULT_PROVIDER || 'groq';
-      this.defaultModel = providersOrOptions.defaultModel || config.defaultModel || process.env.AI_DEFAULT_MODEL || 'qwen/qwen3.8-27b';
-      this.fallbackProvider = providersOrOptions.fallbackProvider || config.fallbackProvider || process.env.AI_FALLBACK_PROVIDER || 'openrouter';
-      this.fallbackModel = providersOrOptions.fallbackModel || config.fallbackModel || process.env.AI_FALLBACK_MODEL || 'meta-llama/llama-3.3-70b-instruct';
+      this.defaultModel = providersOrOptions.defaultModel || config.defaultModel || process.env.AI_DEFAULT_MODEL || 'openai/gpt-oss-120b';
+      this.fallbackProvider = providersOrOptions.fallbackProvider || config.fallbackProvider || process.env.AI_FALLBACK_PROVIDER || 'gemini';
+      this.fallbackModel = providersOrOptions.fallbackModel || config.fallbackModel || process.env.AI_FALLBACK_MODEL || 'gemini-3.5-flash';
       this.maxRetries = providersOrOptions.maxRetries || parseInt(process.env.AI_MAX_RETRIES, 10) || 2;
     } else {
       this.providers = providersOrOptions || {};
       this.healthMonitor = config.healthMonitor || healthMonitor;
       this.registry = config.registry || modelRegistry;
       this.defaultProvider = config.defaultProvider || process.env.AI_DEFAULT_PROVIDER || 'groq';
-      this.defaultModel = config.defaultModel || process.env.AI_DEFAULT_MODEL || 'qwen/qwen3.8-27b';
-      this.fallbackProvider = config.fallbackProvider || process.env.AI_FALLBACK_PROVIDER || 'openrouter';
-      this.fallbackModel = config.fallbackModel || process.env.AI_FALLBACK_MODEL || 'meta-llama/llama-3.3-70b-instruct';
+      this.defaultModel = config.defaultModel || process.env.AI_DEFAULT_MODEL || 'openai/gpt-oss-120b';
+      this.fallbackProvider = config.fallbackProvider || process.env.AI_FALLBACK_PROVIDER || 'gemini';
+      this.fallbackModel = config.fallbackModel || process.env.AI_FALLBACK_MODEL || 'gemini-3.5-flash';
       this.maxRetries = parseInt(process.env.AI_MAX_RETRIES, 10) || 2;
     }
   }
@@ -115,15 +116,15 @@ export class AIModelRouter {
     }
 
     // Add Fallback Chain based on configured healthy providers
-    const fallbackOrder = ['groq', 'openrouter', 'gemini'];
+    const fallbackOrder = ['groq', 'gemini', 'openrouter'];
     for (const pId of fallbackOrder) {
       if (candidates.some(c => c.providerId === pId)) continue;
       const provider = this.providers[pId];
       if (provider && provider.isConfigured && monitor.canExecute(pId)) {
         let m = provider.defaultModel;
-        if (pId === 'groq') m = 'qwen/qwen3.8-27b';
-        if (pId === 'openrouter') m = 'meta-llama/llama-3.3-70b-instruct';
+        if (pId === 'groq') m = 'openai/gpt-oss-120b';
         if (pId === 'gemini') m = 'gemini-3.5-flash';
+        if (pId === 'openrouter') m = 'meta-llama/llama-3.3-70b-instruct';
 
         candidates.push({ providerId: pId, model: m });
       }
@@ -254,6 +255,21 @@ export class AIModelRouter {
           const finishReason = GenerationConfig.normalizeFinishReason(result.finishReason);
           const isTruncated = finishReason === 'length';
 
+          diagnosticsStore.record({
+            requestId: result.requestId,
+            provider: candidate.providerId,
+            model: candidate.model,
+            preset: effectivePreset,
+            startTime: t0,
+            endTime: Date.now(),
+            finishReason,
+            generatedTokens: result.usage?.completionTokens || Math.round((result.content || '').length / 4),
+            configuredOutputLimit: effectiveMaxTokens,
+            isTruncated,
+            canContinue: isTruncated,
+            streaming
+          });
+
           return {
             success: true,
             ...result,
@@ -269,6 +285,17 @@ export class AIModelRouter {
         } catch (err) {
           lastError = err;
           healthMonitor.recordFailure(candidate.providerId, err);
+
+          diagnosticsStore.record({
+            provider: candidate.providerId,
+            model: candidate.model,
+            preset: effectivePreset,
+            startTime: t0,
+            endTime: Date.now(),
+            finishReason: 'error',
+            error: err.message,
+            streaming
+          });
 
           SafeLogger.warn(`Provider ${candidate.providerId} attempt ${attempt + 1} failed`, {
             model: candidate.model,

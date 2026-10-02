@@ -35,25 +35,15 @@ export class ModelRegistry {
     // GROQ ULTRA-FAST LPU MODELS
     // -------------------------------------------------------------
     this.register({
-      id: 'qwen/qwen3.8-27b',
-      provider: 'groq',
-      name: 'Qwen 3.8 27B (Groq LPU)',
-      capabilities: { text: true, vision: false, tools: true, streaming: true, reasoning: true },
-      speedClass: 'fast',
-      qualityClass: 'high',
-      contextWindow: 32768,
-      presetMapping: ['Epic Think Fast', 'Fast', 'Auto']
-    });
-
-    this.register({
       id: 'openai/gpt-oss-20b',
       provider: 'groq',
-      name: 'GPT OSS 20B (Groq LPU)',
+      name: 'GPT OSS 20B (Groq LPU Fast & Reasoning)',
       capabilities: { text: true, vision: false, tools: true, streaming: true, reasoning: true },
-      speedClass: 'fast',
+      speedClass: 'ultra',
       qualityClass: 'high',
-      contextWindow: 16384,
-      presetMapping: ['Epic Think o1', 'Reasoning']
+      contextWindow: 131072,
+      maxOutputTokens: 8192,
+      presetMapping: ['Epic Think Fast', 'Fast', 'Auto', 'Epic Think o1', 'Reasoning']
     });
 
     this.register({
@@ -61,10 +51,23 @@ export class ModelRegistry {
       provider: 'groq',
       name: 'GPT OSS 120B Flagship (Groq LPU)',
       capabilities: { text: true, vision: false, tools: true, streaming: true, reasoning: true },
-      speedClass: 'balanced',
+      speedClass: 'fast',
       qualityClass: 'flagship',
-      contextWindow: 32768,
-      presetMapping: ['Epic Think 4o', 'Smartest']
+      contextWindow: 131072,
+      maxOutputTokens: 8192,
+      presetMapping: ['Epic Think 4o', 'Smartest', 'Quality']
+    });
+
+    this.register({
+      id: 'qwen/qwen3.8-27b',
+      provider: 'groq',
+      name: 'Qwen 3.8 27B (Groq LPU)',
+      capabilities: { text: true, vision: false, tools: true, streaming: true, reasoning: true },
+      speedClass: 'fast',
+      qualityClass: 'high',
+      contextWindow: 131072,
+      maxOutputTokens: 1000,
+      presetMapping: []
     });
 
     this.register({
@@ -185,53 +188,56 @@ export class ModelRegistry {
   resolvePreset(presetName = 'Epic Think 4o', availableProviders = new Set(['groq', 'openrouter', 'gemini'])) {
     const p = (presetName || '').toLowerCase();
 
-    // 1. ULTRA FAST PRESET -> GROQ (sub-150ms)
+    // 1. ULTRA FAST PRESET -> GROQ LPU (sub-second, 8192 output tokens)
     if (p.includes('fast') || p.includes('ultra')) {
       if (availableProviders.has('groq')) {
-        return { provider: 'groq', model: 'qwen/qwen3.8-27b' };
+        return { provider: 'groq', model: 'openai/gpt-oss-20b' };
+      }
+      if (availableProviders.has('gemini')) {
+        return { provider: 'gemini', model: 'gemini-3.5-flash' };
       }
       if (availableProviders.has('openrouter')) {
         return { provider: 'openrouter', model: 'meta-llama/llama-3.3-70b-instruct' };
       }
-      if (availableProviders.has('gemini')) {
-        return { provider: 'gemini', model: 'gemini-flash-latest' };
-      }
     }
 
-    // 2. REASONING / DEEP THINK PRESET -> GROQ / OPENROUTER
+    // 2. REASONING / DEEP THINK PRESET -> GROQ LPU (Native Reasoning, 8192 output tokens)
     if (p.includes('o1') || p.includes('reason') || p.includes('deep')) {
       if (availableProviders.has('groq')) {
         return { provider: 'groq', model: 'openai/gpt-oss-20b' };
       }
+      if (availableProviders.has('gemini')) {
+        return { provider: 'gemini', model: 'gemini-3.5-flash' };
+      }
       if (availableProviders.has('openrouter')) {
         return { provider: 'openrouter', model: 'meta-llama/llama-3.3-70b-instruct' };
-      }
-      if (availableProviders.has('gemini')) {
-        return { provider: 'gemini', model: 'gemini-3.7-flash' };
       }
     }
 
-    // 3. SMARTEST / FLAGSHIP PRESET -> OPENROUTER / GROQ / GEMINI
+    // 3. SMARTEST / FLAGSHIP PRESET -> GROQ 120B / GEMINI / OPENROUTER
     if (p.includes('4o') || p.includes('smart') || p.includes('flagship')) {
-      if (availableProviders.has('openrouter')) {
-        return { provider: 'openrouter', model: 'meta-llama/llama-3.3-70b-instruct' };
-      }
       if (availableProviders.has('groq')) {
         return { provider: 'groq', model: 'openai/gpt-oss-120b' };
       }
       if (availableProviders.has('gemini')) {
-        return { provider: 'gemini', model: 'gemini-3.7-flash' };
+        return { provider: 'gemini', model: 'gemini-3.5-flash' };
+      }
+      if (availableProviders.has('openrouter')) {
+        return { provider: 'openrouter', model: 'meta-llama/llama-3.3-70b-instruct' };
       }
     }
 
     // Default Fallback
     if (availableProviders.has('groq')) {
-      return { provider: 'groq', model: 'qwen/qwen3.8-27b' };
+      return { provider: 'groq', model: 'openai/gpt-oss-120b' };
+    }
+    if (availableProviders.has('gemini')) {
+      return { provider: 'gemini', model: 'gemini-3.5-flash' };
     }
     if (availableProviders.has('openrouter')) {
       return { provider: 'openrouter', model: 'meta-llama/llama-3.3-70b-instruct' };
     }
-    return { provider: 'gemini', model: 'gemini-flash-latest' };
+    return { provider: 'groq', model: 'openai/gpt-oss-120b' };
   }
 
   /**

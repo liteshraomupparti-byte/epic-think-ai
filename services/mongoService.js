@@ -539,6 +539,11 @@ export async function saveConversation(uid, conversationData) {
                   latency: m.latency || null,
                   recalledMemories: m.recalledMemories || 0,
                   feedback: m.feedback || null,
+                  finishReason: m.finishReason || null,
+                  isTruncated: Boolean(m.isTruncated || m.finishReason === 'length'),
+                  canContinue: Boolean(m.canContinue || m.isTruncated || m.finishReason === 'length'),
+                  maxOutputTokens: m.maxOutputTokens || null,
+                  status: m.status || (m.isTruncated ? 'interrupted' : 'completed'),
                   createdAt: m.timestamp || m.createdAt || now
                 }
               },
@@ -620,6 +625,11 @@ export async function saveMessage(uid, chatId, message) {
     latency: message.latency || null,
     recalledMemories: message.recalledMemories || 0,
     feedback: message.feedback || null,
+    finishReason: message.finishReason || null,
+    isTruncated: Boolean(message.isTruncated || message.finishReason === 'length'),
+    canContinue: Boolean(message.canContinue || message.isTruncated || message.finishReason === 'length'),
+    maxOutputTokens: message.maxOutputTokens || null,
+    status: message.status || (message.isTruncated ? 'interrupted' : 'completed'),
     timestamp: message.timestamp || now,
     createdAt: message.createdAt || message.timestamp || now
   };

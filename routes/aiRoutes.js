@@ -13,7 +13,7 @@
 
 import express from 'express';
 import { requireAuth } from '../services/firebaseAuthService.js';
-import { AIEngine, healthMonitor, modelRegistry, providers } from '../ai/index.js';
+import { AIEngine, healthMonitor, modelRegistry, providers, diagnosticsStore } from '../ai/index.js';
 import { SafeLogger } from '../plugins/core/SafeLogger.js';
 
 const router = express.Router();
@@ -157,6 +157,7 @@ router.post('/stream', optionalAuth, async (req, res) => {
   });
 
   try {
+    let streamedAnyChunks = false;
     const streamResult = await AIEngine.chat({
       uid: req.user.uid,
       prompt: userPrompt,
@@ -169,10 +170,12 @@ router.post('/stream', optionalAuth, async (req, res) => {
       signal: abortController.signal,
       onEvent: (evt) => {
         if (evt.event === 'ai:chunk') {
+          streamedAnyChunks = true;
           const content = evt.content || evt.text || '';
           sendEvent('chunk', { type: 'chunk', content, text: content });
         } else if (evt.event === 'ai:complete') {
-          if (evt.text) {
+          // Only send full content as chunk if nothing was streamed token-by-token (avoids duplicating response)
+          if (evt.text && !streamedAnyChunks) {
             sendEvent('chunk', { type: 'chunk', content: evt.text, text: evt.text });
           }
           sendEvent('ai:complete', evt);
@@ -186,10 +189,14 @@ router.post('/stream', optionalAuth, async (req, res) => {
       type: 'done',
       done: true,
       success: true,
+      provider: streamResult.provider,
+      model: streamResult.model,
       finishReason: streamResult.finishReason || 'stop',
       isTruncated: Boolean(streamResult.isTruncated || streamResult.finishReason === 'length'),
       canContinue: Boolean(streamResult.canContinue || streamResult.isTruncated || streamResult.finishReason === 'length'),
-      maxOutputTokens: streamResult.maxOutputTokens
+      maxOutputTokens: streamResult.maxOutputTokens,
+      durationMs: streamResult.durationMs || streamResult.latency,
+      builderProject: streamResult.builderProject || null
     });
     res.end();
   } catch (err) {
@@ -225,23 +232,23 @@ router.get('/models', (req, res) => {
       'Epic Think Fast': {
         name: 'Epic Think Fast',
         tag: 'Ultra Fast',
-        description: 'Lightweight and instant for everyday tasks and quick drafting.',
+        description: 'Sub-second inference for instant answers, fast drafting, and rapid iteration.',
         recommendedProvider: 'groq',
-        recommendedModel: 'qwen/qwen3.8-27b'
+        recommendedModel: 'openai/gpt-oss-20b'
       },
       'Epic Think o1': {
         name: 'Epic Think o1',
         tag: 'Deep Think',
-        description: 'Advanced chain-of-thought reasoning with multi-step validation.',
+        description: 'Advanced chain-of-thought reasoning with multi-step validation and 8192-token output.',
         recommendedProvider: 'groq',
         recommendedModel: 'openai/gpt-oss-20b'
       },
       'Epic Think 4o': {
         name: 'Epic Think 4o',
         tag: 'Smartest',
-        description: 'High-intelligence flagship model for complex reasoning, analysis, and coding.',
-        recommendedProvider: 'openrouter',
-        recommendedModel: 'meta-llama/llama-3.3-70b-instruct'
+        description: 'High-intelligence flagship 120B model for complex reasoning, analysis, and extensive coding.',
+        recommendedProvider: 'groq',
+        recommendedModel: 'openai/gpt-oss-120b'
       }
     },
     models
@@ -256,6 +263,18 @@ router.get('/health', (req, res) => {
   res.json({
     success: true,
     health: AIEngine.getHealth()
+  });
+});
+
+/**
+ * Generation Telemetry & Observability Diagnostics
+ * GET /api/ai/diagnostics
+ */
+router.get('/diagnostics', optionalAuth, (req, res) => {
+  res.json({
+    success: true,
+    summary: diagnosticsStore.getSummary(),
+    recent: diagnosticsStore.getRecent(30)
   });
 });
 
