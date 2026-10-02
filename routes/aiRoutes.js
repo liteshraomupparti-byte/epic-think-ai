@@ -44,7 +44,9 @@ router.post('/chat', optionalAuth, async (req, res) => {
     confirmationId,
     isContinuation = false,
     partialResponse = '',
-    maxTokens = null
+    maxTokens = null,
+    webSearch = false,
+    reasoning = false
   } = req.body || {};
   const userPrompt = prompt || text || message || (Array.isArray(messages) ? messages[messages.length - 1]?.content : null);
   const effectiveMessages = recentMessages || history || (Array.isArray(messages) ? messages.slice(0, -1) : []);
@@ -66,7 +68,9 @@ router.post('/chat', optionalAuth, async (req, res) => {
       confirmationId,
       isContinuation,
       partialResponse,
-      maxTokens
+      maxTokens,
+      webSearch: Boolean(webSearch),
+      reasoning: Boolean(reasoning)
     });
 
     res.json({
@@ -129,7 +133,9 @@ router.post('/stream', optionalAuth, async (req, res) => {
     modelPreset,
     isContinuation = false,
     partialResponse = '',
-    maxTokens = null
+    maxTokens = null,
+    webSearch = false,
+    reasoning = false
   } = req.body || {};
   const userPrompt = prompt || text || message || (Array.isArray(messages) ? messages[messages.length - 1]?.content : null);
   const effectiveMessages = recentMessages || history || (Array.isArray(messages) ? messages.slice(0, -1) : []);
@@ -167,6 +173,8 @@ router.post('/stream', optionalAuth, async (req, res) => {
       isContinuation,
       partialResponse,
       maxTokens,
+      webSearch: Boolean(webSearch),
+      reasoning: Boolean(reasoning),
       signal: abortController.signal,
       onEvent: (evt) => {
         if (evt.event === 'ai:chunk') {

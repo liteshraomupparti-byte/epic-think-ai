@@ -75,6 +75,8 @@ export const AIEngine = {
     isContinuation = false,
     partialResponse = '',
     maxTokens = null,
+    webSearch = false,
+    reasoning = false,
     streaming = false,
     onEvent = null,
     signal = null
@@ -89,6 +91,8 @@ export const AIEngine = {
       isContinuation,
       partialResponse,
       maxTokens,
+      webSearch,
+      reasoning,
       signal,
       onEvent
     });

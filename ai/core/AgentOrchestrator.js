@@ -15,6 +15,7 @@ import { recallMemory, retainMemory } from '../../services/hindsightService.js';
 import { AICancellationError, AITimeoutError } from '../errors/AIErrors.js';
 import { IntentDispatcher } from './IntentDispatcher.js';
 import { GenerationConfig } from './GenerationConfig.js';
+import { WebSearchClient } from '../../plugins/providers/web-search/WebSearchClient.js';
 
 export class AgentOrchestrator {
   /**
@@ -54,6 +55,8 @@ export class AgentOrchestrator {
     isContinuation = false,
     partialResponse = '',
     maxTokens = null,
+    webSearch = false,
+    reasoning = false,
     signal = null,
     onEvent = null
   }) {
@@ -64,6 +67,13 @@ export class AgentOrchestrator {
         onEvent({ event, timestamp: Date.now(), ...data });
       }
     };
+
+    if (reasoning) {
+      emit('ai:thinking', { thought: 'Deep Reasoning mode engaged: Detailed chain-of-thought analysis activated.' });
+      if (!modelPreset || modelPreset === 'Epic Think 4o' || modelPreset === 'Epic Think Fast') {
+        modelPreset = 'Epic Think o1';
+      }
+    }
 
     emit('ai:start', { prompt: userPrompt, preset: modelPreset });
 
@@ -177,6 +187,26 @@ export class AgentOrchestrator {
       };
     }
 
+    // 2c. Proactive Web Search (if toggled by user or explicitly requested in query)
+    let liveWebSearchContext = '';
+    const needsSearch = webSearch || /(?:search (?:the )?web|web search|browse the web|latest news|search online|search google|current news)\b/i.test(userPrompt);
+    if (needsSearch && !isContinuation) {
+      const searchEngineName = process.env.SERPAPI_API_KEY ? 'Google (SerpAPI)' : 'DuckDuckGo';
+      emit('ai:thinking', { thought: `Conducting live web search via ${searchEngineName} for: "${userPrompt.slice(0, 45)}"...` });
+      try {
+        const searchRes = await WebSearchClient.search({ query: userPrompt, maxResults: 5 });
+        if (searchRes && Array.isArray(searchRes.results) && searchRes.results.length > 0) {
+          const formattedResults = searchRes.results.map((r, i) =>
+            `[${i + 1}] ${r.title}\nURL: ${r.url}\nSnippet: ${r.snippet}`
+          ).join('\n\n');
+          liveWebSearchContext = `[LIVE WEB SEARCH INTELLIGENCE (${searchRes.source.toUpperCase()})]:\nQuery: "${userPrompt}"\n\n${formattedResults}\n\n[INSTRUCTIONS]: Use these verified live web results to answer factually, citing relevant sources and URLs.`;
+          emit('ai:thinking', { thought: `Retrieved ${searchRes.results.length} live web sources from ${searchRes.source}. Synthesizing answer...` });
+        }
+      } catch (searchErr) {
+        SafeLogger.warn('Proactive web search failed gracefully', { error: searchErr.message });
+      }
+    }
+
     // 3. Assemble Initial Context (Supports continuation without duplication)
     let systemPrompt, messages;
     if (isContinuation && partialResponse) {
@@ -199,6 +229,14 @@ export class AgentOrchestrator {
       });
       systemPrompt = built.systemPrompt;
       messages = built.messages;
+    }
+
+    if (liveWebSearchContext) {
+      systemPrompt += `\n\n${liveWebSearchContext}`;
+      messages.push({
+        role: 'user',
+        content: `[LIVE SEARCH CONTEXT]:\n${liveWebSearchContext}\n\nPlease answer my request using the verified real-time search data above: "${userPrompt}"`
+      });
     }
 
     // 4. Autonomous Agent Loop

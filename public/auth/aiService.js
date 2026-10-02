@@ -107,7 +107,9 @@ export class AiService {
       recentMessages: params.recentMessages || params.history || [],
       isContinuation: Boolean(params.isContinuation),
       partialResponse: params.partialResponse || '',
-      maxTokens: params.maxTokens || null
+      maxTokens: params.maxTokens || null,
+      webSearch: Boolean(params.webSearch),
+      reasoning: Boolean(params.reasoning)
     };
 
     const response = await fetch(`${getApiBase()}/api/ai/stream`, {
