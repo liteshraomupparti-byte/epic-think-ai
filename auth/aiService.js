@@ -109,7 +109,8 @@ export class AiService {
       partialResponse: params.partialResponse || '',
       maxTokens: params.maxTokens || null,
       webSearch: Boolean(params.webSearch),
-      reasoning: Boolean(params.reasoning)
+      reasoning: Boolean(params.reasoning),
+      clientLocation: params.clientLocation || params.location || (typeof window !== 'undefined' ? window._clientLocation : null) || null
     };
 
     const response = await fetch(`${getApiBase()}/api/ai/stream`, {

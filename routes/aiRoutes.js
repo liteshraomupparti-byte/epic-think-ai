@@ -58,6 +58,11 @@ router.post('/chat', optionalAuth, async (req, res) => {
     });
   }
 
+  const clientCity = req.headers['x-vercel-ip-city'] || (typeof req.body?.clientLocation === 'object' ? req.body.clientLocation?.city : null) || '';
+  const clientCountry = req.headers['x-vercel-ip-country'] || (typeof req.body?.clientLocation === 'object' ? req.body.clientLocation?.country : null) || '';
+  const clientRegion = req.headers['x-vercel-ip-country-region'] || (typeof req.body?.clientLocation === 'object' ? req.body.clientLocation?.region : null) || '';
+  const location = [clientCity, clientRegion, clientCountry].filter(Boolean).join(', ') || (typeof req.body?.clientLocation === 'string' ? req.body.clientLocation : null) || null;
+
   try {
     const result = await AIEngine.chat({
       uid: req.user.uid,
@@ -70,7 +75,8 @@ router.post('/chat', optionalAuth, async (req, res) => {
       partialResponse,
       maxTokens,
       webSearch: Boolean(webSearch),
-      reasoning: Boolean(reasoning)
+      reasoning: Boolean(reasoning),
+      location
     });
 
     res.json({
@@ -162,6 +168,11 @@ router.post('/stream', optionalAuth, async (req, res) => {
     }
   });
 
+  const clientCity = req.headers['x-vercel-ip-city'] || (typeof req.body?.clientLocation === 'object' ? req.body.clientLocation?.city : null) || '';
+  const clientCountry = req.headers['x-vercel-ip-country'] || (typeof req.body?.clientLocation === 'object' ? req.body.clientLocation?.country : null) || '';
+  const clientRegion = req.headers['x-vercel-ip-country-region'] || (typeof req.body?.clientLocation === 'object' ? req.body.clientLocation?.region : null) || '';
+  const location = [clientCity, clientRegion, clientCountry].filter(Boolean).join(', ') || (typeof req.body?.clientLocation === 'string' ? req.body.clientLocation : null) || null;
+
   try {
     let streamedAnyChunks = false;
     const streamResult = await AIEngine.chat({
@@ -175,6 +186,7 @@ router.post('/stream', optionalAuth, async (req, res) => {
       maxTokens,
       webSearch: Boolean(webSearch),
       reasoning: Boolean(reasoning),
+      location,
       signal: abortController.signal,
       onEvent: (evt) => {
         if (evt.event === 'ai:chunk') {

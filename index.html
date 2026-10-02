@@ -7686,6 +7686,7 @@
             recentMessages: chat.messages.slice(0, -1),
             reasoning: state.isReasoningEnabled,
             webSearch: state.isWebSearchEnabled,
+            clientLocation: window._clientLocation || null,
             signal: state.activeAbortController.signal
           }, {
             onChunk: ({ text, content, accumulated }) => {
@@ -7754,7 +7755,8 @@
                   modelPreset: state.activeModel,
                   history: chat.messages.slice(0, -1),
                   reasoning: state.isReasoningEnabled,
-                  webSearch: state.isWebSearchEnabled
+                  webSearch: state.isWebSearchEnabled,
+                  clientLocation: window._clientLocation || null
                 });
 
                 if (fallbackRes && fallbackRes.text) {
@@ -8236,6 +8238,28 @@
         webSearchBtn.classList.toggle('active', state.isWebSearchEnabled);
         showToast(state.isWebSearchEnabled ? 'Web browsing enabled' : 'Web browsing disabled');
       });
+
+      // Background client location detection for local queries
+      if (!window._clientLocation) {
+        try {
+          const cached = sessionStorage.getItem('epic_client_loc');
+          if (cached) {
+            window._clientLocation = JSON.parse(cached);
+          } else {
+            fetch('https://ipwho.is/').then(r => r.json()).then(data => {
+              if (data && data.success !== false && data.city) {
+                window._clientLocation = {
+                  city: data.city,
+                  region: data.region,
+                  country: data.country,
+                  timezone: data.timezone?.id || Intl.DateTimeFormat().resolvedOptions().timeZone
+                };
+                sessionStorage.setItem('epic_client_loc', JSON.stringify(window._clientLocation));
+              }
+            }).catch(() => {});
+          }
+        } catch (_) {}
+      }
 
       // Reasoning Pill Toggle
       const reasonBtn = $('#reasoningToggle');

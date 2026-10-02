@@ -77,6 +77,7 @@ export const AIEngine = {
     maxTokens = null,
     webSearch = false,
     reasoning = false,
+    location = null,
     streaming = false,
     onEvent = null,
     signal = null
@@ -93,6 +94,7 @@ export const AIEngine = {
       maxTokens,
       webSearch,
       reasoning,
+      location,
       signal,
       onEvent
     });

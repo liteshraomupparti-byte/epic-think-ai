@@ -7,30 +7,96 @@
 
 export class WebSearchClient {
   /**
-   * Search the web using DuckDuckGo or Tavily/SerpAPI if configured
+   * Search the web using SerpAPI (Google), Tavily, DuckDuckGo, or Wikipedia fallback
    */
-  static async search({ query, maxResults = 5 }) {
+  static async search({ query, location = null, maxResults = 5 }) {
     if (!query) throw new Error('Search query is required.');
 
     const limit = Math.min(Math.max(1, Number(maxResults) || 5), 15);
-    const cleanQuery = encodeURIComponent(query.trim());
+    let resolvedQuery = query.trim();
+    let effectiveLocation = location || null;
 
-    // 1. SerpAPI (Google Search) check if configured
+    // Detect "near me" or "nearby" queries and resolve location
+    const isLocalQuery = /\b(?:near me|nearby|around here|closest|in my area)\b/i.test(resolvedQuery);
+    if (isLocalQuery && !effectiveLocation) {
+      try {
+        const ipRes = await fetch('https://ipwho.is/', { signal: AbortSignal.timeout(2000) });
+        const ipData = await ipRes.json();
+        if (ipData && ipData.success !== false && ipData.city) {
+          effectiveLocation = [ipData.city, ipData.region, ipData.country].filter(Boolean).join(', ');
+        }
+      } catch (_) {}
+    }
+
+    if (effectiveLocation && isLocalQuery) {
+      resolvedQuery = resolvedQuery.replace(/\b(?:near me|nearby|around here|closest|in my area)\b/gi, `in ${effectiveLocation}`).trim();
+    }
+
+    const cleanQuery = encodeURIComponent(resolvedQuery);
+
+    // 1. SerpAPI (Google Search & Google Maps Local Results)
     const serpApiKey = process.env.SERPAPI_API_KEY;
     if (serpApiKey) {
       try {
-        const serpUrl = `https://serpapi.com/search?engine=google&q=${cleanQuery}&api_key=${serpApiKey}&num=${limit}`;
-        const res = await fetch(serpUrl);
+        let serpUrl = `https://serpapi.com/search?engine=google&q=${cleanQuery}&api_key=${serpApiKey}&num=${limit}`;
+        if (effectiveLocation) {
+          serpUrl += `&location=${encodeURIComponent(effectiveLocation)}`;
+        }
+
+        const res = await fetch(serpUrl, { signal: AbortSignal.timeout(10000) });
         const data = await res.json();
-        if (data && Array.isArray(data.organic_results) && data.organic_results.length > 0) {
-          return {
-            source: 'serpapi_google',
-            query,
-            results: data.organic_results.slice(0, limit).map(r => ({
+        const results = [];
+
+        // Direct Answer Box (e.g. weather, sports, calculators, quick facts)
+        if (data.answer_box) {
+          const box = data.answer_box;
+          const snippet = box.snippet || box.answer || box.result || box.title || '';
+          if (snippet) {
+            results.push({
+              title: box.title || 'Direct Answer',
+              url: box.link || '',
+              snippet: String(snippet)
+            });
+          }
+        }
+
+        // Local places (e.g. hotels, restaurants, shops, clinics)
+        if (data.local_results && Array.isArray(data.local_results.places)) {
+          for (const place of data.local_results.places) {
+            results.push({
+              title: `${place.title}${place.rating ? ` (★ ${place.rating})` : ''}${place.price ? ` [${place.price}]` : ''}`,
+              url: place.links?.website || place.links?.directions || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.title + ' ' + (place.address || ''))}`,
+              snippet: [place.type, place.address, place.phone, place.description].filter(Boolean).join(' • ')
+            });
+          }
+        }
+
+        // Knowledge Graph description
+        if (data.knowledge_graph && data.knowledge_graph.description) {
+          results.push({
+            title: data.knowledge_graph.title || 'Knowledge Summary',
+            url: data.knowledge_graph.source?.link || '',
+            snippet: data.knowledge_graph.description
+          });
+        }
+
+        // Organic Web Results
+        if (Array.isArray(data.organic_results)) {
+          for (const r of data.organic_results) {
+            results.push({
               title: r.title || 'Search Result',
               url: r.link || '',
               snippet: (r.snippet || r.description || '').slice(0, 300)
-            }))
+            });
+          }
+        }
+
+        if (results.length > 0) {
+          return {
+            source: 'serpapi_google',
+            query: resolvedQuery,
+            location: effectiveLocation,
+            results: results.slice(0, limit)
           };
         }
       } catch (_) {}
@@ -44,20 +110,24 @@ export class WebSearchClient {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             api_key: process.env.TAVILY_API_KEY,
-            query: query.trim(),
+            query: resolvedQuery,
             max_results: limit
-          })
+          }),
+          signal: AbortSignal.timeout(8000)
         });
         const data = await res.json();
-        return {
-          source: 'tavily',
-          query,
-          results: (data.results || []).map(r => ({
-            title: r.title,
-            url: r.url,
-            snippet: r.content
-          }))
-        };
+        if (data && Array.isArray(data.results) && data.results.length > 0) {
+          return {
+            source: 'tavily',
+            query: resolvedQuery,
+            location: effectiveLocation,
+            results: data.results.slice(0, limit).map(r => ({
+              title: r.title,
+              url: r.url,
+              snippet: r.content
+            }))
+          };
+        }
       } catch (_) {}
     }
 
@@ -68,7 +138,8 @@ export class WebSearchClient {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Accept': 'text/html'
-        }
+        },
+        signal: AbortSignal.timeout(6000)
       });
 
       const html = await response.text();
@@ -83,7 +154,6 @@ export class WebSearchClient {
         const title = match[2].replace(/<[^>]+>/g, '').trim();
         const snippet = match[3].replace(/<[^>]+>/g, '').trim();
 
-        // Extract real target URL from DDG redirect wrapper
         let actualUrl = rawUrl;
         const uddgMatch = rawUrl.match(/uddg=([^&]+)/);
         if (uddgMatch) {
@@ -102,21 +172,49 @@ export class WebSearchClient {
       if (results.length > 0) {
         return {
           source: 'duckduckgo',
-          query,
+          query: resolvedQuery,
+          location: effectiveLocation,
           results
         };
       }
     } catch (_) {}
 
-    // Resilient fallback summary
+    // 4. Wikipedia Instant OpenSearch Fallback (High-reliability datacenter fallback)
+    try {
+      const wikiUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&search=${cleanQuery}&limit=${limit}&namespace=0&format=json`;
+      const wikiRes = await fetch(wikiUrl, { signal: AbortSignal.timeout(4000) });
+      const wikiData = await wikiRes.json();
+      if (Array.isArray(wikiData) && Array.isArray(wikiData[1]) && wikiData[1].length > 0) {
+        const titles = wikiData[1];
+        const descriptions = wikiData[2] || [];
+        const links = wikiData[3] || [];
+        const wikiResults = titles.map((t, idx) => ({
+          title: t,
+          url: links[idx] || `https://en.wikipedia.org/wiki/${encodeURIComponent(t)}`,
+          snippet: descriptions[idx] || `Wikipedia article for ${t}`
+        })).filter(r => r.snippet && !r.snippet.includes('may refer to:'));
+
+        if (wikiResults.length > 0) {
+          return {
+            source: 'wikipedia',
+            query: resolvedQuery,
+            location: effectiveLocation,
+            results: wikiResults.slice(0, limit)
+          };
+        }
+      }
+    } catch (_) {}
+
+    // 5. Resilient fallback summary
     return {
       source: 'web_index',
-      query,
+      query: resolvedQuery,
+      location: effectiveLocation,
       results: [
         {
-          title: `Web results for: ${query}`,
-          url: `https://duckduckgo.com/?q=${cleanQuery}`,
-          snippet: `Live web query executed for "${query}". Ensure connectivity or configure TAVILY_API_KEY for deep research.`
+          title: `Web results for: ${resolvedQuery}`,
+          url: `https://www.google.com/search?q=${cleanQuery}`,
+          snippet: `Live search query executed for "${resolvedQuery}".`
         }
       ]
     };

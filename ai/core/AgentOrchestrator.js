@@ -57,6 +57,7 @@ export class AgentOrchestrator {
     maxTokens = null,
     webSearch = false,
     reasoning = false,
+    location = null,
     signal = null,
     onEvent = null
   }) {
@@ -189,18 +190,18 @@ export class AgentOrchestrator {
 
     // 2c. Proactive Web Search (if toggled by user or explicitly requested in query)
     let liveWebSearchContext = '';
-    const needsSearch = webSearch || /(?:search (?:the )?web|web search|browse the web|latest news|search online|search google|current news)\b/i.test(userPrompt);
+    const needsSearch = webSearch || /(?:search (?:the )?web|web search|browse the web|latest news|search online|search google|current news|near me|nearby)\b/i.test(userPrompt);
     if (needsSearch && !isContinuation) {
       const searchEngineName = process.env.SERPAPI_API_KEY ? 'Google (SerpAPI)' : 'DuckDuckGo';
       emit('ai:thinking', { thought: `Conducting live web search via ${searchEngineName} for: "${userPrompt.slice(0, 45)}"...` });
       try {
-        const searchRes = await WebSearchClient.search({ query: userPrompt, maxResults: 5 });
+        const searchRes = await WebSearchClient.search({ query: userPrompt, location, maxResults: 6 });
         if (searchRes && Array.isArray(searchRes.results) && searchRes.results.length > 0) {
           const formattedResults = searchRes.results.map((r, i) =>
             `[${i + 1}] ${r.title}\nURL: ${r.url}\nSnippet: ${r.snippet}`
           ).join('\n\n');
-          liveWebSearchContext = `[LIVE WEB SEARCH INTELLIGENCE (${searchRes.source.toUpperCase()})]:\nQuery: "${userPrompt}"\n\n${formattedResults}\n\n[INSTRUCTIONS]: Use these verified live web results to answer factually, citing relevant sources and URLs.`;
-          emit('ai:thinking', { thought: `Retrieved ${searchRes.results.length} live web sources from ${searchRes.source}. Synthesizing answer...` });
+          liveWebSearchContext = `[LIVE WEB SEARCH INTELLIGENCE (${searchRes.source.toUpperCase()}${searchRes.location ? ` - ${searchRes.location}` : ''})]:\nQuery: "${userPrompt}"\n\n${formattedResults}\n\n[INSTRUCTIONS]: You are in Web Browsing Mode. Use these live search results to provide a direct, helpful, and specific response with real names, locations, and details. Do NOT give a generic answer asking the user for their location if search results are already provided above.`;
+          emit('ai:thinking', { thought: `Retrieved ${searchRes.results.length} live web sources from ${searchRes.source}${searchRes.location ? ` for ${searchRes.location}` : ''}. Synthesizing answer...` });
         }
       } catch (searchErr) {
         SafeLogger.warn('Proactive web search failed gracefully', { error: searchErr.message });
