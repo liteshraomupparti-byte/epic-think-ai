@@ -9800,10 +9800,17 @@
               attributionControl: false
             });
 
-            // CartoDB Dark Matter tile layer
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-              subdomains: 'abcd',
-              maxZoom: 19
+            // ESRI World Dark Gray Base & Reference Layers (Clean dark theme, zero watermarks, no API key required)
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+              maxNativeZoom: 16,
+              maxZoom: 19,
+              attribution: '&copy; Esri'
+            }).addTo(map);
+
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+              maxNativeZoom: 16,
+              maxZoom: 19,
+              attribution: ''
             }).addTo(map);
 
             window.__activeLeafletMaps[cardId] = map;
@@ -9963,9 +9970,17 @@
               attributionControl: false
             });
 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-              subdomains: 'abcd',
-              maxZoom: 19
+            // ESRI World Dark Gray Base & Reference Layers (Clean dark theme, zero watermarks, no API key required)
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+              maxNativeZoom: 16,
+              maxZoom: 19,
+              attribution: '&copy; Esri'
+            }).addTo(expandedMap);
+
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+              maxNativeZoom: 16,
+              maxZoom: 19,
+              attribution: ''
             }).addTo(expandedMap);
 
             window.__expandedLeafletMap = expandedMap;
