@@ -200,8 +200,22 @@ export class AgentOrchestrator {
           const formattedResults = searchRes.results.map((r, i) =>
             `[${i + 1}] ${r.title}\nURL: ${r.url}\nSnippet: ${r.snippet}`
           ).join('\n\n');
-          liveWebSearchContext = `[LIVE WEB SEARCH INTELLIGENCE (${searchRes.source.toUpperCase()}${searchRes.location ? ` - ${searchRes.location}` : ''})]:\nQuery: "${userPrompt}"\n\n${formattedResults}\n\n[INSTRUCTIONS]: You are in Web Browsing Mode. Use these live search results to provide a direct, helpful, and specific response with real names, locations, and details. Do NOT give a generic answer asking the user for their location if search results are already provided above.`;
-          emit('ai:thinking', { thought: `Retrieved ${searchRes.results.length} live web sources from ${searchRes.source}${searchRes.location ? ` for ${searchRes.location}` : ''}. Synthesizing answer...` });
+
+          let imageContext = '';
+          if (Array.isArray(searchRes.images) && searchRes.images.length > 0) {
+            imageContext = `\n\n[VERIFIED GOOGLE IMAGES (Include relevant ones as markdown images: ![Title](url))]:\n` +
+              searchRes.images.map(img => `- "${img.title}": ${img.url}`).join('\n');
+          }
+
+          liveWebSearchContext = `[LIVE WEB SEARCH INTELLIGENCE (${searchRes.source.toUpperCase()}${searchRes.location ? ` - ${searchRes.location}` : ''})]:\nQuery: "${userPrompt}"\n\n${formattedResults}${imageContext}\n\n` +
+            `[PROFESSIONAL PRESENTATION GUIDELINES (LIKE CHATGPT & CLAUDE)]:\n` +
+            `1. Provide a natural, engaging, beautifully formatted, and professional answer without raw markdown artifacts or messy syntax.\n` +
+            `2. Include verified photos using standard markdown image syntax: ![Place or Subject Name](image_url) when describing visual entities (hotels, landmarks, places, products, etc.).\n` +
+            `3. Always use the exact verified URLs provided in [VERIFIED GOOGLE IMAGES]. Do NOT fabricate or guess image URLs.\n` +
+            `4. When providing comparison or directory listings, format clean GitHub-Flavored Markdown tables with clear column headers.\n` +
+            `5. Use clean headings (##, ###), bullet points, and actionable details (pricing, addresses, contacts, ratings). Do not ask generic location questions when search results are already provided.`;
+
+          emit('ai:thinking', { thought: `Retrieved ${searchRes.results.length} live sources and ${searchRes.images?.length || 0} photos from ${searchRes.source}${searchRes.location ? ` for ${searchRes.location}` : ''}. Synthesizing answer...` });
         }
       } catch (searchErr) {
         SafeLogger.warn('Proactive web search failed gracefully', { error: searchErr.message });

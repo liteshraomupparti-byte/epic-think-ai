@@ -39,12 +39,52 @@ export class WebSearchClient {
     if (serpApiKey) {
       try {
         let serpUrl = `https://serpapi.com/search?engine=google&q=${cleanQuery}&api_key=${serpApiKey}&num=${limit}`;
+        let serpImgUrl = `https://serpapi.com/search?engine=google_images&q=${cleanQuery}&api_key=${serpApiKey}&num=8`;
         if (effectiveLocation) {
           serpUrl += `&location=${encodeURIComponent(effectiveLocation)}`;
+          serpImgUrl += `&location=${encodeURIComponent(effectiveLocation)}`;
         }
 
-        const res = await fetch(serpUrl, { signal: AbortSignal.timeout(10000) });
+        const [res, imgRes] = await Promise.all([
+          fetch(serpUrl, { signal: AbortSignal.timeout(10000) }),
+          fetch(serpImgUrl, { signal: AbortSignal.timeout(10000) }).catch(() => null)
+        ]);
+
         const data = await res.json();
+        let imgData = null;
+        try {
+          if (imgRes && imgRes.ok) imgData = await imgRes.json();
+        } catch (_) {}
+
+        const images = [];
+        if (imgData && Array.isArray(imgData.images_results)) {
+          for (const img of imgData.images_results.slice(0, 8)) {
+            const url = img.thumbnail || img.original;
+            if (url && (url.startsWith('https://') || url.startsWith('http://'))) {
+              images.push({
+                title: img.title || 'Visual photo',
+                url,
+                thumbnail: img.thumbnail || url,
+                source: img.source || ''
+              });
+            }
+          }
+        }
+
+        if (Array.isArray(data.inline_images)) {
+          for (const img of data.inline_images.slice(0, 6)) {
+            const url = img.thumbnail || img.original;
+            if (url && images.length < 8) {
+              images.push({
+                title: img.title || 'Visual photo',
+                url,
+                thumbnail: url,
+                source: 'Google Images'
+              });
+            }
+          }
+        }
+
         const results = [];
 
         // Direct Answer Box (e.g. weather, sports, calculators, quick facts)
@@ -66,8 +106,16 @@ export class WebSearchClient {
             results.push({
               title: `${place.title}${place.rating ? ` (★ ${place.rating})` : ''}${place.price ? ` [${place.price}]` : ''}`,
               url: place.links?.website || place.links?.directions || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.title + ' ' + (place.address || ''))}`,
-              snippet: [place.type, place.address, place.phone, place.description].filter(Boolean).join(' • ')
+              snippet: [place.type, place.address, place.phone, place.description].filter(Boolean).join(' • '),
+              thumbnail: place.thumbnail || null
             });
+            if (place.thumbnail && images.length < 8) {
+              images.push({
+                title: place.title,
+                url: place.thumbnail,
+                thumbnail: place.thumbnail
+              });
+            }
           }
         }
 
@@ -86,8 +134,16 @@ export class WebSearchClient {
             results.push({
               title: r.title || 'Search Result',
               url: r.link || '',
-              snippet: (r.snippet || r.description || '').slice(0, 300)
+              snippet: (r.snippet || r.description || '').slice(0, 300),
+              thumbnail: r.thumbnail || null
             });
+            if (r.thumbnail && images.length < 8) {
+              images.push({
+                title: r.title || 'Search Result',
+                url: r.thumbnail,
+                thumbnail: r.thumbnail
+              });
+            }
           }
         }
 
@@ -96,7 +152,8 @@ export class WebSearchClient {
             source: 'serpapi_google',
             query: resolvedQuery,
             location: effectiveLocation,
-            results: results.slice(0, limit)
+            results: results.slice(0, limit),
+            images: images.slice(0, 6)
           };
         }
       } catch (_) {}
@@ -125,7 +182,8 @@ export class WebSearchClient {
               title: r.title,
               url: r.url,
               snippet: r.content
-            }))
+            })),
+            images: []
           };
         }
       } catch (_) {}
@@ -174,7 +232,8 @@ export class WebSearchClient {
           source: 'duckduckgo',
           query: resolvedQuery,
           location: effectiveLocation,
-          results
+          results,
+          images: []
         };
       }
     } catch (_) {}
@@ -199,7 +258,8 @@ export class WebSearchClient {
             source: 'wikipedia',
             query: resolvedQuery,
             location: effectiveLocation,
-            results: wikiResults.slice(0, limit)
+            results: wikiResults.slice(0, limit),
+            images: []
           };
         }
       }
@@ -216,7 +276,8 @@ export class WebSearchClient {
           url: `https://www.google.com/search?q=${cleanQuery}`,
           snippet: `Live search query executed for "${resolvedQuery}".`
         }
-      ]
+      ],
+      images: []
     };
   }
 
