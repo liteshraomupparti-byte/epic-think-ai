@@ -890,16 +890,21 @@
       color: var(--text-secondary);
     }
 
-    /* Assistant Message Typography */
+    /* Assistant Message Typography & Layout Constraints */
     .assistant-content {
       color: var(--text-main);
       font-size: 15px;
       line-height: 1.68;
-      word-break: break-word;
+      overflow-wrap: break-word;
+      word-break: normal;
+      min-width: 0;
+      max-width: 100%;
     }
 
     .assistant-content p {
       margin-bottom: 12px;
+      overflow-wrap: break-word;
+      word-break: normal;
     }
 
     .assistant-content p:last-child {
@@ -916,6 +921,8 @@
       font-weight: 600;
       line-height: 1.35;
       color: var(--text-main);
+      overflow-wrap: break-word;
+      word-break: normal;
     }
 
     .assistant-content h1 {
@@ -950,52 +957,106 @@
       margin: 22px 0;
     }
 
-    /* Modern Markdown Table Styling */
+    /* Modern Markdown Table Styling - Bulletproof Layout & Responsive Scrolling */
     .table-responsive-container {
       width: 100%;
+      max-width: 100%;
       overflow-x: auto;
+      overflow-y: hidden;
       margin: 16px 0;
-      border-radius: var(--radius-md);
+      border-radius: 12px;
       border: 1px solid var(--border-light);
       background: var(--bg-card);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.16);
       -webkit-overflow-scrolling: touch;
+      position: relative;
+    }
+
+    .table-responsive-container::-webkit-scrollbar {
+      height: 6px;
+    }
+    .table-responsive-container::-webkit-scrollbar-track {
+      background: var(--bg-subtle);
+      border-radius: 4px;
+    }
+    .table-responsive-container::-webkit-scrollbar-thumb {
+      background: var(--border-medium);
+      border-radius: 4px;
+    }
+    .table-responsive-container::-webkit-scrollbar-thumb:hover {
+      background: var(--accent);
     }
 
     .modern-markdown-table {
       width: 100%;
-      border-collapse: collapse;
+      min-width: 560px; /* CRITICAL: Prevents columns from compressing into narrow character fragments */
+      border-collapse: separate;
+      border-spacing: 0;
       text-align: left;
       font-size: 13.5px;
       line-height: 1.5;
+      table-layout: auto;
     }
 
     .modern-markdown-table thead {
       background: var(--bg-subtle-hover);
       border-bottom: 2px solid var(--border-light);
+      position: sticky;
+      top: 0;
+      z-index: 1;
     }
 
     .modern-markdown-table th {
-      padding: 10px 14px;
+      padding: 12px 16px;
       font-weight: 600;
       color: var(--text-main);
       white-space: nowrap;
-      letter-spacing: 0.01em;
+      letter-spacing: 0.02em;
+      font-size: 12px;
+      text-transform: uppercase;
+      border-bottom: 2px solid var(--border-light);
     }
 
     .modern-markdown-table td {
-      padding: 10px 14px;
+      padding: 12px 16px;
       border-bottom: 1px solid var(--border-light);
       color: var(--text-secondary);
-      vertical-align: top;
+      vertical-align: middle;
+      white-space: normal;
+      word-break: normal; /* Never break words character-by-character */
+      overflow-wrap: break-word;
+      hyphens: none;
+      min-width: 120px;
+    }
+
+    /* Index/counter column */
+    .modern-markdown-table th:first-child,
+    .modern-markdown-table td:first-child {
+      min-width: 44px;
+      width: 48px;
+      text-align: center;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* Primary entity/name column */
+    .modern-markdown-table th:nth-child(2),
+    .modern-markdown-table td:nth-child(2) {
+      min-width: 180px;
+      font-weight: 600;
+      color: var(--text-main);
     }
 
     .modern-markdown-table tbody tr:last-child td {
       border-bottom: none;
     }
 
+    .modern-markdown-table tbody tr {
+      transition: background-color 0.15s ease;
+    }
+
     .modern-markdown-table tbody tr:hover {
-      background-color: var(--bg-subtle);
+      background-color: var(--bg-subtle-hover);
     }
 
     .modern-markdown-table strong {
@@ -1009,6 +1070,7 @@
 
     .modern-markdown-table .markdown-image-card img {
       max-height: 80px;
+      aspect-ratio: 16 / 9;
     }
 
     /* Visual Photo Cards & Lightbox */
@@ -1016,7 +1078,7 @@
       position: relative;
       display: inline-block;
       max-width: 100%;
-      margin: 14px 0;
+      margin: 12px 0;
       border-radius: 12px;
       overflow: hidden;
       border: 1px solid var(--border-light);
@@ -1034,9 +1096,547 @@
     .markdown-image-card img {
       display: block;
       width: 100%;
-      max-height: 380px;
+      max-height: 280px;
+      aspect-ratio: 16 / 9;
       object-fit: cover;
+      background: var(--bg-subtle);
+    }
+
+    /* Places Result Component (<PlacesResult />) */
+    .places-result-container {
+      margin: 18px 0;
+      border-radius: 14px;
+      border: 1px solid var(--border-light);
+      background: var(--bg-card);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.22);
+      overflow: hidden;
+      width: 100%;
+      max-width: 100%;
+    }
+    .places-result-container.chatgpt-map-wrapper {
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      overflow: visible;
+      margin: 14px 0 16px 0;
+    }
+    .places-result-container.chatgpt-map-wrapper .chatgpt-map-card {
+      margin: 0;
+    }
+
+    .places-result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 18px;
+      background: linear-gradient(135deg, var(--bg-subtle-hover), var(--bg-card));
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .places-header-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .places-header-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    .places-header-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin: 0;
+      line-height: 1.3;
+    }
+
+    .places-header-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .places-count-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.28);
+      color: #34d399;
+      font-size: 11.5px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .places-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+      padding: 16px 18px;
       background: var(--bg-main);
+    }
+
+    .place-rich-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .place-rich-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+      border-color: var(--border-medium);
+    }
+
+    .place-card-media {
+      position: relative;
+      width: 100%;
+      height: 140px;
+      background: var(--bg-subtle);
+      overflow: hidden;
+    }
+
+    .place-card-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.3s ease;
+    }
+
+    .place-rich-card:hover .place-card-media img {
+      transform: scale(1.05);
+    }
+
+    .place-card-media-fallback {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--bg-subtle), var(--bg-subtle-hover));
+      color: var(--text-muted);
+    }
+
+    .place-card-badge-row {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      right: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      pointer-events: none;
+    }
+
+    .place-rating-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 3px 8px;
+      border-radius: 12px;
+      color: #fbbf24;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .place-status-pill {
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 12px;
+      backdrop-filter: blur(6px);
+    }
+
+    .place-status-pill.open {
+      background: rgba(16, 185, 129, 0.85);
+      color: #fff;
+    }
+
+    .place-status-pill.closed {
+      background: rgba(239, 68, 68, 0.85);
+      color: #fff;
+    }
+
+    .place-card-body {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      gap: 6px;
+    }
+
+    .place-card-category {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+    }
+
+    .place-card-title {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.35;
+      margin: 0;
+      white-space: normal;
+      word-break: normal;
+      overflow-wrap: break-word;
+    }
+
+    .place-card-address {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+      margin-top: 2px;
+      flex: 1;
+    }
+
+    .place-card-address svg {
+      flex-shrink: 0;
+      margin-top: 2px;
+      color: var(--text-muted);
+    }
+
+    .place-card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-light);
+    }
+
+    .place-btn {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 7px 10px;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+
+    .place-btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+    }
+
+    .place-btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .place-btn-secondary {
+      background: var(--bg-subtle-hover);
+      border: 1px solid var(--border-light);
+      color: var(--text-secondary);
+    }
+
+    .place-btn-secondary:hover {
+      background: var(--bg-subtle);
+      color: var(--text-main);
+    }
+
+    /* SEO Audit Result Component (<SEOAuditResult />) */
+    .seo-audit-container {
+      margin: 18px 0;
+      border-radius: 14px;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      background: linear-gradient(135deg, rgba(16, 20, 24, 0.95), rgba(12, 14, 18, 0.98));
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .seo-audit-header {
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.02);
+      flex-wrap: wrap;
+    }
+
+    .seo-score-badge-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .seo-score-circle {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 18px;
+      flex-shrink: 0;
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.35);
+    }
+
+    .seo-score-circle.grade-a {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #000;
+    }
+
+    .seo-score-circle.grade-b {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #000;
+    }
+
+    .seo-score-circle.grade-c {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: #fff;
+    }
+
+    .seo-meta-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #f9fafb;
+      margin: 0;
+    }
+
+    .seo-meta-url {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 3px;
+      font-family: var(--font-mono);
+      word-break: break-all;
+    }
+
+    .seo-summary-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .seo-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    .seo-pill.passed {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+    }
+
+    .seo-pill.warning {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
+    }
+
+    .seo-pill.critical {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+
+    .seo-sections-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      padding: 18px 20px;
+    }
+
+    .seo-section-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    .seo-section-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #d1d5db;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .seo-checklist-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 12px;
+      line-height: 1.45;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: #e5e7eb;
+    }
+
+    .seo-checklist-item:last-child {
+      border-bottom: none;
+    }
+
+    .seo-check-icon {
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .seo-issues-list {
+      padding: 0 20px 18px;
+    }
+
+    .seo-issue-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: rgba(239, 68, 68, 0.06);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      font-size: 12px;
+      line-height: 1.4;
+      color: #fca5a5;
+    }
+
+    .seo-issue-row.warning {
+      background: rgba(245, 158, 11, 0.06);
+      border-color: rgba(245, 158, 11, 0.2);
+      color: #fde68a;
+    }
+
+    .seo-issue-row.info {
+      background: rgba(59, 130, 246, 0.06);
+      border-color: rgba(59, 130, 246, 0.2);
+      color: #93c5fd;
+    }
+
+    /* Image Gallery Grid (<ImageGalleryRenderer />) */
+    .image-gallery-container {
+      margin: 16px 0;
+      width: 100%;
+    }
+
+    .image-gallery-header {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .image-gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      width: 100%;
+    }
+
+    .image-gallery-card {
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border-light);
+      background: var(--bg-card);
+      aspect-ratio: 16 / 10;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .image-gallery-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .image-gallery-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.3s ease;
+    }
+
+    .image-gallery-card:hover img {
+      transform: scale(1.04);
+    }
+
+    .image-gallery-caption {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 6px 10px;
+      background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.85));
+      font-size: 11px;
+      color: #f3f4f6;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Streaming Shimmer Loading Placeholder */
+    .streaming-rich-placeholder {
+      margin: 16px 0;
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px dashed var(--border-medium);
+      background: var(--bg-card);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .rich-shimmer-pulse {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2.5px solid var(--accent);
+      border-top-color: transparent;
+      animation: spin 0.8s linear infinite;
     }
 
     .markdown-image-card .image-caption {
@@ -5081,8 +5681,8 @@
     .chatgpt-map-card {
       position: relative;
       width: 100%;
-      height: 380px;
-      min-height: 340px;
+      height: 400px;
+      min-height: 360px;
       max-width: 100%;
       border-radius: 18px;
       overflow: hidden;
@@ -5114,6 +5714,29 @@
       justify-content: space-between;
       align-items: center;
       pointer-events: none;
+    }
+
+    .chatgpt-map-recenter-btn {
+      pointer-events: auto;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(24, 24, 27, 0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #f4f4f5;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+      transition: all 0.18s ease;
+    }
+    .chatgpt-map-recenter-btn:hover {
+      background: rgba(39, 39, 42, 0.95);
+      border-color: rgba(255, 255, 255, 0.35);
+      transform: scale(1.06);
     }
 
     .chatgpt-map-location-badge {
@@ -5222,30 +5845,35 @@
       display: none;
     }
 
-    .chatgpt-place-chip {
-      background: rgba(28, 28, 30, 0.94);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      border-radius: 14px;
-      padding: 9px 12px;
-      display: flex;
-      align-items: center;
-      gap: 11px;
-      min-width: 250px;
-      max-width: 280px;
-      flex-shrink: 0;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+    .chatgpt-place-chip,
+    .chatgpt-place-chip.place-rich-card {
+      background: rgba(28, 28, 30, 0.94) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.14) !important;
+      border-radius: 14px !important;
+      padding: 9px 12px !important;
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      gap: 11px !important;
+      min-width: 250px !important;
+      max-width: 290px !important;
+      height: auto !important;
+      flex-shrink: 0 !important;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55) !important;
       cursor: pointer;
       transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
       text-decoration: none;
       color: inherit;
     }
     .chatgpt-place-chip:hover,
-    .chatgpt-place-chip.active {
-      background: rgba(38, 38, 42, 0.98);
-      border-color: rgba(255, 255, 255, 0.35);
-      transform: translateY(-2px);
+    .chatgpt-place-chip.active,
+    .chatgpt-place-chip.place-rich-card:hover,
+    .chatgpt-place-chip.place-rich-card.active {
+      background: rgba(38, 38, 42, 0.98) !important;
+      border-color: rgba(255, 255, 255, 0.35) !important;
+      transform: translateY(-2px) !important;
     }
 
     .chatgpt-place-chip-thumb {
@@ -5536,11 +6164,11 @@
 
     @media (max-width: 768px) {
       .chatgpt-map-card {
-        height: 320px;
+        height: 300px;
       }
       .chatgpt-place-chip {
-        min-width: 220px;
-        max-width: 250px;
+        min-width: 200px;
+        max-width: 240px;
       }
       .chatgpt-map-expanded-body {
         flex-direction: column;
@@ -5552,6 +6180,508 @@
       }
       .chatgpt-map-expanded-sidebar {
         height: 55%;
+      }
+      .places-cards-grid {
+        grid-template-columns: 1fr;
+        padding: 12px;
+        gap: 10px;
+      }
+      .places-result-header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 12px 14px;
+        gap: 8px;
+      }
+      .seo-audit-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px 16px;
+      }
+      .seo-sections-grid {
+        grid-template-columns: 1fr;
+        padding: 12px 14px;
+      }
+      .image-gallery-grid {
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        gap: 10px;
+        padding-bottom: 8px;
+        -webkit-overflow-scrolling: touch;
+      }
+      .image-gallery-card {
+        flex: 0 0 220px;
+        scroll-snap-align: start;
+      }
+      .table-responsive-container {
+        margin: 12px 0;
+        border-radius: 8px;
+      }
+      .modern-markdown-table {
+        min-width: 520px;
+        font-size: 12.5px;
+      }
+      .modern-markdown-table th,
+      .modern-markdown-table td {
+        padding: 10px 12px;
+      }
+    /* ==========================================================================
+       EPIC THINK AI - USER PROFILE, SETTINGS & ACCOUNT DROPDOWN STYLES
+       ========================================================================== */
+    .user-status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.7);
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .profile-account-dropdown {
+      position: absolute;
+      bottom: 60px;
+      left: 10px;
+      width: 255px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-main);
+      border-radius: 14px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+      z-index: 1050;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transform-origin: bottom left;
+      animation: profileDropdownIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes profileDropdownIn {
+      from { opacity: 0; transform: scale(0.95) translateY(6px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .profile-account-dropdown.open {
+      display: flex;
+    }
+
+    .profile-dropdown-header {
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-subtle);
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .profile-dropdown-meta {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .profile-dropdown-name {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .profile-dropdown-handle {
+      font-size: 11.5px;
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .profile-dropdown-email {
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 170px;
+    }
+
+    .profile-dropdown-divider {
+      height: 1px;
+      background: var(--border-light);
+      margin: 4px 0;
+    }
+
+    .profile-dropdown-items {
+      padding: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .profile-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text-main);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      width: 100%;
+      transition: background 0.12s ease;
+    }
+
+    .profile-dropdown-item:hover {
+      background: var(--bg-subtle);
+    }
+
+    .profile-dropdown-item svg {
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .profile-dropdown-item:hover svg {
+      color: var(--accent);
+    }
+
+    .profile-dropdown-logout {
+      color: #ef4444 !important;
+    }
+
+    .profile-dropdown-logout svg {
+      color: #ef4444 !important;
+    }
+
+    .profile-dropdown-logout:hover {
+      background: rgba(239, 68, 68, 0.12) !important;
+    }
+
+    /* Large Pro Settings Modal */
+    .settings-dialog-pro {
+      max-width: 920px;
+      width: 94vw;
+      height: 82vh;
+      max-height: 720px;
+      display: flex;
+      flex-direction: column;
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--bg-card);
+      border: 1px solid var(--border-main);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+    }
+
+    .settings-dialog-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border-main);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-subtle);
+      flex-shrink: 0;
+    }
+
+    .settings-layout-pro {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .settings-nav-sidebar {
+      width: 220px;
+      min-width: 200px;
+      border-right: 1px solid var(--border-main);
+      background: var(--bg-subtle);
+      padding: 12px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .settings-nav-tab {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      width: 100%;
+      transition: all 0.12s ease;
+    }
+
+    .settings-nav-tab:hover {
+      color: var(--text-main);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .settings-nav-tab.active {
+      color: var(--accent);
+      background: var(--accent-glow);
+      font-weight: 600;
+    }
+
+    .settings-nav-tab svg {
+      flex-shrink: 0;
+      opacity: 0.8;
+    }
+
+    .settings-nav-tab.active svg {
+      opacity: 1;
+    }
+
+    .settings-nav-tab.danger-tab {
+      color: #ef4444;
+      margin-top: auto;
+    }
+
+    .settings-nav-tab.danger-tab.active {
+      background: rgba(239, 68, 68, 0.14);
+    }
+
+    .settings-content-viewport {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .settings-panel {
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+      animation: fadeIn 0.15s ease-out;
+    }
+
+    .settings-panel.active {
+      display: flex;
+    }
+
+    .settings-card {
+      background: var(--bg-sidebar);
+      border: 1px solid var(--border-main);
+      border-radius: 12px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .settings-card-title {
+      font-size: 14.5px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin: 0;
+    }
+
+    .settings-card-desc {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .form-group-pro {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group-pro label {
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .form-input-pro {
+      padding: 9px 12px;
+      font-size: 13.5px;
+      border-radius: 8px;
+      border: 1px solid var(--border-main);
+      background: var(--bg-card);
+      color: var(--text-main);
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+
+    .form-input-pro:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-glow);
+    }
+
+    .avatar-uploader-pro {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 14px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+    }
+
+    .avatar-preview-circle {
+      width: 76px;
+      height: 76px;
+      min-width: 76px;
+      border-radius: 50%;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .username-input-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .username-at {
+      position: absolute;
+      left: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+      pointer-events: none;
+    }
+
+    .username-field-pro {
+      padding-left: 28px !important;
+      padding-right: 36px !important;
+      width: 100%;
+    }
+
+    .username-status-badge {
+      position: absolute;
+      right: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .profile-meter-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: var(--bg-subtle);
+      border-radius: 10px;
+      border: 1px solid var(--border-light);
+    }
+
+    .profile-meter-track {
+      flex: 1;
+      height: 6px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .profile-meter-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #10b981);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    .connected-app-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-main);
+      border-radius: 10px;
+    }
+
+    .connected-app-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11.5px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-weight: 500;
+    }
+
+    .connected-app-status.connected {
+      background: rgba(16,185,129,0.15);
+      color: #10b981;
+    }
+
+    .connected-app-status.disconnected {
+      background: rgba(255,255,255,0.06);
+      color: var(--text-muted);
+    }
+
+    .user-msg-avatar {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      border-radius: 50%;
+      overflow: hidden;
+      margin-left: 10px;
+      flex-shrink: 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    }
+
+    /* Mobile responsiveness for Settings Modal */
+    @media (max-width: 768px) {
+      .settings-dialog-pro {
+        width: 98vw;
+        height: 94vh;
+        max-height: 94vh;
+      }
+      .settings-layout-pro {
+        flex-direction: column;
+      }
+      .settings-nav-sidebar {
+        width: 100%;
+        min-width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border-main);
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 8px 6px;
+        gap: 4px;
+      }
+      .settings-nav-tab {
+        white-space: nowrap;
+        width: auto;
+        padding: 7px 11px;
+        flex-shrink: 0;
+      }
+      .settings-nav-tab.danger-tab {
+        margin-top: 0;
+      }
+      .settings-content-viewport {
+        padding: 16px;
+      }
+      .form-grid-2 {
+        grid-template-columns: 1fr;
+      }
+      .avatar-uploader-pro {
+        flex-direction: column;
+        text-align: center;
       }
     }
   </style>
@@ -5840,13 +6970,14 @@
       </div>
 
       <!-- Sidebar Bottom Profile / Settings -->
-      <div class="sidebar-footer">
-        <button class="user-profile-btn" id="userSettingsBtn" title="Account & Memory Settings">
+      <div class="sidebar-footer" style="position:relative;">
+        <button class="user-profile-btn" id="userSettingsBtn" aria-haspopup="true" aria-expanded="false" title="Account & Preferences">
           <div class="avatar-circle" id="userAvatar">ET</div>
           <div class="user-info">
             <span class="user-name" id="userNameLabel">You</span>
-            <span class="user-email" id="userEmailLabel" style="font-size:11.5px;color:var(--text-muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;">auth@epicthink.ai</span>
+            <span class="user-handle" id="userHandleLabel" style="font-size:11.5px;color:var(--text-muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:115px;">@thinker</span>
           </div>
+          <span class="user-status-dot" title="Active"></span>
         </button>
 
         <button class="icon-btn" id="themeToggleBtn" title="Toggle dark/light theme">
@@ -5872,6 +7003,54 @@
             <line x1="21" y1="12" x2="9" y2="12"></line>
           </svg>
         </button>
+
+        <!-- Professional Account Menu Popup -->
+        <div class="profile-account-dropdown" id="profileAccountDropdown" role="menu" aria-label="Account Settings Menu">
+          <div class="profile-dropdown-header">
+            <div class="profile-dropdown-avatar" id="dropdownUserAvatar">ET</div>
+            <div class="profile-dropdown-meta">
+              <div class="profile-dropdown-name" id="dropdownUserName">You</div>
+              <div class="profile-dropdown-handle" id="dropdownUserHandle">@thinker</div>
+              <div class="profile-dropdown-email" id="dropdownUserEmail">auth@epicthink.ai</div>
+            </div>
+          </div>
+          <div class="profile-dropdown-divider"></div>
+          <div class="profile-dropdown-items">
+            <button type="button" class="profile-dropdown-item" data-tab="profile" role="menuitem">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span>View Profile</span>
+            </button>
+            <button type="button" class="profile-dropdown-item" data-tab="account" role="menuitem">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span>Settings</span>
+            </button>
+            <button type="button" class="profile-dropdown-item" data-tab="personalization" role="menuitem">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              <span>Personalization</span>
+            </button>
+            <button type="button" class="profile-dropdown-item" data-tab="usage" role="menuitem">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              <span>Usage & Activity</span>
+            </button>
+            <button type="button" class="profile-dropdown-item" data-tab="connected-apps" role="menuitem">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+              <span>Connected Apps</span>
+            </button>
+            <button type="button" class="profile-dropdown-item" data-tab="security" role="menuitem">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span>Security</span>
+            </button>
+            <button type="button" class="profile-dropdown-item" id="dropdownHelpBtn" role="menuitem">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <span>Help & Support</span>
+            </button>
+          </div>
+          <div class="profile-dropdown-divider"></div>
+          <button type="button" class="profile-dropdown-item profile-dropdown-logout" id="dropdownLogoutBtn" role="menuitem">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Log out</span>
+          </button>
+        </div>
       </div>
     </aside>
 
@@ -6835,10 +8014,18 @@
      SETTINGS & PROFILE MODAL
      ========================================================================== -->
   <div class="modal-overlay" id="settingsModal">
-    <div class="modal-dialog">
-      <div class="modal-header">
-        <h3>Settings</h3>
-        <button class="icon-btn" id="closeSettingsBtn">
+    <div class="settings-dialog-pro">
+      <div class="settings-dialog-header">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <h3 style="margin:0;font-size:16.5px;font-weight:600;">Settings & Personalization</h3>
+          <div class="profile-meter-container" style="padding:4px 10px;font-size:12px;">
+            <div class="profile-meter-track" style="width:70px;">
+              <div class="profile-meter-fill" id="settingsCompletionFill" style="width:0%;"></div>
+            </div>
+            <span id="settingsCompletionText" style="font-weight:600;color:var(--text-muted);">0% Complete</span>
+          </div>
+        </div>
+        <button class="icon-btn" id="closeSettingsBtn" title="Close Settings">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -6846,67 +8033,485 @@
           </svg>
         </button>
       </div>
-      <div class="modal-body">
-        <!-- Authenticated Account & Identity -->
-        <div class="account-card">
-          <div class="account-card-header">
-            <div class="account-avatar-large" id="modalUserAvatar">ET</div>
-            <div class="account-details">
-              <div class="account-name">
-                <span id="modalUserName">You</span>
-                <span class="provider-pill" id="modalProviderBadge">Firebase Auth</span>
+
+      <div class="settings-layout-pro">
+        <!-- Settings Left Sidebar Navigation -->
+        <nav class="settings-nav-sidebar" aria-label="Settings Categories">
+          <button type="button" class="settings-nav-tab active" data-tab="profile">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>Profile</span>
+          </button>
+          <button type="button" class="settings-nav-tab" data-tab="account">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span>Account</span>
+          </button>
+          <button type="button" class="settings-nav-tab" data-tab="personalization">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            <span>Personalization</span>
+          </button>
+          <button type="button" class="settings-nav-tab" data-tab="appearance">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            <span>Appearance</span>
+          </button>
+          <button type="button" class="settings-nav-tab" data-tab="ai-settings">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14.5h-2v-2h2zm0-4h-2V7h2z"/></svg>
+            <span>AI Experience</span>
+          </button>
+          <button type="button" class="settings-nav-tab" data-tab="connected-apps">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+            <span>Connected Apps</span>
+          </button>
+          <button type="button" class="settings-nav-tab" data-tab="security">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>Security & Sessions</span>
+          </button>
+          <button type="button" class="settings-nav-tab" data-tab="usage">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            <span>Usage & Activity</span>
+          </button>
+          <button type="button" class="settings-nav-tab danger-tab" data-tab="danger">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span>Danger Zone</span>
+          </button>
+        </nav>
+
+        <!-- Settings Content Viewport -->
+        <div class="settings-content-viewport">
+          
+          <!-- TAB 1: PROFILE -->
+          <div class="settings-panel active" data-tab="profile">
+            <div class="settings-card">
+              <div>
+                <h4 class="settings-card-title">Profile Picture</h4>
+                <div class="settings-card-desc">Supported formats: JPG, PNG, WEBP (Max 5MB). Changes sync in real-time.</div>
               </div>
-              <div class="account-email" id="modalUserEmail">user@example.com</div>
+              <div class="avatar-uploader-pro">
+                <div class="avatar-preview-circle" id="settingsAvatarPreview"></div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  <div style="display:flex;gap:10px;">
+                    <button type="button" class="primary-btn" id="settingsUploadAvatarBtn" style="padding:7px 14px;font-size:13px;">Change Photo</button>
+                    <button type="button" class="secondary-btn" id="settingsRemoveAvatarBtn" style="padding:7px 14px;font-size:13px;display:none;color:#ef4444;">Remove Photo</button>
+                  </div>
+                  <span style="font-size:11.5px;color:var(--text-muted);">If no photo is uploaded, your deterministic initials avatar is used.</span>
+                  <input type="file" id="settingsAvatarFileInput" accept="image/png,image/jpeg,image/webp" style="display:none;" />
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-card">
+              <h4 class="settings-card-title">Personal Details</h4>
+              <div class="form-grid-2">
+                <div class="form-group-pro">
+                  <label for="settingsFirstName">First Name *</label>
+                  <input type="text" id="settingsFirstName" class="form-input-pro" placeholder="First Name" />
+                </div>
+                <div class="form-group-pro">
+                  <label for="settingsLastName">Last Name</label>
+                  <input type="text" id="settingsLastName" class="form-input-pro" placeholder="Last Name" />
+                </div>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="form-group-pro">
+                  <label for="settingsDisplayName">Display Name</label>
+                  <input type="text" id="settingsDisplayName" class="form-input-pro" placeholder="Display Name" />
+                </div>
+                <div class="form-group-pro">
+                  <label for="settingsUsername">Username *</label>
+                  <div class="username-input-container">
+                    <span class="username-at">@</span>
+                    <input type="text" id="settingsUsername" class="form-input-pro username-field-pro" placeholder="username" />
+                    <div class="username-status-badge" id="settingsUsernameStatus"></div>
+                  </div>
+                  <div id="settingsUsernameMsg" style="font-size:11.5px;min-height:14px;"></div>
+                </div>
+              </div>
+
+              <div class="form-group-pro">
+                <label for="settingsBio">Bio</label>
+                <textarea id="settingsBio" class="form-input-pro" rows="3" placeholder="Tell Epic Think AI a little about yourself or your software engineering interests (max 500 chars)..." maxlength="500"></textarea>
+              </div>
+
+              <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+                <button type="button" class="primary-btn" id="saveProfileBtn" style="padding:9px 20px;font-weight:600;">Save Changes</button>
+              </div>
             </div>
           </div>
 
+          <!-- TAB 2: ACCOUNT -->
+          <div class="settings-panel" data-tab="account">
+            <div class="settings-card">
+              <h4 class="settings-card-title">Identity & Authentication</h4>
+              <div class="settings-card-desc">Your authentication credentials are cryptographically verified by Firebase Auth.</div>
+              
+              <div class="form-grid-2">
+                <div class="form-group-pro">
+                  <label>Email Address</label>
+                  <input type="text" id="settingsAccountEmail" class="form-input-pro" readonly style="opacity:0.8;cursor:default;" />
+                </div>
+                <div class="form-group-pro">
+                  <label>Login Provider</label>
+                  <input type="text" id="settingsAccountProvider" class="form-input-pro" readonly style="opacity:0.8;cursor:default;" />
+                </div>
+              </div>
 
-          <button type="button" class="account-logout-btn" id="modalLogoutBtn">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
-            <span>Sign Out of Epic Think AI</span>
-          </button>
-        </div>
+              <div class="form-grid-2">
+                <div class="form-group-pro">
+                  <label>Member Since</label>
+                  <input type="text" id="settingsAccountCreated" class="form-input-pro" readonly style="opacity:0.8;cursor:default;" />
+                </div>
+                <div class="form-group-pro">
+                  <label>Canonical User ID (Firebase UID)</label>
+                  <input type="text" id="settingsAccountUid" class="form-input-pro" readonly style="opacity:0.7;font-family:monospace;font-size:12px;cursor:default;" />
+                </div>
+              </div>
+            </div>
+          </div>
 
-        <div
-          style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-light)">
-          <div>
-            <strong style="display:block;font-size:14px">Color Theme</strong>
-            <span style="font-size:12.5px;color:var(--text-muted)">Switch between dark and light appearance</span>
+          <!-- TAB 3: PERSONALIZATION -->
+          <div class="settings-panel" data-tab="personalization">
+            <div class="settings-card">
+              <h4 class="settings-card-title">AI Custom Instructions</h4>
+              <div class="settings-card-desc">Inject context into every AI interaction to personalize pair programming solutions.</div>
+
+              <div class="form-group-pro">
+                <label for="settingsAboutUser">What should Epic Think AI know about you to provide better responses?</label>
+                <textarea id="settingsAboutUser" class="form-input-pro" rows="3" placeholder="e.g. Software engineering student building React & Node.js apps; prefers modern ESM syntax and thorough architecture explanations..."></textarea>
+              </div>
+
+              <div class="form-group-pro">
+                <label for="settingsCustomInstructions">How would you like Epic Think AI to respond?</label>
+                <textarea id="settingsCustomInstructions" class="form-input-pro" rows="3" placeholder="e.g. Prioritize clean code with minimal commentary. When proposing fixes, highlight the exact corrected lines..."></textarea>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="form-group-pro">
+                  <label for="settingsResponseStyle">Response Style</label>
+                  <select id="settingsResponseStyle" class="form-input-pro">
+                    <option value="professional">Professional (Accurate, structured, objective)</option>
+                    <option value="detailed">Detailed (Comprehensive explanations & edge cases)</option>
+                    <option value="concise">Concise (Direct answers & immediate code without fluff)</option>
+                    <option value="friendly">Friendly (Approachable, encouraging pair programmer)</option>
+                  </select>
+                </div>
+                <div class="form-group-pro">
+                  <label for="settingsLanguage">Preferred Language</label>
+                  <select id="settingsLanguage" class="form-input-pro">
+                    <option value="en">English (US/UK/IN)</option>
+                    <option value="hi">Hindi</option>
+                    <option value="te">Telugu</option>
+                    <option value="ta">Tamil</option>
+                    <option value="es">Spanish</option>
+                    <option value="fr">French</option>
+                    <option value="de">German</option>
+                    <option value="ja">Japanese</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group-pro">
+                <label for="settingsTimezone">Default Timezone</label>
+                <select id="settingsTimezone" class="form-input-pro">
+                  <option value="Asia/Kolkata">Indian Standard Time (IST, UTC+5:30)</option>
+                  <option value="UTC">Coordinated Universal Time (UTC)</option>
+                  <option value="America/New_York">Eastern Time (US & Canada, EST/EDT)</option>
+                  <option value="America/Los_Angeles">Pacific Time (US & Canada, PST/PDT)</option>
+                  <option value="Europe/London">London / GMT</option>
+                  <option value="Europe/Berlin">Central European Time (CET/CEST)</option>
+                  <option value="Asia/Tokyo">Japan Standard Time (JST)</option>
+                  <option value="Asia/Dubai">Gulf Standard Time (GST)</option>
+                </select>
+              </div>
+
+              <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+                <button type="button" class="primary-btn" id="savePersonalizationBtn" style="padding:9px 20px;font-weight:600;">Save Personalization</button>
+              </div>
+            </div>
           </div>
-          <button class="secondary-btn" id="modalThemeToggleBtn">Toggle Theme</button>
-        </div>
-        <div
-          style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-light)">
-          <div>
-            <strong style="display:block;font-size:14px">Active Persona</strong>
-            <span style="font-size:12.5px;color:var(--text-muted)">Epic Think Intelligent Pair Programmer &
-              Advisor</span>
+
+          <!-- TAB 4: APPEARANCE -->
+          <div class="settings-panel" data-tab="appearance">
+            <div class="settings-card">
+              <h4 class="settings-card-title">Theme & Layout Appearance</h4>
+              
+              <div class="form-group-pro">
+                <label for="settingsThemeSelect">Color Theme</label>
+                <select id="settingsThemeSelect" class="form-input-pro">
+                  <option value="dark">Dark Theme (Default)</option>
+                  <option value="light">Light Theme</option>
+                  <option value="system">Follow System Preferences</option>
+                </select>
+              </div>
+
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-light);">
+                <div>
+                  <strong style="font-size:13.5px;display:block;">Compact Mode</strong>
+                  <span style="font-size:12px;color:var(--text-muted);">Dense message list and tighter padding for high-resolution displays</span>
+                </div>
+                <input type="checkbox" id="settingsCompactToggle" style="width:18px;height:18px;cursor:pointer;" />
+              </div>
+
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-light);">
+                <div>
+                  <strong style="font-size:13.5px;display:block;">Animations & Transitions</strong>
+                  <span style="font-size:12px;color:var(--text-muted);">Enable smooth UI motion, dropdown transitions, and shimmer effects</span>
+                </div>
+                <input type="checkbox" id="settingsAnimationsToggle" checked style="width:18px;height:18px;cursor:pointer;" />
+              </div>
+
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;">
+                <div>
+                  <strong style="font-size:13.5px;display:block;">Reduced Motion</strong>
+                  <span style="font-size:12px;color:var(--text-muted);">Respect accessibility preference to reduce motion sensitivity</span>
+                </div>
+                <input type="checkbox" id="settingsReducedMotionToggle" style="width:18px;height:18px;cursor:pointer;" />
+              </div>
+
+              <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+                <button type="button" class="primary-btn" id="saveAppearanceBtn" style="padding:9px 20px;font-weight:600;">Save Appearance</button>
+              </div>
+            </div>
           </div>
-          <span class="model-tag" style="background:var(--accent-glow);color:var(--accent)">Active</span>
-        </div>
-        <div
-          style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-light)">
-          <div>
-            <strong style="display:block;font-size:14px">Share Feedback</strong>
-            <span style="font-size:12.5px;color:var(--text-muted)">Help us improve Epic Think AI with your ideas and reports</span>
+
+          <!-- TAB 5: AI EXPERIENCE -->
+          <div class="settings-panel" data-tab="ai-settings">
+            <div class="settings-card">
+              <h4 class="settings-card-title">Default Model & Workspace Preferences</h4>
+              
+              <div class="form-group-pro">
+                <label for="settingsDefaultModelSelect">Default Model Preset</label>
+                <select id="settingsDefaultModelSelect" class="form-input-pro">
+                  <option value="auto">Auto Router (Intelligent Multi-Provider Selection)</option>
+                  <option value="Epic Think 4o">Epic Think 4o (Balanced Intelligence & High Speed)</option>
+                  <option value="Epic Think o1">Epic Think o1 (Deep Reasoning & Autonomous Architecture)</option>
+                  <option value="Epic Think Fast">Epic Think Fast (Ultra-low latency streaming)</option>
+                </select>
+              </div>
+
+              <div class="form-group-pro">
+                <label for="settingsDefaultLandingSelect">Default Landing View</label>
+                <select id="settingsDefaultLandingSelect" class="form-input-pro">
+                  <option value="chat">Chat Workspace (Main Interface)</option>
+                  <option value="builder">Website Builder (Autonomous Studio)</option>
+                </select>
+              </div>
+
+              <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+                <button type="button" class="primary-btn" id="saveAiBtn" style="padding:9px 20px;font-weight:600;">Save AI Preferences</button>
+              </div>
+            </div>
           </div>
-          <button class="secondary-btn" id="settingsFeedbackBtn">Give Feedback</button>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
-          <div>
-            <strong style="display:block;font-size:14px;color:#ef4444">Reset All Conversations</strong>
-            <span style="font-size:12.5px;color:var(--text-muted)">Permanently delete all chat histories from this
-              browser</span>
+
+          <!-- TAB 6: CONNECTED APPS -->
+          <div class="settings-panel" data-tab="connected-apps">
+            <div class="settings-card">
+              <h4 class="settings-card-title">External Tool Connectors</h4>
+              <div class="settings-card-desc">Authorize external tools so the autonomous agent can query files, emails, or repositories safely.</div>
+              
+              <div id="connectedAppsList" style="display:flex;flex-direction:column;gap:10px;margin-top:4px;">
+                <!-- Populated dynamically via ProfileUI -->
+              </div>
+            </div>
           </div>
-          <button class="danger-btn" id="clearAllChatsBtn">Delete All</button>
+
+          <!-- TAB 7: SECURITY & SESSIONS -->
+          <div class="settings-panel" data-tab="security">
+            <div class="settings-card">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                  <h4 class="settings-card-title">Active Device Sessions</h4>
+                  <div class="settings-card-desc">Review connected browsers and manage multi-device access.</div>
+                </div>
+                <button type="button" class="secondary-btn" id="settingsLogoutAllSessionsBtn" style="padding:7px 12px;font-size:12.5px;">Sign Out Other Sessions</button>
+              </div>
+
+              <div id="securitySessionsList" style="margin-top:4px;">
+                <!-- Populated dynamically via ProfileUI -->
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 8: USAGE & ACTIVITY -->
+          <div class="settings-panel" data-tab="usage">
+            <div class="settings-card">
+              <h4 class="settings-card-title">Workspace Telemetry</h4>
+              <div class="settings-card-desc">Live activity and message metrics retrieved directly from MongoDB.</div>
+
+              <div class="form-grid-2">
+                <div style="padding:16px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:10px;text-align:center;">
+                  <div id="usageChatsCount" style="font-size:26px;font-weight:700;color:var(--accent);">0</div>
+                  <div style="font-size:12.5px;color:var(--text-muted);margin-top:4px;">Conversations Created</div>
+                </div>
+                <div style="padding:16px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:10px;text-align:center;">
+                  <div id="usageMessagesCount" style="font-size:26px;font-weight:700;color:#10b981;">0</div>
+                  <div style="font-size:12.5px;color:var(--text-muted);margin-top:4px;">Messages Transmitted</div>
+                </div>
+              </div>
+
+              <div style="font-size:12.5px;color:var(--text-muted);padding-top:6px;">
+                Member Since: <strong id="usageMemberSince" style="color:var(--text-main);">Recently</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 9: DANGER ZONE -->
+          <div class="settings-panel" data-tab="danger">
+            <div class="settings-card" style="border-color:rgba(239,68,68,0.3);">
+              <h4 class="settings-card-title" style="color:#ef4444;">Clear Local Cache</h4>
+              <div class="settings-card-desc">Clear local browser storage and temporary conversation cache without deleting your cloud profile.</div>
+              <div style="display:flex;justify-content:flex-end;">
+                <button type="button" class="secondary-btn" id="clearAllChatsBtn" style="color:#ef4444;">Clear Local Conversations</button>
+              </div>
+            </div>
+
+            <div class="settings-card" style="border-color:rgba(239,68,68,0.5);background:rgba(239,68,68,0.04);">
+              <h4 class="settings-card-title" style="color:#ef4444;">Delete Account Permanently</h4>
+              <div class="settings-card-desc">Permanently erase your user profile, all chat histories, messages, and Hindsight semantic memories from our servers. This action is irreversible.</div>
+              <div style="display:flex;justify-content:flex-end;">
+                <button type="button" class="danger-btn" id="settingsDeleteAccountBtn" style="background:#ef4444;color:white;border:none;padding:9px 18px;border-radius:8px;cursor:pointer;font-weight:600;">Delete Account</button>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="secondary-btn" id="closeSettingsFooterBtn">Close</button>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+     EPIC THINK AI - FIRST TIME ONBOARDING MODAL
+     ========================================================================== -->
+  <div class="modal-overlay" id="onboardingModal" style="display:none;align-items:center;justify-content:center;z-index:2100;">
+    <div class="onboarding-card" style="background:var(--bg-card);border:1px solid var(--border-main);border-radius:20px;width:92vw;max-width:500px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.55);display:flex;flex-direction:column;">
+      <!-- Step Dots Header -->
+      <div style="padding:16px 24px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between;background:var(--bg-subtle);">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="onboarding-dot" data-step="1" style="width:8px;height:8px;border-radius:50%;background:var(--accent);"></div>
+          <div class="onboarding-dot" data-step="2" style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.2);"></div>
+          <div class="onboarding-dot" data-step="3" style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.2);"></div>
+          <div class="onboarding-dot" data-step="4" style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.2);"></div>
+          <div class="onboarding-dot" data-step="5" style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.2);"></div>
+        </div>
+        <button type="button" id="skipOnboardingBtn" style="background:none;border:none;color:var(--text-muted);font-size:12px;cursor:pointer;padding:4px 8px;">Skip for now</button>
+      </div>
+
+      <div style="padding:28px 24px;">
+        <!-- Step 1: Welcome -->
+        <div class="onboarding-step active" id="onboardingStep1" style="display:flex;flex-direction:column;gap:14px;text-align:center;align-items:center;">
+          <div style="width:56px;height:56px;border-radius:16px;background:var(--accent-glow);display:flex;align-items:center;justify-content:center;font-size:26px;">👋</div>
+          <h2 style="font-size:21px;font-weight:700;margin:0;">Welcome to Epic Think AI</h2>
+          <p style="font-size:13.5px;color:var(--text-muted);line-height:1.5;margin:0;">Let's personalize your workspace in just a few quick steps so the AI pair programmer adapts to your workflow.</p>
+          <button type="button" class="primary-btn" id="onboardingNextBtn1" style="width:100%;margin-top:12px;padding:11px;font-size:14px;font-weight:600;">Get Started →</button>
+        </div>
+
+        <!-- Step 2: Name -->
+        <div class="onboarding-step" id="onboardingStep2" style="display:none;flex-direction:column;gap:16px;">
+          <div>
+            <h3 style="font-size:18px;font-weight:600;margin:0 0 4px 0;">What's your name?</h3>
+            <p style="font-size:13px;color:var(--text-muted);margin:0;">This helps Epic Think AI address you naturally.</p>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-group-pro">
+              <label for="onboardingFirstName">First Name *</label>
+              <input type="text" id="onboardingFirstName" class="form-input-pro" placeholder="e.g. Litesh" required />
+            </div>
+            <div class="form-group-pro">
+              <label for="onboardingLastName">Last Name</label>
+              <input type="text" id="onboardingLastName" class="form-input-pro" placeholder="e.g. Rao" />
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:8px;">
+            <button type="button" class="secondary-btn" id="onboardingBackBtn2" style="padding:10px 16px;">Back</button>
+            <button type="button" class="primary-btn" id="onboardingNextBtn2" style="flex:1;padding:10px 16px;font-weight:600;">Continue →</button>
+          </div>
+        </div>
+
+        <!-- Step 3: Username -->
+        <div class="onboarding-step" id="onboardingStep3" style="display:none;flex-direction:column;gap:16px;">
+          <div>
+            <h3 style="font-size:18px;font-weight:600;margin:0 0 4px 0;">Choose a username</h3>
+            <p style="font-size:13px;color:var(--text-muted);margin:0;">Your unique handle across workspaces and projects.</p>
+          </div>
+          <div class="form-group-pro">
+            <label for="onboardingUsername">Username</label>
+            <div class="username-input-container">
+              <span class="username-at">@</span>
+              <input type="text" id="onboardingUsername" class="form-input-pro username-field-pro" placeholder="username" />
+              <div class="username-status-badge" id="onboardingUsernameStatus"></div>
+            </div>
+            <div id="onboardingUsernameMsg" style="font-size:12px;margin-top:2px;min-height:16px;"></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:8px;">
+            <button type="button" class="secondary-btn" id="onboardingBackBtn3" style="padding:10px 16px;">Back</button>
+            <button type="button" class="primary-btn" id="onboardingNextBtn3" style="flex:1;padding:10px 16px;font-weight:600;">Continue →</button>
+          </div>
+        </div>
+
+        <!-- Step 4: Profile Photo -->
+        <div class="onboarding-step" id="onboardingStep4" style="display:none;flex-direction:column;gap:16px;align-items:center;text-align:center;">
+          <div>
+            <h3 style="font-size:18px;font-weight:600;margin:0 0 4px 0;">Add a profile photo</h3>
+            <p style="font-size:13px;color:var(--text-muted);margin:0;">Upload a custom photo or use your generated initials avatar.</p>
+          </div>
+          <div id="onboardingAvatarPreview" style="width:96px;height:96px;border-radius:50%;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;margin:8px 0;"></div>
+          <input type="file" id="onboardingAvatarFileInput" accept="image/png,image/jpeg,image/webp" style="display:none;" />
+          <div style="display:flex;gap:10px;">
+            <button type="button" class="secondary-btn" id="onboardingUploadAvatarBtn" style="padding:8px 14px;font-size:13px;">Upload Photo</button>
+            <button type="button" class="secondary-btn" id="onboardingRemoveAvatarBtn" style="padding:8px 14px;font-size:13px;display:none;color:#ef4444;">Remove</button>
+          </div>
+          <div style="display:flex;gap:10px;width:100%;margin-top:12px;">
+            <button type="button" class="secondary-btn" id="onboardingBackBtn4" style="padding:10px 16px;">Back</button>
+            <button type="button" class="primary-btn" id="onboardingNextBtn4" style="flex:1;padding:10px 16px;font-weight:600;">Continue →</button>
+          </div>
+        </div>
+
+        <!-- Step 5: AI Personalization -->
+        <div class="onboarding-step" id="onboardingStep5" style="display:none;flex-direction:column;gap:16px;">
+          <div>
+            <h3 style="font-size:18px;font-weight:600;margin:0 0 4px 0;">AI Personalization</h3>
+            <p style="font-size:13px;color:var(--text-muted);margin:0;">Help Epic Think AI tailor its code architectures and solutions to your background.</p>
+          </div>
+          <div class="form-group-pro">
+            <label for="onboardingAboutUser">What should Epic Think AI know about you?</label>
+            <textarea id="onboardingAboutUser" class="form-input-pro" rows="2" placeholder="e.g. Software engineer building full-stack cloud apps; prefers clean TypeScript & Python..."></textarea>
+          </div>
+          <div class="form-group-pro">
+            <label for="onboardingResponseStyle">Preferred AI Response Style</label>
+            <select id="onboardingResponseStyle" class="form-input-pro">
+              <option value="professional" selected>Professional (Concise, accurate, well-structured)</option>
+              <option value="detailed">Detailed (In-depth explanations with architecture trade-offs)</option>
+              <option value="concise">Concise (Direct answers & immediate code without fluff)</option>
+              <option value="friendly">Friendly (Approachable, encouraging pair programmer)</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:8px;">
+            <button type="button" class="secondary-btn" id="onboardingBackBtn5" style="padding:10px 16px;">Back</button>
+            <button type="button" class="primary-btn" id="onboardingFinishBtn" style="flex:1;padding:10px 16px;font-weight:600;background:linear-gradient(135deg,#3b82f6,#10b981);">Complete Setup ✨</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+     ACCOUNT DELETION CONFIRMATION MODAL
+     ========================================================================== -->
+  <div class="modal-overlay" id="deleteAccountModal" style="display:none;align-items:center;justify-content:center;z-index:2200;">
+    <div style="background:var(--bg-card);border:1px solid rgba(239,68,68,0.3);border-radius:16px;width:92vw;max-width:440px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.6);padding:24px;display:flex;flex-direction:column;gap:14px;">
+      <div style="display:flex;align-items:center;gap:10px;color:#ef4444;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <h3 style="margin:0;font-size:17px;font-weight:600;">Delete Account Permanently</h3>
+      </div>
+      <p style="font-size:13px;color:var(--text-muted);line-height:1.5;margin:0;">
+        This action is <strong>irreversible</strong>. It will permanently delete your user profile, all chat histories, messages, and Hindsight semantic memories from our servers.
+      </p>
+      <div class="form-group-pro">
+        <label for="deleteConfirmInput" style="font-size:12.5px;">To confirm, type <strong>DELETE</strong> below:</label>
+        <input type="text" id="deleteConfirmInput" class="form-input-pro" placeholder="DELETE" />
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:6px;">
+        <button type="button" class="secondary-btn" id="cancelDeleteAccountBtn">Cancel</button>
+        <button type="button" class="danger-btn" id="confirmDeleteAccountBtn" disabled style="opacity:0.5;background:#ef4444;color:white;border:none;padding:9px 18px;border-radius:8px;font-weight:600;cursor:pointer;">Permanently Delete Account</button>
       </div>
     </div>
   </div>
@@ -7267,9 +8872,75 @@
       <div class="modal-body" style="padding: 18px 20px;">
         <!-- IMAGE GENERATOR PANE -->
         <div id="imageGeneratorPane" class="studio-section">
+          <!-- Reference Image for Image Editing -->
           <div>
-            <label class="studio-label" for="imagePromptInput">Visual Prompt</label>
-            <textarea id="imagePromptInput" class="studio-textarea" placeholder="Describe the scene in detail... e.g. A serene Japanese garden with floating lanterns, cherry blossoms falling at dusk, cinematic 8k resolution"></textarea>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+              <label class="studio-label" style="margin:0;">Reference Image <span style="font-weight:normal;opacity:0.7;">(Optional - for Conversational Image Editing)</span></label>
+              <button id="clearRefImageBtn" type="button" class="icon-btn" style="display:none;font-size:11px;padding:2px 8px;height:auto;color:var(--text-muted);" title="Remove reference image">Clear</button>
+            </div>
+            <div id="imageDropZone" style="border:1px dashed var(--border-color);border-radius:8px;padding:8px 12px;background:rgba(255,255,255,0.02);cursor:pointer;transition:border-color 0.2s;">
+              <input type="file" id="referenceImageInput" accept="image/*" style="display:none;" />
+              <div id="dropZoneContent" style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;color:var(--text-muted);">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                <span>Upload or drag reference image to edit / transform</span>
+              </div>
+              <div id="dropZonePreview" style="display:none;align-items:center;gap:10px;">
+                <img id="refImageThumb" style="width:42px;height:42px;object-fit:cover;border-radius:6px;border:1px solid var(--border-color);" alt="Reference preview" />
+                <div style="font-size:11px;text-align:left;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;">
+                  <span id="refImageName" style="color:var(--text-primary);font-weight:500;">image.png</span>
+                  <div style="color:var(--accent);">Conversational Image Editing Mode Active</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="studio-label" for="imagePromptInput">Visual Prompt / Edit Instruction</label>
+            <textarea id="imagePromptInput" class="studio-textarea" placeholder="Describe the scene or edit instruction... e.g. A serene Japanese garden with floating lanterns, or 'Change the background to a luxury studio'"></textarea>
+          </div>
+
+          <div>
+            <label class="studio-label">Model Engine</label>
+            <div class="studio-chips-row" id="imageModelChips">
+              <span class="studio-chip active" data-model="AUTO">Auto (Best Available)</span>
+              <span class="studio-chip" data-model="GEMINI_HIGH_QUALITY">Gemini 3 Pro Image (Nano Banana Pro)</span>
+              <span class="studio-chip" data-model="GEMINI_FAST">Gemini 3.1 Flash Image</span>
+              <span class="studio-chip" data-model="POLLINATIONS_FALLBACK">Pollinations Fallback (FLUX)</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="studio-label">Target Resolution</label>
+            <div class="studio-chips-row" id="imageResolutionChips">
+              <span class="studio-chip active" data-res="1K">1K Standard (1024px)</span>
+              <span class="studio-chip" data-res="2K">2K Quad HD (1440p / 2048px)</span>
+              <span class="studio-chip" data-res="4K" id="chipRes4K">4K Ultra HD (3840px Native)</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="studio-label">Render Quality Tier</label>
+            <div class="studio-chips-row" id="imageQualityChips">
+              <span class="studio-chip" data-quality="STANDARD">Standard</span>
+              <span class="studio-chip active" data-quality="HIGH">High Fidelity</span>
+              <span class="studio-chip" data-quality="ULTRA">Ultra Quality</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="studio-label">Aspect Ratio</label>
+            <div class="studio-chips-row" id="imageRatioChips">
+              <span class="studio-chip active" data-ratio="1:1">1:1 Square</span>
+              <span class="studio-chip" data-ratio="16:9">16:9 Landscape</span>
+              <span class="studio-chip" data-ratio="9:16">9:16 Vertical Reel</span>
+              <span class="studio-chip" data-ratio="4:3">4:3 Classic</span>
+              <span class="studio-chip" data-ratio="3:4">3:4 Portrait</span>
+              <span class="studio-chip" data-ratio="21:9" id="chipRatio21_9">21:9 Ultrawide</span>
+            </div>
           </div>
 
           <div>
@@ -7281,35 +8952,6 @@
               <span class="studio-chip" data-style="cyberpunk">Cyberpunk</span>
               <span class="studio-chip" data-style="cinematic-3d">Cinematic 3D</span>
               <span class="studio-chip" data-style="oil-painting">Oil Painting</span>
-            </div>
-          </div>
-
-          <div>
-            <label class="studio-label">Aspect Ratio</label>
-            <div class="studio-chips-row" id="imageRatioChips">
-              <span class="studio-chip active" data-ratio="1:1">1:1 Square</span>
-              <span class="studio-chip" data-ratio="16:9">16:9 Landscape</span>
-              <span class="studio-chip" data-ratio="9:16">9:16 Vertical Reel</span>
-              <span class="studio-chip" data-ratio="4:3">4:3 Classic</span>
-            </div>
-          </div>
-
-          <div>
-            <label class="studio-label">Model Architecture</label>
-            <div class="studio-chips-row" id="imageModelChips">
-              <span class="studio-chip active" data-model="AUTO">Auto (Optimal Model)</span>
-              <span class="studio-chip" data-model="FLUX_2_PRO">FLUX.2 Pro</span>
-              <span class="studio-chip" data-model="FLUX_2_MAX">FLUX.2 Max</span>
-              <span class="studio-chip" data-model="FLUX_2_FLEX">FLUX.2 Flex</span>
-            </div>
-          </div>
-
-          <div>
-            <label class="studio-label">Render Quality &amp; Target Resolution</label>
-            <div class="studio-chips-row" id="imageQualityChips">
-              <span class="studio-chip" data-quality="STANDARD">Standard HD (1024px)</span>
-              <span class="studio-chip active" data-quality="HIGH">High Definition (1440px / 1080p)</span>
-              <span class="studio-chip" data-quality="ULTRA">Ultra 2K / Max (2048px+)</span>
             </div>
           </div>
 
@@ -7333,10 +8975,14 @@
               <span>Generated image preview will appear here</span>
             </div>
             <img id="imageResultImg" class="studio-preview-img" style="display:none;" alt="Generated AI Artwork" />
-            <div id="imageResultDetails" style="display:none;margin-top:10px;padding:8px 12px;background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:8px;font-size:11px;color:var(--text-muted);text-align:left;line-height:1.5;width:100%;">
-              <div><strong>Model Used:</strong> <span id="imageResultModel" style="color:var(--text-primary);">-</span></div>
+            <div id="imageResultDetails" style="display:none;margin-top:10px;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:8px;font-size:11px;color:var(--text-muted);text-align:left;line-height:1.6;width:100%;">
+              <div id="imageFallbackAlert" style="display:none;margin-bottom:8px;padding:6px 10px;border-radius:6px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);color:#f59e0b;font-size:11px;">
+                ⚠️ <span id="imageFallbackMsg">Primary provider quota reached. Switched to fallback provider.</span>
+              </div>
+              <div><strong>Generated with:</strong> <span id="imageResultProvider" style="color:var(--accent);font-weight:600;">-</span></div>
+              <div><strong>Model:</strong> <span id="imageResultModel" style="color:var(--text-primary);">-</span></div>
               <div><strong>Resolution:</strong> <span id="imageResultRes" style="color:var(--text-primary);">-</span></div>
-              <div><strong>Render Time:</strong> <span id="imageResultTime" style="color:var(--text-primary);">-</span></div>
+              <div><strong>Generation time:</strong> <span id="imageResultTime" style="color:var(--text-primary);">-</span></div>
               <div id="imageResultPromptBox" style="margin-top:4px;"><strong>Enhanced Prompt:</strong> <span id="imageResultPrompt" style="font-style:italic;">-</span></div>
             </div>
             <div id="imageActions" style="display:none;margin-top:10px;gap:8px;">
@@ -7434,6 +9080,8 @@
     import { MongoChatService } from "./auth/mongoChatService.js";
     import { PluginService } from "./auth/pluginService.js";
     import { AiService } from "./auth/aiService.js";
+    import { UserService, renderAvatarHtml } from "./auth/userService.js";
+    import { ProfileUI } from "./auth/profileUiController.js";
 
     // DOM Selector Helpers
     const $ = selector => document.querySelector(selector);
@@ -7658,6 +9306,22 @@
       setTimeout(() => toast.classList.remove('show'), 2500);
     };
 
+    // Initialize Profile & Account Controller
+    ProfileUI.init({
+      onSignOut: async () => {
+        try {
+          await logoutUser();
+        } catch (err) {
+          console.error('[SignOut Error]', err);
+        }
+      },
+      showToast: (msg) => showToast(msg)
+    });
+
+    window.UserService = UserService;
+    window.ProfileUI = ProfileUI;
+    window.renderAvatarHtml = renderAvatarHtml;
+
     const saveState = (immediate = false) => {
       if (currentUser && currentUser.uid) {
         storage.set('eta_chats_' + currentUser.uid, state.chats);
@@ -7670,15 +9334,374 @@
       }
     };
 
+      // ======================================================================
+      // UNIFIED RICH RESULT RENDERER ARCHITECTURE (<ResultRenderer />)
+      // ======================================================================
+      const ResultRenderer = {
+        render(result) {
+          if (!result || typeof result !== 'object') return '';
+          const type = (result.type || '').toLowerCase();
+          switch (type) {
+            case 'places':
+            case 'places-result':
+              return this.renderPlaces(result.data || result);
+            case 'seo_audit':
+            case 'seo-audit':
+              return this.renderSeoAudit(result.data || result);
+            case 'images':
+            case 'image_gallery':
+            case 'image-gallery':
+              return this.renderImageGallery(result.data || result);
+            case 'table':
+            case 'comparison':
+              return this.renderDataTable(result.headers || [], result.rows || []);
+            default:
+              return '';
+          }
+        },
+
+        renderPlaces(data) {
+          if (!data) return '';
+          const title = escapeHtml(data.title || 'Places Near You');
+          const location = escapeHtml(data.location || 'Local Area');
+          const count = data.count || (Array.isArray(data.places) ? data.places.length : 0);
+          const places = Array.isArray(data.places) ? data.places : [];
+          const center = data.center || { lat: 17.3850, lng: 78.4867, label: location };
+
+          const firstPlaceTitle = places[0] ? (places[0].title || '') : '';
+          const safeKey = (data.id || (data.title || 'places') + '_' + firstPlaceTitle).toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 32) || 'places';
+          const cardId = `chatgpt-map-${safeKey}`;
+          window.__mapCardData = window.__mapCardData || {};
+          window.__mapCardData[cardId] = {
+            center: center,
+            places: places
+          };
+
+          let chipsHtml = '';
+          places.forEach((p, idx) => {
+            const pTitle = escapeHtml(p.title || 'Place');
+            const pRating = p.rating ? (typeof p.rating === 'number' ? p.rating.toFixed(1) : p.rating) : '4.5';
+            const pReviews = p.reviews ? `(${escapeHtml(String(p.reviews))})` : '';
+            const pCategory = escapeHtml(p.category || 'Hostel');
+            const pAddress = escapeHtml(p.address || '');
+            const pStatus = p.status || 'Open';
+            const isOpen = /open/i.test(pStatus);
+            const statusHtml = isOpen
+              ? `<span class="chip-status-open">Open</span>`
+              : `<span class="chip-status-closed">${escapeHtml(pStatus || 'Closed')}</span>`;
+
+            const thumbUrl = p.thumbnail || p.serpapi_thumbnail || '';
+            const thumbHtml = thumbUrl
+              ? `<img src="${thumbUrl}" class="chatgpt-place-chip-thumb" alt="${pTitle}" loading="lazy" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=120&auto=format&fit=crop&q=80'">`
+              : `<div class="chatgpt-place-chip-thumb-fallback"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v14M21 7v14M6 11h2M10 11h2M14 11h2M6 15h2M10 15h2M14 15h2M9 3h6v4H9z"/></svg></div>`;
+
+            const pUrl = escapeHtml(p.url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.title + ' ' + (p.address || ''))}`);
+
+            chipsHtml += `
+              <div class="chatgpt-place-chip place-rich-card" data-card-id="${cardId}" data-place-idx="${idx}" onclick="window.panToPlace('${cardId}', ${idx})" title="${pTitle} - Click to focus on map">
+                ${thumbHtml}
+                <div class="chatgpt-place-chip-info">
+                  <div class="chatgpt-place-chip-title">${pTitle}</div>
+                  <div class="chatgpt-place-chip-meta">
+                    <span class="star">★ ${pRating}</span>
+                    <span class="dot">•</span>
+                    <span>${pCategory}</span>
+                  </div>
+                  <div class="chatgpt-place-chip-status-row">
+                    ${statusHtml}
+                  </div>
+                </div>
+                <a href="${pUrl}" target="_blank" rel="noopener noreferrer" class="chip-directions-btn" onclick="event.stopPropagation()" title="Directions on Google Maps">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                </a>
+              </div>
+            `;
+          });
+
+          // Schedule Leaflet map initialization
+          if (typeof window.initMapCards === 'function') {
+            setTimeout(() => window.initMapCards(), 60);
+          }
+
+          return `
+            <div class="places-result-container chatgpt-map-wrapper">
+              <div class="chatgpt-map-card" id="${cardId}" data-card-id="${cardId}">
+                <div class="chatgpt-map-canvas" id="${cardId}-canvas"></div>
+                <div class="chatgpt-map-top-bar">
+                  <button type="button" class="chatgpt-map-recenter-btn" onclick="window.recenterMap('${cardId}')" title="Re-center map">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+                  </button>
+                  <button type="button" class="chatgpt-map-expand-btn" onclick="window.expandMapCard('${cardId}')" title="Expand interactive map">
+                    <span>Expand</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                  </button>
+                </div>
+                <div class="chatgpt-places-carousel" id="${cardId}-carousel">
+                  ${chipsHtml}
+                </div>
+              </div>
+            </div>
+          `;
+        },
+
+        renderSeoAudit(data) {
+          if (!data) return '';
+          const score = Number.isFinite(data.score) ? data.score : 0;
+          const grade = escapeHtml(data.grade || (score >= 90 ? 'A' : score >= 70 ? 'B' : score >= 50 ? 'C' : 'D'));
+          const gradeClass = score >= 90 ? 'grade-a' : (score >= 70 ? 'grade-b' : 'grade-c');
+          const site = escapeHtml(data.identifier || 'Website SEO Audit');
+          const totalChecks = data.totalChecks || 0;
+          const passedCount = data.passedCount || (Array.isArray(data.passed) ? data.passed.length : 0);
+          const issuesCount = data.issuesCount || (Array.isArray(data.issues) ? data.issues.length : 0);
+
+          const issues = Array.isArray(data.issues) ? data.issues : [];
+          const passed = Array.isArray(data.passed) ? data.passed : [];
+          const meta = data.meta || {};
+
+          let issuesHtml = '';
+          issues.forEach(issue => {
+            const sev = (issue.severity || 'warning').toLowerCase();
+            const rowClass = sev === 'critical' ? '' : (sev === 'warning' ? 'warning' : 'info');
+            issuesHtml += `
+              <div class="seo-issue-row ${rowClass}">
+                <span style="font-weight:700; text-transform:uppercase; font-size:10.5px; padding:2px 6px; border-radius:4px; background:rgba(0,0,0,0.25); flex-shrink:0;">${escapeHtml(sev)}</span>
+                <div style="flex:1;">
+                  <div style="font-weight:600; color:var(--text-main); margin-bottom:2px;">${escapeHtml(issue.message || issue.check || 'SEO Finding')}</div>
+                  ${issue.recommendation ? `<div style="font-size:11.5px; opacity:0.9;"><strong>Action:</strong> ${escapeHtml(issue.recommendation)}</div>` : ''}
+                </div>
+              </div>
+            `;
+          });
+
+          let checklistHtml = '';
+          passed.slice(0, 10).forEach(p => {
+            checklistHtml += `
+              <div class="seo-checklist-item">
+                <span class="seo-check-icon" style="color:#10b981;">✓</span>
+                <div>
+                  <span style="font-weight:600;">${escapeHtml(p.check || p)}</span>
+                  ${p.detail ? `<div style="font-size:11px; color:var(--text-muted);">${escapeHtml(p.detail)}</div>` : ''}
+                </div>
+              </div>
+            `;
+          });
+
+          return `
+            <div class="seo-audit-container">
+              <div class="seo-audit-header">
+                <div class="seo-score-badge-group">
+                  <div class="seo-score-circle ${gradeClass}">
+                    <span>${score}</span>
+                  </div>
+                  <div>
+                    <div class="seo-meta-title">Technical SEO Audit Report</div>
+                    <div class="seo-meta-url">${site}</div>
+                  </div>
+                </div>
+                <div class="seo-summary-pills">
+                  <span class="seo-pill passed">✓ ${passedCount} Passed</span>
+                  <span class="seo-pill ${issuesCount > 0 ? (score < 70 ? 'critical' : 'warning') : 'passed'}">${issuesCount} Issues</span>
+                  <span class="seo-pill" style="background:rgba(96,165,250,0.15); border:1px solid rgba(96,165,250,0.3); color:#93c5fd;">${totalChecks} Checks</span>
+                </div>
+              </div>
+
+              <div class="seo-sections-grid">
+                <div class="seo-section-card">
+                  <div class="seo-section-title">
+                    <span>🏷️</span>
+                    <span>Meta & Indexability</span>
+                  </div>
+                  <div class="seo-checklist-item">
+                    <span class="seo-check-icon" style="color:${meta.title ? '#10b981' : '#ef4444'};">${meta.title ? '✓' : '✗'}</span>
+                    <div>
+                      <div style="font-weight:600;">Page Title (${meta.titleLength || (meta.title ? meta.title.length : 0)} chars)</div>
+                      <div style="font-size:11px; color:var(--text-secondary);">${escapeHtml(meta.title || 'Missing Title')}</div>
+                    </div>
+                  </div>
+                  <div class="seo-checklist-item">
+                    <span class="seo-check-icon" style="color:${meta.description ? '#10b981' : '#ef4444'};">${meta.description ? '✓' : '✗'}</span>
+                    <div>
+                      <div style="font-weight:600;">Meta Description (${meta.descLength || (meta.description ? meta.description.length : 0)} chars)</div>
+                      <div style="font-size:11px; color:var(--text-secondary);">${escapeHtml(meta.description || 'Missing Description')}</div>
+                    </div>
+                  </div>
+                  <div class="seo-checklist-item">
+                    <span class="seo-check-icon" style="color:${meta.canonical ? '#10b981' : '#f59e0b'};">${meta.canonical ? '✓' : '!'}</span>
+                    <div>
+                      <div style="font-weight:600;">Canonical URL</div>
+                      <div style="font-size:11px; color:var(--text-secondary);">${escapeHtml(meta.canonical || 'Not specified')}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="seo-section-card">
+                  <div class="seo-section-title">
+                    <span>📊</span>
+                    <span>Structure & Content</span>
+                  </div>
+                  <div class="seo-checklist-item">
+                    <span class="seo-check-icon" style="color:${meta.h1Count === 1 ? '#10b981' : '#f59e0b'};">${meta.h1Count === 1 ? '✓' : '!'}</span>
+                    <div>
+                      <div style="font-weight:600;">H1 Headings: ${meta.h1Count !== undefined ? meta.h1Count : 'N/A'} (H2: ${meta.h2Count || 0})</div>
+                      <div style="font-size:11px; color:var(--text-secondary);">${meta.h1Count === 1 ? 'Optimal single H1 detected' : (meta.h1Count === 0 ? 'Missing H1 heading' : 'Multiple H1 headings detected')}</div>
+                    </div>
+                  </div>
+                  <div class="seo-checklist-item">
+                    <span class="seo-check-icon" style="color:${meta.missingAltCount === 0 ? '#10b981' : '#f59e0b'};">${meta.missingAltCount === 0 ? '✓' : '!'}</span>
+                    <div>
+                      <div style="font-weight:600;">Images & Alt Attributes</div>
+                      <div style="font-size:11px; color:var(--text-secondary);">${meta.imagesCount || 0} images total (${meta.missingAltCount || 0} missing alt)</div>
+                    </div>
+                  </div>
+                  <div class="seo-checklist-item">
+                    <span class="seo-check-icon" style="color:${meta.hasSchema ? '#10b981' : '#f59e0b'};">${meta.hasSchema ? '✓' : '!'}</span>
+                    <div>
+                      <div style="font-weight:600;">Schema.org Structured Data</div>
+                      <div style="font-size:11px; color:var(--text-secondary);">${meta.schemaTypes && meta.schemaTypes.length > 0 ? escapeHtml(meta.schemaTypes.join(', ')) : (meta.hasSchema ? 'JSON-LD Detected' : 'None detected')}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              ${issues.length > 0 ? `
+                <div class="seo-issues-list">
+                  <div class="seo-section-title" style="color:#f87171; margin-bottom:12px;">
+                    <span>⚠️</span>
+                    <span>Actionable Fixes & Recommendations (${issues.length})</span>
+                  </div>
+                  ${issuesHtml}
+                </div>
+              ` : ''}
+
+              ${passed.length > 0 ? `
+                <div style="padding: 0 20px 18px;">
+                  <div class="seo-section-title" style="color:#34d399; margin-bottom:10px;">
+                    <span>✓</span>
+                    <span>Verified Optimizations (${passed.length})</span>
+                  </div>
+                  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:8px;">
+                    ${checklistHtml}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        },
+
+        renderImageGallery(data) {
+          if (!data || !Array.isArray(data.images) || data.images.length === 0) return '';
+          const title = escapeHtml(data.title || 'Verified Visual Sources');
+          const images = data.images.slice(0, 8);
+
+          let galleryItems = '';
+          images.forEach(img => {
+            const url = typeof img === 'string' ? img : (img.url || img.src || '');
+            const alt = escapeHtml((typeof img === 'object' && img.title) ? img.title : 'Visual Source');
+            if (!url) return;
+            galleryItems += `
+              <div class="image-gallery-card" onclick="window.openImageModal && window.openImageModal('${encodeURI(url)}', '${alt}')">
+                <img src="${url}" alt="${alt}" loading="lazy" onerror="this.closest('.image-gallery-card').style.display='none'">
+                <div class="image-gallery-caption" title="${alt}">${alt}</div>
+              </div>
+            `;
+          });
+
+          return `
+            <div class="image-gallery-container">
+              <div class="image-gallery-header">
+                <span>🖼️</span>
+                <span>${title}</span>
+                <span style="font-size:11.5px; color:var(--text-muted); font-weight:normal; margin-left:auto;">${images.length} verified photos</span>
+              </div>
+              <div class="image-gallery-grid">
+                ${galleryItems}
+              </div>
+            </div>
+          `;
+        },
+
+        renderDataTable(headers, rows) {
+          if (!Array.isArray(headers) || headers.length === 0) return '';
+          let tableHtml = '<div class="table-responsive-container"><table class="modern-markdown-table"><thead><tr>';
+          headers.forEach(h => {
+            tableHtml += `<th>${formatInline(String(h))}</th>`;
+          });
+          tableHtml += '</tr></thead><tbody>';
+          (rows || []).forEach(row => {
+            tableHtml += '<tr>';
+            headers.forEach((_, c) => {
+              const val = row[c] !== undefined ? row[c] : '';
+              tableHtml += `<td>${formatInline(String(val))}</td>`;
+            });
+            tableHtml += '</tr>';
+          });
+          tableHtml += '</tbody></table></div>';
+          return tableHtml;
+        }
+      };
+      window.ResultRenderer = ResultRenderer;
+
       // Enhanced Markdown Parser with Token-Based Code Block Protection & Streaming Support
       function parseMarkdown(text) {
         if (!text) return '';
 
         const codeBlocks = [];
         const builderCards = [];
+        const mapCards = [];
+        const actionCards = [];
+        const placesCards = [];
+        const seoCards = [];
+        const galleryCards = [];
+
+        // Streaming Guard: Intercept trailing unclosed rich block tags during active streaming to prevent raw partial JSON from flashing
+        let processed = text.replace(/:::(?:places-result|map-card|image-gallery|seo-audit|builder-card|action-ticket)\b[\s\S]*$/, (unclosed) => {
+          if (!unclosed.slice(3).includes(':::')) {
+            return '\n\n<div class="streaming-rich-placeholder"><div class="rich-shimmer-pulse"></div><span>Synthesizing verified rich intelligence...</span></div>\n\n';
+          }
+          return unclosed;
+        });
+
+        // 0-places. Extract Unified Places Result Cards (:::places-result ... :::)
+        processed = processed.replace(/:::places-result\s*([\s\S]*?)\s*:::/g, (match, jsonStr) => {
+          try {
+            const data = JSON.parse(jsonStr.trim());
+            const cardHtml = ResultRenderer.renderPlaces(data);
+            const idx = placesCards.length;
+            placesCards.push(cardHtml);
+            return `\n\n__PLACES_CARD_${idx}__\n\n`;
+          } catch (_) {
+            return '';
+          }
+        });
+
+        // 0-seo. Extract SEO Technical Audit Result Cards (:::seo-audit ... :::)
+        processed = processed.replace(/:::seo-audit\s*([\s\S]*?)\s*:::/g, (match, jsonStr) => {
+          try {
+            const data = JSON.parse(jsonStr.trim());
+            const cardHtml = ResultRenderer.renderSeoAudit(data);
+            const idx = seoCards.length;
+            seoCards.push(cardHtml);
+            return `\n\n__SEO_CARD_${idx}__\n\n`;
+          } catch (_) {
+            return '';
+          }
+        });
+
+        // 0-gallery. Extract Image Gallery Cards (:::image-gallery ... :::)
+        processed = processed.replace(/:::image-gallery\s*([\s\S]*?)\s*:::/g, (match, jsonStr) => {
+          try {
+            const data = JSON.parse(jsonStr.trim());
+            const cardHtml = ResultRenderer.renderImageGallery(data);
+            const idx = galleryCards.length;
+            galleryCards.push(cardHtml);
+            return `\n\n__GALLERY_CARD_${idx}__\n\n`;
+          } catch (_) {
+            return '';
+          }
+        });
 
         // 0. Extract Autonomous Builder Project Cards (:::builder-card ... :::)
-        let processed = text.replace(/:::builder-card\s*([\s\S]*?)\s*:::/g, (match, jsonStr) => {
+        processed = processed.replace(/:::builder-card\s*([\s\S]*?)\s*:::/g, (match, jsonStr) => {
           try {
             const data = JSON.parse(jsonStr.trim());
             const projectId = escapeHtml(data.projectId || '');
@@ -7723,12 +9746,13 @@
         });
 
         // 0-map. Extract ChatGPT-Style Interactive Map Cards (:::map-card ... :::)
-        const mapCards = [];
         window.__mapCardData = window.__mapCardData || {};
         processed = processed.replace(/:::map-card\s*([\s\S]*?)\s*:::/g, (match, jsonStr) => {
           try {
             const data = JSON.parse(jsonStr.trim());
-            const cardId = `chatgpt-map-${mapCards.length}-${Math.random().toString(36).substring(2, 9)}`;
+            const firstPlace = data.places && data.places[0] ? (data.places[0].title || '') : '';
+            const safeKey = (data.id || (data.center?.label || 'map') + '_' + firstPlace).toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 32) || 'map';
+            const cardId = `chatgpt-map-${safeKey}`;
             window.__mapCardData[cardId] = data;
 
             const places = Array.isArray(data.places) ? data.places : [];
@@ -7805,7 +9829,6 @@
         });
 
         // 0b. Extract Action Confirmation Cards (:::action-ticket ... :::)
-        const actionCards = [];
         processed = processed.replace(/:::action-ticket\s*([\s\S]*?)\s*:::/g, (match, jsonStr) => {
           try {
             const ticket = JSON.parse(jsonStr.trim());
@@ -7931,6 +9954,36 @@
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i];
           const trimmed = line.trim();
+
+          // Check for places card placeholder
+          const placesMatch = trimmed.match(/^__PLACES_CARD_(\d+)__$/);
+          if (placesMatch) {
+            if (inList) { result.push('</ul>'); inList = false; }
+            if (inOrderedList) { result.push('</ol>'); inOrderedList = false; }
+            const cardIndex = parseInt(placesMatch[1], 10);
+            result.push(placesCards[cardIndex]);
+            continue;
+          }
+
+          // Check for seo audit card placeholder
+          const seoMatch = trimmed.match(/^__SEO_CARD_(\d+)__$/);
+          if (seoMatch) {
+            if (inList) { result.push('</ul>'); inList = false; }
+            if (inOrderedList) { result.push('</ol>'); inOrderedList = false; }
+            const cardIndex = parseInt(seoMatch[1], 10);
+            result.push(seoCards[cardIndex]);
+            continue;
+          }
+
+          // Check for gallery card placeholder
+          const galleryMatch = trimmed.match(/^__GALLERY_CARD_(\d+)__$/);
+          if (galleryMatch) {
+            if (inList) { result.push('</ul>'); inList = false; }
+            if (inOrderedList) { result.push('</ol>'); inOrderedList = false; }
+            const cardIndex = parseInt(galleryMatch[1], 10);
+            result.push(galleryCards[cardIndex]);
+            continue;
+          }
 
           // Check for map card placeholder
           const mapMatch = trimmed.match(/^__MAP_CARD_(\d+)__$/);
@@ -8572,7 +10625,8 @@
           if (msg.role === 'user') {
             const fileBadges = (msg.files || []).map(f => `<div class="attached-file-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg><span>${escapeHtml(f)}</span></div>`).join('');
             const userText = escapeHtml((msg.text || '').trim());
-            row.innerHTML = `<div class="message-content-wrapper user-content-wrapper"><div class="user-bubble">${fileBadges ? `<div class="user-bubble-files">${fileBadges}</div>` : ''}<div class="user-bubble-text">${userText}</div><div class="message-ist-time" style="font-size:10px;color:rgba(255,255,255,0.45);text-align:right;margin-top:4px;">${istTime} IST</div></div></div>`;
+            const userAvatarMarkup = renderAvatarHtml(UserService.getProfile() || currentUser, 30, 'user-msg-avatar');
+            row.innerHTML = `<div class="message-content-wrapper user-content-wrapper"><div class="user-bubble">${fileBadges ? `<div class="user-bubble-files">${fileBadges}</div>` : ''}<div class="user-bubble-text">${userText}</div><div class="message-ist-time" style="font-size:10px;color:rgba(255,255,255,0.45);text-align:right;margin-top:4px;">${istTime} IST</div></div></div><div class="user-avatar-col" style="flex-shrink:0;margin-left:8px;margin-top:2px;">${userAvatarMarkup}</div>`;
           } else {
             // Assistant Message
             let reasoningMarkup = '';
@@ -8950,8 +11004,9 @@
               aiMessage.text = accumulated;
               if (contentEl) {
                 contentEl.innerHTML = parseMarkdown(aiMessage.text);
-                if (aiMessage.text.includes(':::map-card') && typeof window.initMapCards === 'function') {
-                  setTimeout(() => window.initMapCards(), 60);
+                if ((aiMessage.text.includes(':::map-card') || aiMessage.text.includes(':::places-result')) && typeof window.initMapCards === 'function') {
+                  if (window.__initMapTimer) clearTimeout(window.__initMapTimer);
+                  window.__initMapTimer = setTimeout(() => window.initMapCards(), 120);
                 }
               }
               scrollToBottom(false);
@@ -8985,6 +11040,15 @@
 
             if (!aiMessage.text && streamResult.text) {
               aiMessage.text = streamResult.text;
+            } else if (streamResult.text && aiMessage.text.length < streamResult.text.length) {
+              aiMessage.text = streamResult.text;
+            }
+
+            if (contentEl) {
+              contentEl.innerHTML = parseMarkdown(aiMessage.text);
+              if (typeof window.initMapCards === 'function') {
+                setTimeout(() => window.initMapCards(), 80);
+              }
             }
 
             if (streamResult.builderProject && !aiMessage.text.includes(':::builder-card')) {
@@ -10238,8 +12302,36 @@
       window.__expandedLeafletMap = null;
 
       window.initMapCards = function() {
-        if (typeof L === 'undefined') return;
-        const cards = document.querySelectorAll('.chatgpt-map-card:not([data-initialized="true"])');
+        if (typeof L === 'undefined') {
+          if (!window.__loadingLeaflet) {
+            window.__loadingLeaflet = true;
+            if (!document.getElementById('leaflet-cdn-css')) {
+              const link = document.createElement('link');
+              link.id = 'leaflet-cdn-css';
+              link.rel = 'stylesheet';
+              link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+              document.head.appendChild(link);
+            }
+            const script = document.createElement('script');
+            script.id = 'leaflet-cdn-js';
+            script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+            script.onload = () => {
+              window.__loadingLeaflet = false;
+              window.initMapCards();
+            };
+            script.onerror = () => {
+              window.__loadingLeaflet = false;
+              const s2 = document.createElement('script');
+              s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js';
+              s2.onload = () => window.initMapCards();
+              document.head.appendChild(s2);
+            };
+            document.head.appendChild(script);
+          }
+          return;
+        }
+
+        const cards = document.querySelectorAll('.chatgpt-map-card');
         cards.forEach(cardEl => {
           const cardId = cardEl.getAttribute('data-card-id') || cardEl.id;
           const data = window.__mapCardData[cardId];
@@ -10248,9 +12340,24 @@
           const canvasEl = document.getElementById(`${cardId}-canvas`);
           if (!canvasEl) return;
 
+          // If this card is already initialized with an active attached map on this exact canvas, invalidate and skip re-creation
+          if (cardEl.getAttribute('data-initialized') === 'true' && window.__activeLeafletMaps[cardId] && window.__activeLeafletMaps[cardId].getContainer() === canvasEl) {
+            try { window.__activeLeafletMaps[cardId].invalidateSize(); } catch (_) {}
+            return;
+          }
+
           try {
+            // Clean up any stale map container reference
+            if (canvasEl._leaflet_id) {
+              try {
+                if (window.__activeLeafletMaps[cardId]) {
+                  window.__activeLeafletMaps[cardId].remove();
+                }
+              } catch (_) {}
+              delete canvasEl._leaflet_id;
+            }
             if (window.__activeLeafletMaps[cardId]) {
-              window.__activeLeafletMaps[cardId].remove();
+              try { window.__activeLeafletMaps[cardId].remove(); } catch (_) {}
               delete window.__activeLeafletMaps[cardId];
             }
 
@@ -10259,20 +12366,16 @@
               center: defaultCenter,
               zoom: 13,
               zoomControl: false,
-              attributionControl: false
+              attributionControl: false,
+              preferCanvas: true
             });
 
-            // ESRI World Dark Gray Base & Reference Layers (Clean dark theme, zero watermarks, no API key required)
-            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-              maxNativeZoom: 16,
-              maxZoom: 19,
-              attribution: '&copy; Esri'
-            }).addTo(map);
-
-            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
-              maxNativeZoom: 16,
-              maxZoom: 19,
-              attribution: ''
+            // CartoDB Dark Matter retina tiles (ChatGPT / Claude modern dark aesthetic)
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+              subdomains: 'abcd',
+              maxNativeZoom: 19,
+              maxZoom: 20,
+              attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
             }).addTo(map);
 
             window.__activeLeafletMaps[cardId] = map;
@@ -10312,14 +12415,27 @@
 
             if (bounds.length > 0) {
               map.fitBounds(bounds, {
-                padding: [45, 35],
+                paddingTopLeft: [30, 20],
+                paddingBottomRight: [30, 110],
                 maxZoom: 15
               });
             }
 
-            setTimeout(() => {
-              map.invalidateSize();
-            }, 180);
+            // Invalidate size over progressive render intervals to guarantee crisp tiles
+            [80, 250, 600, 1200].forEach(delay => {
+              setTimeout(() => {
+                try { map.invalidateSize(); } catch (_) {}
+              }, delay);
+            });
+
+            // Auto-resize on layout changes
+            if (window.ResizeObserver && !canvasEl.__ro) {
+              const ro = new ResizeObserver(() => {
+                try { map.invalidateSize(); } catch (_) {}
+              });
+              ro.observe(canvasEl);
+              canvasEl.__ro = ro;
+            }
 
           } catch (err) {
             console.warn('[MAP:INIT:ERROR]', err);
@@ -10335,7 +12451,14 @@
 
         const map = window.__activeLeafletMaps[cardId];
         if (map && place.lat && place.lng) {
-          map.flyTo([place.lat, place.lng], 15, { duration: 0.8 });
+          try {
+            const targetPoint = map.project([place.lat, place.lng], 15);
+            targetPoint.y += 50;
+            const targetLatLng = map.unproject(targetPoint, 15);
+            map.flyTo(targetLatLng, 15, { duration: 0.8 });
+          } catch (_) {
+            map.flyTo([place.lat, place.lng], 15, { duration: 0.8 });
+          }
         }
 
         const cardEl = document.getElementById(cardId);
@@ -10351,6 +12474,31 @@
             targetChip.classList.add('active');
             targetChip.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
           }
+        }
+      };
+
+      window.recenterMap = function(cardId) {
+        const data = window.__mapCardData[cardId];
+        if (!data) return;
+        const map = window.__activeLeafletMaps[cardId];
+        if (!map) return;
+
+        const places = Array.isArray(data.places) ? data.places : [];
+        const bounds = places.filter(p => p.lat && p.lng).map(p => [p.lat, p.lng]);
+        if (bounds.length > 0) {
+          map.fitBounds(bounds, {
+            paddingTopLeft: [30, 20],
+            paddingBottomRight: [30, 110],
+            maxZoom: 15
+          });
+        } else if (data.center && data.center.lat && data.center.lng) {
+          map.flyTo([data.center.lat, data.center.lng], 13);
+        }
+
+        const cardEl = document.getElementById(cardId);
+        if (cardEl) {
+          cardEl.querySelectorAll('.chatgpt-map-marker').forEach(m => m.classList.remove('active'));
+          cardEl.querySelectorAll('.chatgpt-place-chip').forEach(c => c.classList.remove('active'));
         }
       };
 
@@ -10418,31 +12566,33 @@
         modal.classList.add('active');
 
         setTimeout(() => {
-          if (window.__expandedLeafletMap) {
-            window.__expandedLeafletMap.remove();
-            window.__expandedLeafletMap = null;
-          }
-
           if (canvasEl && typeof L !== 'undefined') {
+            if (canvasEl._leaflet_id) {
+              try {
+                if (window.__expandedLeafletMap) window.__expandedLeafletMap.remove();
+              } catch (_) {}
+              delete canvasEl._leaflet_id;
+            }
+            if (window.__expandedLeafletMap) {
+              try { window.__expandedLeafletMap.remove(); } catch (_) {}
+              window.__expandedLeafletMap = null;
+            }
+
             const defaultCenter = [data.center?.lat || 17.3850, data.center?.lng || 78.4867];
             const expandedMap = L.map(canvasEl, {
               center: defaultCenter,
               zoom: 13,
               zoomControl: true,
-              attributionControl: false
+              attributionControl: false,
+              preferCanvas: true
             });
 
-            // ESRI World Dark Gray Base & Reference Layers (Clean dark theme, zero watermarks, no API key required)
-            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-              maxNativeZoom: 16,
-              maxZoom: 19,
-              attribution: '&copy; Esri'
-            }).addTo(expandedMap);
-
-            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
-              maxNativeZoom: 16,
-              maxZoom: 19,
-              attribution: ''
+            // CartoDB Dark Matter retina tiles
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+              subdomains: 'abcd',
+              maxNativeZoom: 19,
+              maxZoom: 20,
+              attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
             }).addTo(expandedMap);
 
             window.__expandedLeafletMap = expandedMap;
@@ -10553,7 +12703,73 @@
         $('#imageGeneratorPane').style.display = 'none';
       });
 
-      // Style & Ratio Chips Selection
+      // Reference Image Upload & Image Editing
+      let currentReferenceImage = null;
+      const dropZone = $('#imageDropZone');
+      const refInput = $('#referenceImageInput');
+      const clearRefBtn = $('#clearRefImageBtn');
+
+      dropZone?.addEventListener('click', (e) => {
+        if (e.target !== clearRefBtn && !e.target.closest('#clearRefImageBtn')) {
+          refInput?.click();
+        }
+      });
+
+      const handleRefFileSelect = (file) => {
+        if (!file || !file.type.startsWith('image/')) {
+          showToast('Please select an image file (PNG, JPEG, WebP)');
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          currentReferenceImage = e.target.result;
+          const thumb = $('#refImageThumb');
+          if (thumb) thumb.src = currentReferenceImage;
+          const nameEl = $('#refImageName');
+          if (nameEl) nameEl.textContent = file.name;
+          const contentEl = $('#dropZoneContent');
+          if (contentEl) contentEl.style.display = 'none';
+          const previewEl = $('#dropZonePreview');
+          if (previewEl) previewEl.style.display = 'flex';
+          if (clearRefBtn) clearRefBtn.style.display = 'block';
+          showToast('Reference image loaded for conversational editing');
+        };
+        reader.readAsDataURL(file);
+      };
+
+      refInput?.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          handleRefFileSelect(e.target.files[0]);
+        }
+      });
+
+      dropZone?.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--accent)';
+      });
+      dropZone?.addEventListener('dragleave', () => {
+        dropZone.style.borderColor = 'var(--border-color)';
+      });
+      dropZone?.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--border-color)';
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          handleRefFileSelect(e.dataTransfer.files[0]);
+        }
+      });
+
+      clearRefBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentReferenceImage = null;
+        if (refInput) refInput.value = '';
+        const contentEl = $('#dropZoneContent');
+        if (contentEl) contentEl.style.display = 'flex';
+        const previewEl = $('#dropZonePreview');
+        if (previewEl) previewEl.style.display = 'none';
+        if (clearRefBtn) clearRefBtn.style.display = 'none';
+      });
+
+      // Style & Ratio & Model & Resolution Chips Selection
       $('#imageStyleChips')?.addEventListener('click', (e) => {
         const chip = e.target.closest('.studio-chip');
         if (!chip) return;
@@ -10573,6 +12789,32 @@
         if (!chip) return;
         $('#imageModelChips').querySelectorAll('.studio-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
+
+        // Dynamic constraint: 4K resolution requires Gemini model tier
+        const model = chip.dataset.model || 'AUTO';
+        const chip4K = $('#chipRes4K');
+        if (model === 'POLLINATIONS_FALLBACK') {
+          if (chip4K) {
+            chip4K.style.opacity = '0.4';
+            chip4K.style.pointerEvents = 'none';
+            if (chip4K.classList.contains('active')) {
+              chip4K.classList.remove('active');
+              $('#imageResolutionChips .studio-chip[data-res="2K"]')?.classList.add('active');
+            }
+          }
+        } else {
+          if (chip4K) {
+            chip4K.style.opacity = '1';
+            chip4K.style.pointerEvents = 'auto';
+          }
+        }
+      });
+
+      $('#imageResolutionChips')?.addEventListener('click', (e) => {
+        const chip = e.target.closest('.studio-chip');
+        if (!chip) return;
+        $('#imageResolutionChips').querySelectorAll('.studio-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
       });
 
       $('#imageQualityChips')?.addEventListener('click', (e) => {
@@ -10586,19 +12828,31 @@
       $('#generateImageBtn')?.addEventListener('click', async () => {
         const prompt = ($('#imagePromptInput').value || '').trim();
         if (!prompt) {
-          showToast('Please describe the image to generate');
+          showToast('Please describe the image to generate or edit');
           return;
         }
 
         const activeStyle = $('#imageStyleChips .studio-chip.active')?.dataset.style || 'photorealistic';
         const activeRatio = $('#imageRatioChips .studio-chip.active')?.dataset.ratio || '1:1';
         const activeModel = $('#imageModelChips .studio-chip.active')?.dataset.model || 'AUTO';
+        const activeResolution = $('#imageResolutionChips .studio-chip.active')?.dataset.res || '1K';
         const activeQuality = $('#imageQualityChips .studio-chip.active')?.dataset.quality || 'HIGH';
 
         const btn = $('#generateImageBtn');
         const statusEl = $('#imageGenStatus');
         btn.disabled = true;
-        statusEl.textContent = 'Generating with high-fidelity image models...';
+
+        // Stage 1: Preparing prompt
+        statusEl.textContent = 'Preparing prompt...';
+        const t1 = setTimeout(() => {
+          if (btn.disabled) statusEl.textContent = 'Generating image...';
+        }, 700);
+        const t2 = setTimeout(() => {
+          if (btn.disabled) statusEl.textContent = 'Processing image...';
+        }, 2000);
+        const t3 = setTimeout(() => {
+          if (btn.disabled) statusEl.textContent = 'Finalizing...';
+        }, 3600);
 
         try {
           const res = await AiService.generateImage({
@@ -10606,8 +12860,15 @@
             style: activeStyle,
             aspectRatio: activeRatio,
             model: activeModel,
-            quality: activeQuality
+            mode: activeModel,
+            resolution: activeResolution,
+            quality: activeQuality,
+            referenceImages: currentReferenceImage ? [currentReferenceImage] : []
           });
+
+          clearTimeout(t1);
+          clearTimeout(t2);
+          clearTimeout(t3);
 
           if (res && res.imageUrl) {
             $('#imagePlaceholder').style.display = 'none';
@@ -10620,9 +12881,22 @@
             const detailsEl = $('#imageResultDetails');
             if (detailsEl) {
               detailsEl.style.display = 'block';
-              $('#imageResultModel').textContent = `${res.actualModelUsed || res.requestedModel} (${res.modelTier || 'Active'})`;
-              $('#imageResultRes').textContent = `${res.actualResolution || res.requestedResolution} (Target: ${res.requestedResolution || 'Auto'})`;
+              $('#imageResultProvider').textContent = res.provider || 'Google Gemini';
+              $('#imageResultModel').textContent = `${res.actualModelUsed || res.model || res.requestedModel}`;
+              const resTag = res.is4K ? ' (True 4K)' : (res.is2K ? ' (2K)' : ' (1K)');
+              $('#imageResultRes').textContent = `${res.actualResolution || res.requestedResolution}${resTag}`;
               $('#imageResultTime').textContent = `${((res.durationMs || 0) / 1000).toFixed(1)}s`;
+
+              const fallbackAlert = $('#imageFallbackAlert');
+              if (res.fallbackUsed) {
+                if (fallbackAlert) {
+                  fallbackAlert.style.display = 'block';
+                  $('#imageFallbackMsg').textContent = res.fallbackNote || `Primary provider (Google Gemini) quota reached. Switched to Fallback (${res.provider}).`;
+                }
+              } else {
+                if (fallbackAlert) fallbackAlert.style.display = 'none';
+              }
+
               if (res.enhancedPrompt) {
                 $('#imageResultPromptBox').style.display = 'block';
                 $('#imageResultPrompt').textContent = res.enhancedPrompt;
@@ -10631,12 +12905,15 @@
               }
             }
 
-            statusEl.textContent = `Generated successfully with ${res.actualModelUsed || res.requestedModel}!`;
-            showToast('Artwork generated successfully!');
+            statusEl.textContent = 'Complete';
+            showToast(res.isEditing ? 'Image edited successfully!' : 'Image generated successfully!');
           } else {
             throw new Error(res.error || 'Failed to generate visual');
           }
         } catch (err) {
+          clearTimeout(t1);
+          clearTimeout(t2);
+          clearTimeout(t3);
           statusEl.textContent = 'Error: ' + err.message;
           showToast('Image generation failed: ' + err.message);
         } finally {
@@ -11034,10 +13311,14 @@
 
       function updateProfileUI(user) {
         if (!user) return;
+        const profile = (typeof UserService !== 'undefined' && UserService.getProfile()) ? UserService.getProfile() : null;
 
-        const displayName = user.displayName || user.email?.split('@')[0] || (user.phoneNumber ? user.phoneNumber : 'Epic Thinker');
-        const email = user.email || user.phoneNumber || 'Authenticated User';
+        const displayName = (profile && (profile.displayName || `${profile.firstName || ''} ${profile.lastName || ''}`.trim()))
+          || user.displayName || user.email?.split('@')[0] || (user.phoneNumber ? user.phoneNumber : 'Epic Thinker');
+        const email = (profile && profile.email) || user.email || user.phoneNumber || 'Authenticated User';
         const uid = user.uid;
+        const photoURL = (profile && profile.profilePhotoUrl) || user.photoURL;
+        const username = (profile && profile.username) || '';
 
         // Determine provider name
         let providerName = 'Email/Password';
@@ -11055,17 +13336,14 @@
         const userNameEl = $('#userNameLabel');
         const userEmailEl = $('#userEmailLabel');
         const userAvatarEl = $('#userAvatar');
+        const userHandleEl = $('#userHandleLabel');
 
         if (userNameEl) userNameEl.textContent = displayName;
         if (userEmailEl) userEmailEl.textContent = email;
+        if (userHandleEl && username) userHandleEl.textContent = `@${username}`;
 
         if (userAvatarEl) {
-          if (user.photoURL) {
-            userAvatarEl.innerHTML = `<img src="${escapeHtml(user.photoURL)}" alt="${escapeHtml(displayName)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
-          } else {
-            const initials = (displayName.slice(0, 2) || 'ET').toUpperCase();
-            userAvatarEl.textContent = initials;
-          }
+          userAvatarEl.innerHTML = renderAvatarHtml(profile || { displayName, email, profilePhotoUrl: photoURL }, 32);
         }
 
         // Settings Modal Profile
@@ -11081,12 +13359,7 @@
         if (modalProviderBadge) modalProviderBadge.textContent = providerName;
 
         if (modalAvatarEl) {
-          if (user.photoURL) {
-            modalAvatarEl.innerHTML = `<img src="${escapeHtml(user.photoURL)}" alt="${escapeHtml(displayName)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
-          } else {
-            const initials = (displayName.slice(0, 2) || 'ET').toUpperCase();
-            modalAvatarEl.textContent = initials;
-          }
+          modalAvatarEl.innerHTML = renderAvatarHtml(profile || { displayName, email, profilePhotoUrl: photoURL }, 40);
         }
       }
 
@@ -11307,6 +13580,12 @@
             chat.title = event.title;
             renderHistory();
           }
+        } else if (event.type === 'profile_updated') {
+          try {
+            UserService.handleRealtimeSync(event);
+          } catch (e) {
+            console.warn('[ProfileSync:Event]', e);
+          }
         }
       });
 
@@ -11324,6 +13603,11 @@
             // User is authenticated
             currentUser = user;
             updateProfileUI(user);
+            try {
+              await ProfileUI.onUserAuthenticated(user);
+            } catch (e) {
+              console.warn('[ProfileUI:onUserAuthenticated]', e);
+            }
 
             // 1. Immediately load local cached chats for zero UI latency & zero flicker
             let localChats = storage.get('eta_chats_' + user.uid, []);
@@ -11383,6 +13667,11 @@
           } else {
             // User is unauthenticated - enforce login gating
             currentUser = null;
+            try {
+              ProfileUI.onUserSignedOut();
+            } catch (e) {
+              console.warn('[ProfileUI:onUserSignedOut]', e);
+            }
             state.chats = [];
             state.memories = [];
             state.plugins = [...DEFAULT_PLUGINS];

@@ -132,7 +132,10 @@ export async function initMongoDB() {
       await Promise.allSettled([
         // Users collection indexes
         usersCol.createIndex({ firebaseUid: 1 }, { unique: true }),
+        usersCol.createIndex({ username: 1 }, { unique: true, sparse: true }),
         usersCol.createIndex({ email: 1 }),
+        usersCol.createIndex({ updatedAt: -1 }),
+        usersCol.createIndex({ "usage.lastActiveAt": -1 }),
 
         // Conversations collection indexes
         conversationsCol.createIndex({ firebaseUid: 1, updatedAt: -1 }),
@@ -285,48 +288,553 @@ export async function ensureConnected() {
 }
 
 /**
- * Upsert authenticated user profile into users collection
- * 
- * @param {{ uid: string, email?: string, name?: string }} user
+ * Generate a clean base slug for a username
  */
-export async function upsertUser(user) {
-  if (!user || !user.uid) return null;
+function generateCleanUsername(nameOrEmail) {
+  let base = (nameOrEmail || 'user')
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 20);
+  if (!base || base.length < 3) base = `thinker_${Math.floor(100 + Math.random() * 900)}`;
+  return base;
+}
+
+/**
+ * Check if a username is valid and available (unique)
+ * 
+ * @param {string} username - Desired username
+ * @param {string} [excludeUid] - Current user's Firebase UID to exclude from collision
+ * @returns {Promise<{ available: boolean, username?: string, reason?: string }>}
+ */
+export async function checkUsernameAvailability(username, excludeUid = null) {
+  if (!username || typeof username !== 'string') {
+    return { available: false, reason: 'Username is required.' };
+  }
+  const clean = username.trim().toLowerCase();
+  if (!/^[a-z0-9_-]{3,30}$/.test(clean)) {
+    return {
+      available: false,
+      reason: 'Username must be 3-30 characters long and contain only lowercase letters, numbers, underscores, or hyphens.'
+    };
+  }
+
+  // Reserved usernames blacklist
+  const RESERVED_USERNAMES = new Set([
+    'admin', 'administrator', 'root', 'support', 'help', 'system', 'api',
+    'bot', 'epicthink', 'epicthinkai', 'official', 'null', 'undefined',
+    'mod', 'moderator', 'staff', 'security', 'billing', 'auth', 'login', 'signup'
+  ]);
+  if (RESERVED_USERNAMES.has(clean)) {
+    return { available: false, reason: 'This username is reserved and cannot be claimed.' };
+  }
+
   await ensureConnected();
 
-  const now = Date.now();
-  const userDoc = {
-    firebaseUid: String(user.uid),
-    email: user.email || null,
-    name: user.name || (user.email ? user.email.split('@')[0] : 'Epic Thinker'),
-    updatedAt: now
-  };
-
-  // Cache locally
-  if (!fallbackStore.users) fallbackStore.users = {};
-  fallbackStore.users[user.uid] = {
-    ...fallbackStore.users[user.uid],
-    ...userDoc,
-    createdAt: fallbackStore.users[user.uid]?.createdAt || now
-  };
-  persistFallbackStore();
-
   if (isConnected && usersCol) {
-    try {
-      await usersCol.updateOne(
-        { firebaseUid: userDoc.firebaseUid },
-        { 
-          $set: userDoc,
-          $setOnInsert: { createdAt: now }
-        },
-        { upsert: true }
-      );
-      console.log(`[AUTH] User session synchronized in database: ${user.uid}`);
-    } catch (err) {
-      console.warn('[AUTH] Error upserting user in MongoDB:', err.message);
+    const query = { username: clean };
+    if (excludeUid) {
+      query.firebaseUid = { $ne: String(excludeUid) };
+    }
+    const existing = await usersCol.findOne(query);
+    if (existing) {
+      return { available: false, reason: 'Username is already taken.' };
+    }
+  } else {
+    // Check local resilient fallback cache
+    for (const [fUid, u] of Object.entries(fallbackStore.users || {})) {
+      if (excludeUid && fUid === String(excludeUid)) continue;
+      if (u.username && u.username.toLowerCase() === clean) {
+        return { available: false, reason: 'Username is already taken.' };
+      }
     }
   }
 
-  return userDoc;
+  return { available: true, username: clean };
+}
+
+/**
+ * Compute numeric profile completion percentage (0 - 100%)
+ * 
+ * @param {object} doc - User document
+ * @returns {number} Percentage completed (0 - 100)
+ */
+export function computeProfileCompletion(doc = {}) {
+  let score = 0;
+  if (doc.firstName && String(doc.firstName).trim().length > 0) score += 20;
+  if (doc.lastName && String(doc.lastName).trim().length > 0) score += 20;
+  if (doc.username && String(doc.username).trim().length >= 3) score += 20;
+  if (doc.profilePhotoUrl && String(doc.profilePhotoUrl).trim().length > 0) score += 20;
+  if (doc.bio && String(doc.bio).trim().length > 0) score += 10;
+  const hasJobTitle = doc.jobTitle && String(doc.jobTitle).trim().length > 0;
+  const hasAbout = doc.personalization && doc.personalization.aboutUser && String(doc.personalization.aboutUser).trim().length > 0;
+  if (hasJobTitle || hasAbout) score += 10;
+  return Math.min(100, Math.max(0, score));
+}
+
+/**
+ * Retrieve production User Profile for an authenticated user.
+ * Automatically backfills and normalizes fields if document is missing or newly created.
+ * 
+ * @param {string} uid - Firebase UID
+ * @param {object} [userFallback] - Additional metadata from verified Firebase token
+ */
+export async function getUserProfile(uid, userFallback = null) {
+  if (!uid) return null;
+  await ensureConnected();
+  const fUid = String(uid);
+
+  let doc = null;
+  if (isConnected && usersCol) {
+    doc = await usersCol.findOne({ firebaseUid: fUid });
+  }
+  if (!doc && fallbackStore.users && fallbackStore.users[fUid]) {
+    doc = fallbackStore.users[fUid];
+  }
+
+  const now = Date.now();
+
+  // If user document doesn't exist yet, synthesize canonical profile
+  if (!doc) {
+    const rawName = userFallback?.name || userFallback?.displayName || (userFallback?.email ? userFallback.email.split('@')[0] : '');
+    const nameParts = rawName ? rawName.trim().split(/\s+/) : [];
+    const firstName = nameParts.length > 0 ? nameParts[0] : (userFallback?.email ? userFallback.email.split('@')[0] : 'Epic');
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : (nameParts.length > 0 ? '' : 'Thinker');
+    const displayName = rawName || `${firstName} ${lastName}`.trim();
+
+    // Generate unique initial username
+    let baseUsername = generateCleanUsername(displayName || userFallback?.email);
+    let candidateUsername = baseUsername;
+    let suffix = 1;
+    while (true) {
+      const avail = await checkUsernameAvailability(candidateUsername, fUid);
+      if (avail.available) break;
+      candidateUsername = `${baseUsername}_${suffix++}`;
+    }
+
+    const photoUrl = userFallback?.photoUrl || userFallback?.picture || userFallback?.photoURL || null;
+
+    doc = {
+      firebaseUid: fUid,
+      email: userFallback?.email || null,
+      firstName,
+      lastName,
+      displayName,
+      username: candidateUsername,
+      profilePhotoUrl: photoUrl,
+      bio: '',
+      jobTitle: '',
+      preferredLanguage: 'en',
+      timezone: 'Asia/Kolkata',
+      onboardingCompleted: Boolean(firstName && lastName && (userFallback?.signInProvider === 'google.com' || photoUrl)),
+      profileCompleted: 0,
+      preferences: {
+        theme: 'dark',
+        accentColor: '#3b82f6',
+        responseStyle: 'professional',
+        compactMode: false,
+        showAnimations: true,
+        reducedMotion: false,
+        codeFontLigatures: true,
+        timezone: 'Asia/Kolkata',
+        defaultModelMode: 'auto',
+        defaultLandingPage: 'chat'
+      },
+      personalization: {
+        customInstructions: '',
+        aboutUser: '',
+        responsePreferences: '',
+        responseStyle: 'professional',
+        language: 'en'
+      },
+      usage: {
+        totalChats: 0,
+        totalMessages: 0,
+        lastActiveAt: now
+      },
+      createdAt: now,
+      updatedAt: now,
+      lastLoginAt: now
+    };
+    doc.profileCompleted = computeProfileCompletion(doc);
+
+    if (isConnected && usersCol) {
+      try {
+        await usersCol.insertOne(doc);
+      } catch (err) {
+        doc = (await usersCol.findOne({ firebaseUid: fUid })) || doc;
+      }
+    }
+
+    if (!fallbackStore.users) fallbackStore.users = {};
+    fallbackStore.users[fUid] = doc;
+    persistFallbackStore();
+  } else {
+    // Migration & backfill safeguard for existing accounts
+    let needsUpdate = false;
+    const updates = {};
+
+    if (!doc.preferences) {
+      doc.preferences = {
+        theme: 'dark',
+        accentColor: '#3b82f6',
+        responseStyle: 'professional',
+        compactMode: false,
+        showAnimations: true,
+        reducedMotion: false,
+        defaultModelMode: 'auto',
+        defaultLandingPage: 'chat'
+      };
+      updates.preferences = doc.preferences;
+      needsUpdate = true;
+    }
+    if (!doc.personalization) {
+      doc.personalization = {
+        customInstructions: '',
+        aboutUser: '',
+        responsePreferences: '',
+        responseStyle: 'professional',
+        language: 'en'
+      };
+      updates.personalization = doc.personalization;
+      needsUpdate = true;
+    }
+    if (!doc.usage) {
+      doc.usage = {
+        totalChats: 0,
+        totalMessages: 0,
+        lastActiveAt: now
+      };
+      updates.usage = doc.usage;
+      needsUpdate = true;
+    }
+
+    if (!doc.username) {
+      let baseUsername = generateCleanUsername(doc.displayName || doc.name || doc.email);
+      let candidateUsername = baseUsername;
+      let suffix = 1;
+      while (true) {
+        const avail = await checkUsernameAvailability(candidateUsername, fUid);
+        if (avail.available) break;
+        candidateUsername = `${baseUsername}_${suffix++}`;
+      }
+      doc.username = candidateUsername;
+      updates.username = candidateUsername;
+      needsUpdate = true;
+    }
+
+    if (!doc.firstName) {
+      const parts = (doc.displayName || doc.name || '').trim().split(/\s+/);
+      doc.firstName = parts[0] || (doc.email ? doc.email.split('@')[0] : 'Epic');
+      doc.lastName = parts.slice(1).join(' ') || '';
+      updates.firstName = doc.firstName;
+      updates.lastName = doc.lastName;
+      needsUpdate = true;
+    }
+
+    if (doc.displayName === undefined) {
+      doc.displayName = doc.name || `${doc.firstName} ${doc.lastName}`.trim();
+      updates.displayName = doc.displayName;
+      needsUpdate = true;
+    }
+
+    if (doc.profilePhotoUrl === undefined && (userFallback?.photoUrl || userFallback?.picture)) {
+      doc.profilePhotoUrl = userFallback.photoUrl || userFallback.picture;
+      updates.profilePhotoUrl = doc.profilePhotoUrl;
+      needsUpdate = true;
+    }
+
+    if (doc.jobTitle === undefined) {
+      doc.jobTitle = '';
+      updates.jobTitle = '';
+      needsUpdate = true;
+    }
+
+    // Ensure profileCompleted is a numeric percentage
+    const computedScore = computeProfileCompletion(doc);
+    if (typeof doc.profileCompleted !== 'number' || doc.profileCompleted !== computedScore) {
+      doc.profileCompleted = computedScore;
+      updates.profileCompleted = computedScore;
+      needsUpdate = true;
+    }
+
+    doc.lastLoginAt = now;
+    updates.lastLoginAt = now;
+    if (doc.usage) {
+      doc.usage.lastActiveAt = now;
+      updates['usage.lastActiveAt'] = now;
+    }
+
+    if (needsUpdate || updates.lastLoginAt) {
+      if (isConnected && usersCol) {
+        try {
+          await usersCol.updateOne({ firebaseUid: fUid }, { $set: updates });
+        } catch (_) {}
+      }
+      if (!fallbackStore.users) fallbackStore.users = {};
+      fallbackStore.users[fUid] = { ...doc, ...updates };
+      persistFallbackStore();
+    }
+  }
+
+  return doc;
+}
+
+/**
+ * Upsert authenticated user profile into users collection (Maintains backwards compatibility)
+ * 
+ * @param {{ uid: string, email?: string, name?: string, photoUrl?: string, picture?: string }} user
+ */
+export async function upsertUser(user) {
+  if (!user || !user.uid) return null;
+  return await getUserProfile(user.uid, user);
+}
+
+/**
+ * Update authenticated user profile fields
+ * 
+ * @param {string} uid - Firebase UID
+ * @param {object} updateFields - Allowlisted fields to update
+ */
+export async function updateUserProfile(uid, updateFields = {}) {
+  if (!uid) throw new Error('User UID is required');
+  await ensureConnected();
+  const fUid = String(uid);
+
+  // Strictly allowlisted fields only
+  const allowedKeys = [
+    'firstName', 'lastName', 'displayName', 'username', 'bio', 'jobTitle',
+    'preferredLanguage', 'timezone', 'profilePhotoUrl',
+    'onboardingCompleted'
+  ];
+
+  const sanitized = {};
+  for (const key of allowedKeys) {
+    if (updateFields[key] !== undefined) {
+      if (typeof updateFields[key] === 'string') {
+        sanitized[key] = updateFields[key].trim();
+      } else {
+        sanitized[key] = updateFields[key];
+      }
+    }
+  }
+
+  // Username validation if provided
+  if (sanitized.username) {
+    const avail = await checkUsernameAvailability(sanitized.username, fUid);
+    if (!avail.available) {
+      throw new Error(avail.reason || 'Username is not available.');
+    }
+    sanitized.username = avail.username;
+  }
+
+  // Derive displayName if not explicitly supplied but firstName/lastName changed
+  if ((sanitized.firstName || sanitized.lastName) && !sanitized.displayName) {
+    sanitized.displayName = `${sanitized.firstName || ''} ${sanitized.lastName || ''}`.trim();
+  }
+
+  const now = Date.now();
+  sanitized.updatedAt = now;
+
+  // Recalculate profileCompleted percentage
+  const existing = await getUserProfile(fUid);
+  const mergedForScore = {
+    ...existing,
+    ...sanitized
+  };
+  sanitized.profileCompleted = computeProfileCompletion(mergedForScore);
+
+  if (isConnected && usersCol) {
+    await usersCol.updateOne(
+      { firebaseUid: fUid },
+      { $set: sanitized },
+      { upsert: true }
+    );
+  }
+
+  if (!fallbackStore.users) fallbackStore.users = {};
+  fallbackStore.users[fUid] = {
+    ...(fallbackStore.users[fUid] || {}),
+    ...sanitized
+  };
+  persistFallbackStore();
+
+  return await getUserProfile(fUid);
+}
+
+/**
+ * Update user preferences
+ * 
+ * @param {string} uid - Firebase UID
+ * @param {object} preferences - User preferences object
+ */
+export async function updateUserPreferences(uid, preferences = {}) {
+  if (!uid) throw new Error('User UID is required');
+  await ensureConnected();
+  const fUid = String(uid);
+
+  const allowed = [
+    'theme', 'accentColor', 'responseStyle', 'compactMode',
+    'showAnimations', 'reducedMotion', 'codeFontLigatures', 'timezone',
+    'defaultModelMode', 'defaultLandingPage'
+  ];
+
+  const sanitized = {};
+  for (const k of allowed) {
+    if (preferences[k] !== undefined) {
+      sanitized[`preferences.${k}`] = preferences[k];
+    }
+  }
+  sanitized.updatedAt = Date.now();
+
+  if (isConnected && usersCol) {
+    await usersCol.updateOne({ firebaseUid: fUid }, { $set: sanitized });
+  }
+
+  if (fallbackStore.users && fallbackStore.users[fUid]) {
+    fallbackStore.users[fUid].preferences = {
+      ...(fallbackStore.users[fUid].preferences || {}),
+      ...preferences
+    };
+    fallbackStore.users[fUid].updatedAt = Date.now();
+    persistFallbackStore();
+  }
+
+  return await getUserProfile(fUid);
+}
+
+/**
+ * Update user personalization (Custom instructions, aboutUser, responsePreferences)
+ * 
+ * @param {string} uid - Firebase UID
+ * @param {object} personalization - User personalization object
+ */
+export async function updateUserPersonalization(uid, personalization = {}) {
+  if (!uid) throw new Error('User UID is required');
+  await ensureConnected();
+  const fUid = String(uid);
+
+  const allowed = ['customInstructions', 'aboutUser', 'responsePreferences', 'responseStyle', 'language'];
+  const sanitized = {};
+  for (const k of allowed) {
+    if (personalization[k] !== undefined) {
+      sanitized[`personalization.${k}`] = typeof personalization[k] === 'string' ? personalization[k].trim() : personalization[k];
+    }
+  }
+  sanitized.updatedAt = Date.now();
+
+  // Recalculate profileCompleted percentage
+  const existing = await getUserProfile(fUid);
+  const updatedDoc = {
+    ...existing,
+    personalization: {
+      ...(existing.personalization || {}),
+      ...personalization
+    }
+  };
+  sanitized.profileCompleted = computeProfileCompletion(updatedDoc);
+
+  if (isConnected && usersCol) {
+    await usersCol.updateOne({ firebaseUid: fUid }, { $set: sanitized });
+  }
+
+  if (fallbackStore.users && fallbackStore.users[fUid]) {
+    fallbackStore.users[fUid].personalization = {
+      ...(fallbackStore.users[fUid].personalization || {}),
+      ...personalization
+    };
+    fallbackStore.users[fUid].profileCompleted = sanitized.profileCompleted;
+    fallbackStore.users[fUid].updatedAt = Date.now();
+    persistFallbackStore();
+  }
+
+  return await getUserProfile(fUid);
+}
+
+/**
+ * Get user usage statistics directly from MongoDB
+ * 
+ * @param {string} uid - Firebase UID
+ */
+export async function getUserUsageStats(uid) {
+  if (!uid) return { totalChats: 0, totalConversations: 0, totalMessages: 0, createdAt: Date.now(), memberSince: Date.now(), lastActiveAt: Date.now() };
+  await ensureConnected();
+  const fUid = String(uid);
+
+  let totalChats = 0;
+  let totalMessages = 0;
+
+  if (isConnected && conversationsCol) {
+    try {
+      totalChats = await conversationsCol.countDocuments({
+        $or: [{ firebaseUid: fUid }, { uid: fUid }]
+      });
+      if (messagesCol) {
+        totalMessages = await messagesCol.countDocuments({
+          $or: [{ firebaseUid: fUid }, { uid: fUid }]
+        });
+      }
+    } catch (_) {}
+  } else if (fallbackStore.conversations && fallbackStore.conversations[fUid]) {
+    const chats = Object.values(fallbackStore.conversations[fUid] || {});
+    totalChats = chats.length;
+    for (const c of chats) {
+      totalMessages += (c.messages || []).length;
+    }
+  }
+
+  const profile = await getUserProfile(fUid);
+  const created = profile?.createdAt || Date.now();
+
+  return {
+    totalChats,
+    totalConversations: totalChats,
+    totalMessages,
+    createdAt: created,
+    memberSince: created,
+    lastActiveAt: profile?.lastLoginAt || profile?.updatedAt || Date.now()
+  };
+}
+
+/**
+ * Securely delete user profile and all user-owned data from MongoDB
+ * 
+ * @param {string} uid - Firebase UID
+ */
+export async function deleteUserProfileAndData(uid) {
+  if (!uid) return false;
+  await ensureConnected();
+  const fUid = String(uid);
+
+  let deletedConversations = 0;
+  let deletedMessages = 0;
+
+  if (isConnected && db) {
+    try {
+      const convRes = await conversationsCol.deleteMany({
+        $or: [{ firebaseUid: fUid }, { uid: fUid }]
+      });
+      deletedConversations = convRes.deletedCount || 0;
+
+      if (messagesCol) {
+        const msgRes = await messagesCol.deleteMany({
+          $or: [{ firebaseUid: fUid }, { uid: fUid }]
+        });
+        deletedMessages = msgRes.deletedCount || 0;
+      }
+
+      await usersCol.deleteOne({ firebaseUid: fUid });
+    } catch (err) {
+      console.warn('[DB] Error during user account deletion:', err.message);
+    }
+  }
+
+  // Remove from fallbackStore
+  if (fallbackStore.users) delete fallbackStore.users[fUid];
+  if (fallbackStore.conversations) delete fallbackStore.conversations[fUid];
+  persistFallbackStore();
+
+  return true;
 }
 
 /**

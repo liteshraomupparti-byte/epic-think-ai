@@ -16,6 +16,9 @@ import { AICancellationError, AITimeoutError } from '../errors/AIErrors.js';
 import { IntentDispatcher } from './IntentDispatcher.js';
 import { GenerationConfig } from './GenerationConfig.js';
 import { WebSearchClient } from '../../plugins/providers/web-search/WebSearchClient.js';
+import { SeoAuditEngine } from '../../services/websiteBuilder/SeoAuditEngine.js';
+import { ProjectManager } from '../../services/websiteBuilder/ProjectManager.js';
+import { getUserProfile } from '../../services/mongoService.js';
 
 export class AgentOrchestrator {
   /**
@@ -109,7 +112,14 @@ export class AgentOrchestrator {
       }
     }
 
-    // 1. Recall Hindsight Semantic Memory
+    // 1. Recall Hindsight Semantic Memory & User Personalization Profile
+    let userProfile = null;
+    try {
+      if (uid && uid !== 'guest_user') {
+        userProfile = await getUserProfile(uid);
+      }
+    } catch (_) {}
+
     let recalledMemories = [];
     let recalledPromptContext = '';
     try {
@@ -189,17 +199,48 @@ export class AgentOrchestrator {
     }
 
     // 2c. Proactive Web Search (if toggled by user or explicitly requested in query)
+    // 2c. Proactive Web Search & SEO Intelligence
     let liveWebSearchContext = '';
     let mapCardBlock = '';
     let mapCardEmitted = false;
-    const needsSearch = webSearch || /(?:search (?:the )?web|web search|browse the web|latest news|search online|search google|current news|near me|nearby|around here|closest|hostel|hostels|hotel|hotels|restaurant|restaurants|cafe|cafes|pg|paying guest|co-living|coliving|lodge|lodges)\b/i.test(userPrompt);
+
+    // Check for SEO audit query intent
+    const isSeoQuery = /(?:seo audit|seo analysis|audit seo|analyze seo|technical seo|meta tags audit|seo report|check seo|lighthouse seo)\b/i.test(userPrompt);
+    if (isSeoQuery && !isContinuation) {
+      emit('ai:thinking', { thought: 'Initiating real-time technical SEO engine analysis...' });
+      try {
+        const urlMatch = userPrompt.match(/https?:\/\/[^\s]+|[a-zA-Z0-9_\-]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?/i);
+        let seoReport = null;
+        if (urlMatch) {
+          seoReport = await SeoAuditEngine.auditUrl(urlMatch[0]);
+        } else {
+          // Check for existing website builder projects
+          const projects = await ProjectManager.listProjects().catch(() => []);
+          const activeProjId = projects.length > 0 ? projects[0].id : null;
+          if (activeProjId) {
+            seoReport = await SeoAuditEngine.auditProject(activeProjId);
+          }
+        }
+
+        if (seoReport && seoReport.success) {
+          mapCardBlock += `:::seo-audit\n${JSON.stringify(seoReport)}\n:::\n\n`;
+          liveWebSearchContext += `\n\n[VERIFIED TECHNICAL SEO ENGINE AUDIT RESULTS]:\nScore: ${seoReport.score}/100 (${seoReport.grade})\nTotal Checks: ${seoReport.totalChecks} (Passed: ${seoReport.passedCount}, Issues: ${seoReport.issuesCount})\nPassed Checks: ${seoReport.passed.map(p => p.check).join(', ')}\nIssues: ${seoReport.issues.map(i => `[${i.severity.toUpperCase()}] ${i.message} -> Fix: ${i.recommendation}`).join('\n')}\n\n[PRESENTATION INSTRUCTIONS]: An interactive SEO Audit dashboard is already rendered at the top with score gauge, metrics, and severity cards. Provide an executive summary and strategic recommendations.`;
+          emit('ai:thinking', { thought: `Completed technical SEO analysis for ${seoReport.identifier || 'site'}: Score ${seoReport.score}/100 (${seoReport.grade}). Generating rich audit card...` });
+        }
+      } catch (seoErr) {
+        SafeLogger.warn('SEO audit execution failed gracefully', { error: seoErr.message });
+      }
+    }
+
+    const isLocalPlaceIntent = /(?:\bnear\s+me\b|\bnearby\b|\baround\s+here\b|\bclosest\b|\bin\s+my\s+area\b|\bhostel|\bhotel|\bresort|\blodge|\bmotel|\binn\b|\bpg\b|\bpaying\s+guest|\bco-?living|\baccommodation|\broom\s+for\s+rent|\bstay\s+in\b|\bplaces?\s+to\s+stay|\brestaurant|\bcafe\b|\bcafes\b|\bdiner|\beatery|\bbakery|\bfood\s+court|\bbiryani|\bpizza|\bburger|\bbar\b|\bbars\b|\bpub\b|\bpubs\b|\blounge|\bclub\b|\bclubs\b|\bshop|\bshops|\bstore|\bstores|\bmart\b|\bmall\b|\bmalls\b|\bmarket|\bsupermarket|\bgrocery|\bpharmacy|\bchemist|\bmedicals?\b|\bhospital|\bclinic|\bdoctor|\bdentist|\bgym\b|\bgyms\b|\bfitness|\byoga|\bturf\b|\bcourt\b|\bstadium|\bground|\bpark|\bparks|\bgarden|\bpicnic|\blake\b|\bzoo\b|\bmuseum|\bmonument|\bfort\b|\btemple|\bmosque|\bchurch|\btheatre|\btheater|\bcinema|\bmovie|\batm\b|\bbank\b|\bpetrol\b|\bfuel\b|\bgas\s+station|\bservice\s+center|\bmechanic|\bcar\s+wash|\bsalon\b|\bspa\b|\bparlour|\btourist|\bsightseeing|\bplaces?\s+to\s+visit|\bthings?\s+to\s+do)/i.test(userPrompt);
+    const needsSearch = webSearch || isLocalPlaceIntent || /(?:search (?:the )?web|web search|browse the web|latest news|search online|search google|current news)\b/i.test(userPrompt);
     if (needsSearch && !isContinuation) {
       const searchEngineName = process.env.SERPAPI_API_KEY ? 'Google (SerpAPI)' : 'DuckDuckGo';
       emit('ai:thinking', { thought: `Conducting live web search via ${searchEngineName} for: "${userPrompt.slice(0, 45)}"...` });
       try {
         const searchRes = await WebSearchClient.search({ query: userPrompt, location, maxResults: 6 });
         if (searchRes) {
-          // If local places were discovered (e.g. hostels, hotels, cafes), create ChatGPT-style map widget
+          // If local places were discovered (e.g. sports shops, picnic spots, hostels, cafes)
           if (Array.isArray(searchRes.places) && searchRes.places.length > 0) {
             const centerPlace = searchRes.places[0];
             const mapData = {
@@ -210,21 +251,31 @@ export class AgentOrchestrator {
               },
               places: searchRes.places.slice(0, 8)
             };
-            mapCardBlock = `:::map-card\n${JSON.stringify(mapData)}\n:::\n\n`;
+            const placesData = {
+              title: `${userPrompt.replace(/\b(?:near me|nearby|around here|closest|in my area)\b/gi, '').trim() || 'Places'} Near You`,
+              location: searchRes.location || 'Local Area',
+              count: searchRes.places.length,
+              center: mapData.center,
+              places: searchRes.places.slice(0, 8)
+            };
+            // Emit rich PlacesResult block (encapsulates header, map, and rich cards)
+            mapCardBlock += `:::places-result\n${JSON.stringify(placesData)}\n:::\n\n`;
+            // CRITICAL: Immediately stream map block so frontend renders the interactive Leaflet map widget first!
+            emit('ai:chunk', { content: mapCardBlock, text: mapCardBlock });
+            mapCardEmitted = true;
 
-            liveWebSearchContext = `[LOCAL GOOGLE MAPS & PLACES INTELLIGENCE (${searchRes.location ? searchRes.location : ''})]:\nQuery: "${userPrompt}"\n\n` +
-              `Places found:\n` + searchRes.places.map((p, i) => `${i + 1}. ${p.title} (${p.category || 'Place'}) - ★ ${p.rating} | ${p.address}`).join('\n') +
-              `\n\n[MANDATORY CHATGPT-STYLE MAP PRESENTATION INSTRUCTIONS]:\n` +
-              `1. An interactive map widget is already rendered at the top displaying these places with pins, ratings, and photo cards.\n` +
-              `2. Below the map, write a clean, helpful, and natural response exactly like ChatGPT:\n` +
-              `   - Briefly state that you found options around the user's estimated area (${searchRes.location || 'the area'}).\n` +
-              `   - Provide a section: "**Nearby options**" with concise bullet points:\n` +
-              `     • **Place Name** — Area / neighborhood, key highlight or type\n` +
-              `   - Mention typical price ranges or room sharing details if relevant (e.g. for hostels: ₹3,000–₹12,000+ per month, for hotels: ₹2,000–₹8,000/night).\n` +
-              `   - End with a friendly, helpful prompt: "If you have a specific landmark, budget, or preferred room type (private vs dorm), let me know and I can narrow it down!"\n` +
-              `3. Do NOT output giant standalone photo blocks or messy table pipe syntax in the text; visual photos and directions are already embedded directly in the interactive map widget!`;
+            liveWebSearchContext += `[LOCAL GOOGLE MAPS & PLACES INTELLIGENCE (${searchRes.location ? searchRes.location : ''})]:\nQuery: "${userPrompt}"\n\n` +
+              `Places found:\n` + searchRes.places.map((p, i) => `${i + 1}. ${p.title} (${p.category || 'Place'}) - ★ ${p.rating} | ${p.address} | ${p.status || 'Open'}`).join('\n') +
+              `\n\n[MANDATORY PRESENTATION INSTRUCTIONS]:\n` +
+              `1. The interactive dark map widget and place chips carousel have already been rendered at the top displaying verified map pins, ratings, photos, and directions.\n` +
+              `2. Below the map widget, write a clean, helpful, and natural response exactly like ChatGPT:\n` +
+              `   - Begin with a natural conversational sentence acknowledging the estimated area (e.g. "I found several ${userPrompt.replace(/\b(?:near me|nearby|around here|closest|in my area)\b/gi, '').trim() || 'places'} around your current estimated ${searchRes.location || 'local'} area. Since I don't have your exact location, I can't reliably tell which is closest.")\n` +
+              `   - Include a section titled "**Nearby options**" with concise bullet points:\n` +
+              `     • **Place Name** — Neighborhood/Area, short highlights (e.g. boys' hostel, multi-sport megastore, etc.)\n` +
+              `   - Keep the text crisp, friendly, and natural without repeating addresses or phone numbers.\n` +
+              `3. Do NOT output duplicate photo blocks, raw URLs, or markdown tables; all visual photos, maps, and directions are already embedded directly in the interactive map widget!`;
 
-            emit('ai:thinking', { thought: `Found ${searchRes.places.length} verified Google Maps places with GPS coordinates for ${searchRes.location || 'your area'}. Generating interactive map card...` });
+            emit('ai:thinking', { thought: `Found ${searchRes.places.length} verified Google Maps places with GPS coordinates for ${searchRes.location || 'your area'}. Rendering interactive map...` });
           } else if (Array.isArray(searchRes.results) && searchRes.results.length > 0) {
             const formattedResults = searchRes.results.map((r, i) =>
               `[${i + 1}] ${r.title}\nURL: ${r.url}\nSnippet: ${r.snippet}`
@@ -232,17 +283,19 @@ export class AgentOrchestrator {
 
             let imageContext = '';
             if (Array.isArray(searchRes.images) && searchRes.images.length > 0) {
-              imageContext = `\n\n[VERIFIED GOOGLE IMAGES (Include relevant ones as markdown images: ![Title](url))]:\n` +
+              imageContext = `\n\n[VERIFIED GOOGLE IMAGES]:\n` +
                 searchRes.images.map(img => `- "${img.title}": ${img.url}`).join('\n');
+              // Render verified photos in rich image gallery component
+              const galleryBlock = `:::image-gallery\n${JSON.stringify({ title: 'Verified Visual Sources', images: searchRes.images.slice(0, 6) })}\n:::\n\n`;
+              mapCardBlock += galleryBlock;
+              emit('ai:chunk', { content: galleryBlock, text: galleryBlock });
             }
 
-            liveWebSearchContext = `[LIVE WEB SEARCH INTELLIGENCE (${searchRes.source.toUpperCase()}${searchRes.location ? ` - ${searchRes.location}` : ''})]:\nQuery: "${userPrompt}"\n\n${formattedResults}${imageContext}\n\n` +
-              `[PROFESSIONAL PRESENTATION GUIDELINES (LIKE CHATGPT & CLAUDE)]:\n` +
+            liveWebSearchContext += `[LIVE WEB SEARCH INTELLIGENCE (${searchRes.source.toUpperCase()}${searchRes.location ? ` - ${searchRes.location}` : ''})]:\nQuery: "${userPrompt}"\n\n${formattedResults}${imageContext}\n\n` +
+              `[PROFESSIONAL PRESENTATION GUIDELINES]:\n` +
               `1. Provide a natural, engaging, beautifully formatted, and professional answer without raw markdown artifacts or messy syntax.\n` +
-              `2. Include verified photos using standard markdown image syntax: ![Place or Subject Name](image_url) when describing visual entities.\n` +
-              `3. Always use the exact verified URLs provided in [VERIFIED GOOGLE IMAGES]. Do NOT fabricate or guess image URLs.\n` +
-              `4. When providing comparison or directory listings, format clean GitHub-Flavored Markdown tables with clear column headers.\n` +
-              `5. Use clean headings (##, ###), bullet points, and actionable details (pricing, addresses, contacts, ratings). Do not ask generic location questions when search results are already provided.`;
+              `2. When providing comparison or directory listings, format clean GitHub-Flavored Markdown tables with clear column headers.\n` +
+              `3. Use clean headings (##, ###), bullet points, and actionable details (pricing, addresses, contacts, ratings). Do not ask generic location questions when search results are already provided.`;
 
             emit('ai:thinking', { thought: `Retrieved ${searchRes.results.length} live sources and ${searchRes.images?.length || 0} photos from ${searchRes.source}${searchRes.location ? ` for ${searchRes.location}` : ''}. Synthesizing answer...` });
           }
@@ -270,7 +323,8 @@ export class AgentOrchestrator {
         recalledMemories,
         recalledPromptContext,
         activeModelPreset: modelPreset,
-        builderProject
+        builderProject,
+        userProfile
       });
       systemPrompt = built.systemPrompt;
       messages = built.messages;
@@ -553,9 +607,12 @@ export class AgentOrchestrator {
       }
     }
 
-    // If a map card block was generated, prepend to finalAnswer
-    if (mapCardBlock && !finalAnswer.includes(':::map-card')) {
-      finalAnswer = mapCardBlock + finalAnswer;
+    // If a rich result block was generated (places, map, image-gallery, or seo-audit), prepend to finalAnswer
+    if (mapCardBlock) {
+      const hasBlock = [':::places-result', ':::map-card', ':::image-gallery', ':::seo-audit'].some(tag => finalAnswer.includes(tag));
+      if (!hasBlock) {
+        finalAnswer = mapCardBlock + finalAnswer;
+      }
     }
 
     // If an autonomous builder project was created, append the Lovable preview card

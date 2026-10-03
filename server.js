@@ -45,7 +45,9 @@ import { initRealtimeSync, broadcastToUser } from './services/realtimeSync.js';
 import pluginRoutes from './routes/pluginRoutes.js';
 import agentRoutes from './routes/agentRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
+import imageRoutes from './routes/imageRoutes.js';
 import builderRoutes from './routes/builderRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 import { PreviewServer } from './services/websiteBuilder/PreviewServer.js';
 import { ProjectManager } from './services/websiteBuilder/ProjectManager.js';
 import { initializePlugins } from './plugins/index.js';
@@ -91,7 +93,9 @@ app.use('/api/plugins', pluginRoutes);
 app.use('/api/agent', agentRoutes);
 app.use('/api', agentRoutes); // Exposes /api/confirmations and aliases
 app.use('/api/ai', aiRoutes);
+app.use('/api/image', imageRoutes);
 app.use('/api/builder', builderRoutes);
+app.use('/api/user', userRoutes);
 app.use('/preview', PreviewServer.createExpressHandler());
 
 // ============================================================================
@@ -548,6 +552,7 @@ app.delete('/api/memory', requireAuth, async (req, res) => {
 // ============================================================================
 // STATIC ASSET SERVING
 // ============================================================================
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(__dirname));
 

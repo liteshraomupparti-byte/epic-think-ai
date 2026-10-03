@@ -69,7 +69,10 @@ export async function verifyToken(idToken) {
         return {
           uid: decoded.uid,
           email: decoded.email || null,
-          name: decoded.name || null
+          name: decoded.name || null,
+          picture: decoded.picture || null,
+          photoUrl: decoded.picture || null,
+          signInProvider: decoded.firebase?.sign_in_provider || null
         };
       }
     } catch (err) {
@@ -93,7 +96,10 @@ export async function verifyToken(idToken) {
         return {
           uid: u.localId,
           email: u.email || null,
-          name: u.displayName || null
+          name: u.displayName || null,
+          picture: u.photoUrl || null,
+          photoUrl: u.photoUrl || null,
+          signInProvider: u.providerUserInfo?.[0]?.providerId || null
         };
       }
     }

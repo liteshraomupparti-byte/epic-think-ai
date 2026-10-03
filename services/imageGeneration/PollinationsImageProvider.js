@@ -10,10 +10,41 @@
  */
 
 import { getImageDimensions } from './imageUtils.js';
+import { ImageProvider } from './ImageProvider.js';
 
-export class PollinationsImageProvider {
+export class PollinationsImageProvider extends ImageProvider {
   static BASE_URL = 'https://gen.pollinations.ai/image';
   static LEGACY_URL = 'https://image.pollinations.ai/prompt';
+
+  constructor() {
+    super('Pollinations.ai', 'pollinations');
+  }
+
+  async generateImage(params) {
+    return PollinationsImageProvider.generate(params);
+  }
+
+  async editImage(params) {
+    return PollinationsImageProvider.generate(params);
+  }
+
+  getCapabilities() {
+    return {
+      provider: this.name,
+      id: this.id,
+      hasApiKey: PollinationsImageProvider.hasApiKey(),
+      models: [
+        { id: 'flux', name: 'FLUX.1 Schnell / Sana', tier: 'STANDARD' },
+        { id: 'black-forest-labs/flux.2-pro', name: 'FLUX.2 Pro', tier: 'HIGH_QUALITY' },
+        { id: 'black-forest-labs/flux.2-max', name: 'FLUX.2 Max', tier: 'ULTRA' },
+        { id: 'black-forest-labs/flux.2-flex', name: 'FLUX.2 Flex', tier: 'FAST' }
+      ],
+      supportedAspectRatios: ['1:1', '16:9', '9:16', '4:3'],
+      supportedResolutions: ['1K', '2K'],
+      supportsEditing: false,
+      watermarked: !PollinationsImageProvider.hasApiKey()
+    };
+  }
 
   /**
    * High-resolution thematic curated library for zero-latency resilient fallback

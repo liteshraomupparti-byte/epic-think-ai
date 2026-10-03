@@ -1,37 +1,54 @@
 /**
- * Epic Think AI - Unified Image Generation Studio Service
+ * Epic Think AI - Unified Image Generation & Editing Studio Service
  * 
- * Orchestrates target pipeline:
+ * Target Architecture:
  * User Prompt
- * ──> Image Prompt Enhancer
- * ──> Image Model Router
- * ──> High-Quality Image Model (Pollinations with explicit model & key handling)
- * ──> Optional Image Upscaler & Resolution Verifier
- * ──> Final Image + Structured Audit Logging
+ *       ↓
+ * Image Prompt Enhancer (12 visual dimensions)
+ *       ↓
+ * Image Model Router (Dispatches to Gemini or Pollinations)
+ *       ↓
+ * Gemini Image Provider (Primary: Gemini 3 Pro / Flash, 1K/2K/4K)
+ *       ↓
+ * Fallback to Pollinations Provider (if Gemini fails / quota exceeded)
+ *       ↓
+ * Dimension & Quality Verifier (Truthful pixel inspection)
+ *       ↓
+ * Frontend Result + Transparent Provider Telemetry
  */
 
 import crypto from 'crypto';
 import { ImagePromptEnhancer } from './ImagePromptEnhancer.js';
-import { ImageModelRouter, QUALITY_TIERS, MODEL_ALIASES } from './ImageModelRouter.js';
-import { PollinationsImageProvider } from './PollinationsImageProvider.js';
+import { ImageModelRouter } from './ImageModelRouter.js';
 import { ImageUpscaler } from './ImageUpscaler.js';
-import { PollinationsCatalog } from './PollinationsCatalog.js';
 
-// In-memory generated image cache for resilient preview rendering
+// In-memory cache for generated images (keyed by requestId)
 const imageCache = new Map();
 
 export class ImageStudioService {
   /**
-   * Structured audit logger - strictly sanitized (no secrets or sensitive data logged)
+   * Structured audit logger - strictly sanitized (no secrets or private keys logged)
    */
-  static logAudit({ requestId, provider, model, resolution, duration, status, errorCode }) {
+  static logAudit({
+    requestId,
+    firebaseUid = 'anonymous',
+    provider,
+    model,
+    resolution,
+    aspectRatio,
+    duration,
+    status,
+    errorCode = null
+  }) {
     const logEntry = {
       timestamp: new Date().toISOString(),
       requestId,
+      firebaseUid,
       provider: provider || 'unknown',
       model: model || 'unknown',
       resolution: resolution || 'unknown',
-      durationMs: duration || 0,
+      aspectRatio: aspectRatio || '1:1',
+      generationTimeMs: duration || 0,
       status: status || 'unknown',
       errorCode: errorCode || null
     };
@@ -41,34 +58,43 @@ export class ImageStudioService {
   }
 
   /**
-   * Main Generation Pipeline
+   * Main Image Generation & Editing Pipeline
    * @param {Object} options
-   * @param {string} options.prompt - Raw user prompt
-   * @param {string} [options.model='AUTO'] - 'AUTO' | 'FLUX_2_PRO' | 'FLUX_2_MAX' | 'FLUX_2_FLEX'
+   * @param {string} options.prompt - User prompt / instruction
+   * @param {string} [options.mode='AUTO'] - 'AUTO' | 'HIGH_QUALITY' | 'FAST' | 'FALLBACK'
+   * @param {string} [options.model='AUTO'] - Model alias or custom ID
    * @param {string} [options.quality='HIGH'] - 'STANDARD' | 'HIGH' | 'ULTRA'
-   * @param {string} [options.aspectRatio='1:1'] - '1:1' | '16:9' | '9:16' | '4:3'
+   * @param {string} [options.resolution='1K'] - '1K' | '2K' | '4K'
+   * @param {string} [options.aspectRatio='1:1'] - '1:1' | '16:9' | '9:16' | '4:3' | '3:4' | '21:9'
    * @param {string} [options.style='photorealistic'] - Art style
    * @param {boolean} [options.enhance=true] - Whether to apply prompt enhancer
+   * @param {Array|string} [options.referenceImages=[]] - Reference image(s) for editing
    * @param {number} [options.seed] - Seed
-   * @returns {Promise<Object>} Final result
+   * @param {string} [options.firebaseUid='anonymous'] - Verified Firebase UID
+   * @returns {Promise<Object>} Final result with truthful telemetry
    */
   static async generateImage({
     prompt,
-    model = MODEL_ALIASES.AUTO,
-    quality = QUALITY_TIERS.HIGH,
+    mode = 'AUTO',
+    model = 'AUTO',
+    quality = 'HIGH',
+    resolution = '1K',
     aspectRatio = '1:1',
     style = 'photorealistic',
     enhance = true,
-    seed = null
+    referenceImages = [],
+    seed = null,
+    firebaseUid = 'anonymous'
   }) {
     const requestId = `img_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
     const startTime = Date.now();
 
-    if (!prompt || typeof prompt !== 'string') {
+    if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
       const duration = Date.now() - startTime;
       this.logAudit({
         requestId,
-        provider: 'pollinations',
+        firebaseUid,
+        provider: 'none',
         model: 'none',
         resolution: 'none',
         duration,
@@ -78,15 +104,16 @@ export class ImageStudioService {
       throw new Error('Prompt is required for image generation.');
     }
 
-    const hasApiKey = PollinationsImageProvider.hasApiKey();
-
     // 1. Step 1: Image Prompt Enhancer
     let enhancedPrompt = prompt.trim();
     let promptMetadata = { enhanced: false, dimensionsReasoned: [] };
 
-    if (enhance) {
+    // If reference images exist, this is an image editing task: preserve editing verbs
+    const isEditing = Array.isArray(referenceImages) && referenceImages.length > 0;
+
+    if (enhance && !isEditing) {
       const enhancedResult = await ImagePromptEnhancer.enhance({
-        prompt,
+        prompt: prompt.trim(),
         style,
         aspectRatio,
         targetModel: model
@@ -99,59 +126,112 @@ export class ImageStudioService {
     }
 
     // 2. Step 2: Image Model Router
-    const spec = await ImageModelRouter.createSpecification({
-      provider: 'pollinations',
+    const routing = ImageModelRouter.route({
+      mode,
       model,
-      prompt: enhancedPrompt,
-      aspectRatio,
       quality,
-      seed,
-      hasApiKey
+      resolution,
+      aspectRatio,
+      referenceImages
     });
 
-    // 3. Step 3: High-Quality Image Model Generation
-    const genResult = await PollinationsImageProvider.generate(spec);
+    // 3. Step 3: Attempt Primary Provider (Google Gemini by default)
+    let genResult = null;
+    let primaryFailed = false;
+    let primaryError = null;
+    let fallbackUsed = false;
+    let fallbackError = null;
+
+    try {
+      genResult = await routing.primaryProvider.generateImage({
+        prompt: enhancedPrompt,
+        model: routing.primaryModelId,
+        resolution: routing.resolution,
+        aspectRatio: routing.aspectRatio,
+        referenceImages,
+        seed
+      });
+    } catch (err) {
+      primaryFailed = true;
+      primaryError = err;
+
+      console.warn(`[IMAGE_STUDIO] Primary provider (${routing.primaryProvider.name}) encountered: [${err.code || 'ERROR'}] ${err.message}`);
+
+      // Attempt fallback provider if available
+      if (routing.fallbackProvider && routing.fallbackProvider !== routing.primaryProvider) {
+        console.log(`[IMAGE_STUDIO] Initiating fallback to ${routing.fallbackProvider.name}...`);
+        fallbackUsed = true;
+
+        try {
+          const fallbackSpec = {
+            model: routing.fallbackModelId || 'flux',
+            prompt: enhancedPrompt,
+            width: routing.pixelDimensions.width,
+            height: routing.pixelDimensions.height,
+            aspectRatio: routing.aspectRatio,
+            quality: routing.resolution === '4K' ? 'ULTRA' : (routing.resolution === '2K' ? 'HIGH' : 'STANDARD'),
+            seed,
+            referenceImages
+          };
+
+          genResult = await routing.fallbackProvider.generateImage(fallbackSpec);
+        } catch (fbErr) {
+          fallbackError = fbErr;
+        }
+      }
+    }
 
     const totalDuration = Date.now() - startTime;
 
-    if (!genResult.success) {
+    // If both primary and fallback failed
+    if (!genResult || !genResult.success) {
+      const activeErr = fallbackError || primaryError || new Error('Image generation failed across all providers.');
+      const errorCode = activeErr.code || genResult?.errorCode || 'GENERATION_FAILED';
+
       this.logAudit({
         requestId,
-        provider: 'pollinations',
-        model: spec.model,
-        resolution: spec.width ? `${spec.width}x${spec.height}` : 'unknown',
+        firebaseUid,
+        provider: routing.primaryProvider?.name || 'unknown',
+        model: routing.primaryModelId,
+        resolution: `${routing.pixelDimensions.width}x${routing.pixelDimensions.height}`,
+        aspectRatio: routing.aspectRatio,
         duration: totalDuration,
         status: 'error',
-        errorCode: genResult.errorCode || 'GENERATION_FAILED'
+        errorCode
       });
 
       return {
         success: false,
         requestId,
-        error: genResult.error || 'Failed to generate visual from image model provider.',
-        errorCode: genResult.errorCode,
-        provider: 'pollinations',
-        requestedModel: spec.model,
+        error: activeErr.message || genResult?.error || 'Image generation failed.',
+        errorCode,
+        primaryProvider: routing.primaryProvider?.name,
+        primaryFailed: true,
+        primaryError: primaryError?.message || null,
+        fallbackUsed,
+        fallbackError: fallbackError?.message || null,
         durationMs: totalDuration
       };
     }
 
-    // 4. Step 4: Optional Image Upscaler & Dimension Verifier
-    const upscalerResult = ImageUpscaler.process({
-      width: genResult.width,
-      height: genResult.height,
-      requestedResolution: spec.width ? `${spec.width}x${spec.height}` : '1024x1024',
-      quality
-    });
+    // 4. Step 4: True Dimension Verification (No fake 4K claims!)
+    const actualWidth = genResult.width || routing.pixelDimensions.width;
+    const actualHeight = genResult.height || routing.pixelDimensions.height;
+    const actualResolutionStr = `${actualWidth}x${actualHeight}`;
 
-    // Store in cache for reliable serving
-    imageCache.set(requestId, {
-      dataUri: genResult.dataUri,
-      mimeType: genResult.format === 'png' ? 'image/png' : 'image/jpeg',
-      timestamp: Date.now()
-    });
+    const is4K = actualWidth >= 3840 || actualHeight >= 3840;
+    const is2K = actualWidth >= 2048 || actualHeight >= 2048;
 
-    // Clean up cache entries older than 30 minutes
+    // Cache image data URI in memory
+    if (genResult.dataUri) {
+      imageCache.set(requestId, {
+        dataUri: genResult.dataUri,
+        mimeType: genResult.format === 'png' ? 'image/png' : 'image/jpeg',
+        timestamp: Date.now()
+      });
+    }
+
+    // Clean up cache older than 30 minutes
     const THIRTY_MINUTES = 30 * 60 * 1000;
     for (const [id, entry] of imageCache.entries()) {
       if (Date.now() - entry.timestamp > THIRTY_MINUTES) {
@@ -160,39 +240,53 @@ export class ImageStudioService {
     }
 
     // 5. Step 5: Structured Audit Logging
+    const actualProviderName = genResult.provider || (fallbackUsed ? routing.fallbackProvider.name : routing.primaryProvider.name);
+    const actualModelName = genResult.actualModelUsed || genResult.model || (fallbackUsed ? routing.fallbackModelId : routing.primaryModelId);
+
     this.logAudit({
       requestId,
-      provider: genResult.provider,
-      model: genResult.actualModelUsed || spec.model,
-      resolution: upscalerResult.finalResolution,
+      firebaseUid,
+      provider: actualProviderName,
+      model: actualModelName,
+      resolution: actualResolutionStr,
+      aspectRatio: routing.aspectRatio,
       duration: totalDuration,
-      status: 'success',
-      errorCode: null
+      status: fallbackUsed ? 'success_with_fallback' : 'success',
+      errorCode: primaryFailed ? primaryError?.code : null
     });
 
     return {
       success: true,
       requestId,
-      imageUrl: genResult.dataUri, // Guaranteed non-broken base64 data URI
-      directCdnUrl: genResult.imageUrl,
-      provider: 'pollinations',
-      requestedModel: spec.model,
-      actualModelUsed: genResult.actualModelUsed,
-      modelTier: spec.modelAlias,
-      modelTitle: spec.modelTitle,
-      requestedResolution: `${spec.width}x${spec.height}`,
-      actualResolution: upscalerResult.finalResolution,
-      is4K: upscalerResult.is4K,
-      is2K: upscalerResult.is2K,
-      qualityTier: spec.quality,
-      aspectRatio: spec.aspectRatio,
+      imageUrl: genResult.dataUri || genResult.imageUrl,
+      directCdnUrl: genResult.imageUrl || null,
+      provider: actualProviderName,
+      model: actualModelName,
+      modelTitle: genResult.modelTitle || actualModelName,
+      requestedModel: routing.primaryModelId,
+      actualModelUsed: actualModelName,
+      primaryProvider: routing.primaryProvider.name,
+      primaryFailed,
+      primaryError: primaryError ? primaryError.message : null,
+      primaryErrorCode: primaryError ? primaryError.code : null,
+      fallbackUsed,
+      fallbackNote: fallbackUsed 
+        ? `Primary provider (${routing.primaryProvider.name}) was unavailable or quota-limited (${primaryError?.code || '429'}). Image was rendered using fallback provider (${routing.fallbackProvider.name}).`
+        : null,
+      requestedResolution: routing.resolution,
+      actualResolution: actualResolutionStr,
+      width: actualWidth,
+      height: actualHeight,
+      is4K,
+      is2K,
+      aspectRatio: routing.aspectRatio,
       originalPrompt: prompt,
       enhancedPrompt,
       dimensionsReasoned: promptMetadata.dimensionsReasoned,
       durationMs: totalDuration,
-      watermarked: genResult.watermarked,
-      watermarkNote: genResult.watermarkNote,
-      resolutionNote: upscalerResult.notes
+      watermarked: Boolean(genResult.watermarked),
+      watermarkNote: genResult.watermarkNote || (genResult.watermarked ? 'Branded by Pollinations (Free Tier)' : 'Unwatermarked Clean Asset'),
+      isEditing
     };
   }
 
@@ -207,25 +301,6 @@ export class ImageStudioService {
    * Get dynamic model list and current provider capabilities
    */
   static async getStudioMetadata() {
-    const catalog = await PollinationsCatalog.getCatalog();
-    const config = PollinationsImageProvider.getPublicConfig();
-
-    return {
-      provider: config.provider,
-      watermarkPolicy: config.watermarkPolicy,
-      hasApiKey: config.hasApiKey,
-      supportedModels: [
-        { id: 'AUTO', title: 'Auto (Optimal High-Quality Model)', model: 'AUTO' },
-        { id: 'FLUX_2_PRO', title: 'FLUX.2 Pro (High Fidelity)', model: 'black-forest-labs/flux.2-pro' },
-        { id: 'FLUX_2_MAX', title: 'FLUX.2 Max (Ultra Precision)', model: 'black-forest-labs/flux.2-max' },
-        { id: 'FLUX_2_FLEX', title: 'FLUX.2 Flex (Speed & Versatility)', model: 'black-forest-labs/flux.2-flex' }
-      ],
-      qualityTiers: [
-        { id: 'STANDARD', title: 'Standard (1024px)' },
-        { id: 'HIGH', title: 'High Definition (1440px / 1080p)' },
-        { id: 'ULTRA', title: 'Ultra High Definition (2048px / 2K)' }
-      ],
-      aspectRatios: ['1:1', '16:9', '9:16', '4:3']
-    };
+    return ImageModelRouter.getCapabilities();
   }
 }

@@ -42,7 +42,8 @@ export class ContextManager {
     maxHistoryMessages = 8,
     activeModelPreset = 'Epic Think 4o',
     systemInstruction = null,
-    builderProject = null
+    builderProject = null,
+    userProfile = null
   }) {
     const messages = [];
 
@@ -97,6 +98,30 @@ A live, working project has already been autonomously ${isEdit ? 'modified' : 's
 • Live Preview URL: ${builderProject.previewUrl}
 • Files: ${(builderProject.files || []).join(', ')}
 Acknowledge the build/update with excitement! Explain the architecture and features created. Remind the user they can continue modifying the application through prompt!`;
+    }
+
+    // Incorporate User Profile Personalization & Custom Instructions
+    if (userProfile) {
+      const personalParts = [];
+      const name = userProfile.displayName || userProfile.firstName;
+      if (name) {
+        personalParts.push(`User's Name: ${name}`);
+      }
+      if (userProfile.personalization?.aboutUser) {
+        personalParts.push(`About User: ${ContextManager.sanitizeText(userProfile.personalization.aboutUser)}`);
+      }
+      if (userProfile.personalization?.customInstructions) {
+        personalParts.push(`Custom Instructions: ${ContextManager.sanitizeText(userProfile.personalization.customInstructions)}`);
+      }
+      const rawStyle = userProfile.personalization?.responseStyle || userProfile.personalization?.responsePreferences || userProfile.preferences?.responseStyle;
+      if (rawStyle) {
+        const styleStr = String(rawStyle).trim();
+        const capitalized = styleStr.charAt(0).toUpperCase() + styleStr.slice(1);
+        personalParts.push(`Response Style Preference: ${capitalized}`);
+      }
+      if (personalParts.length > 0) {
+        system += `\n\n[USER PERSONALIZATION & PROFILE PREFERENCES]:\n${personalParts.join('\n')}\n(Adhere to custom instructions and response style naturally. Avoid repeatedly greeting or stating the user's name on every response.)`;
+      }
     }
 
     // 2. Incorporate Hindsight Long-Term Memory Context

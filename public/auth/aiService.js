@@ -208,7 +208,7 @@ export class AiService {
     }
 
     return {
-      text: accumulatedText,
+      text: streamDoneData?.text || accumulatedText,
       ...(streamDoneData || {}),
       finishReason: streamDoneData?.finishReason || 'stop',
       isTruncated: Boolean(streamDoneData?.isTruncated),
@@ -253,7 +253,18 @@ export class AiService {
    * @param {string} [params.aspectRatio]
    */
   static async generateImage(params) {
-    return await fetchWithAuth('/api/ai/image', {
+    return await fetchWithAuth('/api/image/generate', {
+      method: 'POST',
+      body: JSON.stringify(params)
+    });
+  }
+
+  /**
+   * Edit or transform an existing image using reference image
+   * @param {Object} params
+   */
+  static async editImage(params) {
+    return await fetchWithAuth('/api/image/generate', {
       method: 'POST',
       body: JSON.stringify(params)
     });

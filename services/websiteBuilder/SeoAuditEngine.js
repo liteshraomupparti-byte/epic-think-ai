@@ -19,6 +19,29 @@ import { ProjectManager } from './ProjectManager.js';
 
 export class SeoAuditEngine {
   /**
+   * Run full SEO audit on an arbitrary URL
+   */
+  static async auditUrl(url) {
+    try {
+      let targetUrl = (url || '').trim();
+      if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+        targetUrl = 'https://' + targetUrl;
+      }
+      const res = await fetch(targetUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; EpicThinkAI-SEO-Bot/1.0)' },
+        signal: AbortSignal.timeout(8000)
+      });
+      if (!res.ok) {
+        return { success: false, error: `Failed to fetch URL: HTTP ${res.status}` };
+      }
+      const html = await res.text();
+      return this.auditHtml(html, targetUrl);
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
    * Run full SEO audit on the project
    */
   static async auditProject(projectId) {
@@ -28,7 +51,13 @@ export class SeoAuditEngine {
     } catch {
       return { success: false, error: 'Could not read index.html' };
     }
+    return this.auditHtml(indexHtml, projectId);
+  }
 
+  /**
+   * Core HTML SEO Auditor
+   */
+  static auditHtml(indexHtml, identifier = 'Web Application') {
     const issues = [];
     const passed = [];
 
@@ -199,7 +228,8 @@ export class SeoAuditEngine {
 
     return {
       success: true,
-      projectId,
+      identifier,
+      projectId: identifier,
       timestamp: new Date().toISOString(),
       score,
       grade: score >= 90 ? 'A+' : score >= 80 ? 'A' : score >= 70 ? 'B' : 'Needs Optimization',
@@ -210,7 +240,33 @@ export class SeoAuditEngine {
       issuesCount: issues.length,
       passed,
       issues,
-      recommendations: issues.map(i => i.recommendation)
+      recommendations: issues.map(i => i.recommendation),
+      technicalSeo: {
+        title: title || null,
+        titleLength: title ? title.length : 0,
+        description: description || null,
+        descriptionLength: description ? description.length : 0,
+        hasCanonical,
+        canonicalUrl: hasCanonical ? (indexHtml.match(/<link\s+rel=["']canonical["']\s+href=["']([^"']*)["']/i)?.[1] || 'Configured') : null
+      },
+      onPageSeo: {
+        h1Count: h1Matches.length,
+        h1Text: h1Matches.length > 0 ? h1Matches[0].replace(/<[^>]+>/g, '').trim() : null,
+        h2Count: (indexHtml.match(/<h2[^>]*>/gi) || []).length,
+        h3Count: (indexHtml.match(/<h3[^>]*>/gi) || []).length
+      },
+      structuredData: {
+        hasJsonLd,
+        hasOgTitle,
+        hasOgDesc,
+        hasOgImage,
+        hasTwitterCard: /<meta\s+name=["']twitter:card["']/i.test(indexHtml)
+      },
+      images: {
+        total: imgTags.length,
+        withAlt: imgTags.length - missingAltCount,
+        missingAlt: missingAltCount
+      }
     };
   }
 

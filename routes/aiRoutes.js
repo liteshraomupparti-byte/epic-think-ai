@@ -175,7 +175,7 @@ router.post('/stream', optionalAuth, async (req, res) => {
   const location = [clientCity, clientRegion, clientCountry].filter(Boolean).join(', ') || (typeof req.body?.clientLocation === 'string' ? req.body.clientLocation : null) || null;
 
   try {
-    let streamedAnyChunks = false;
+    let streamedTextContent = '';
     const streamResult = await AIEngine.chat({
       uid: req.user.uid,
       prompt: userPrompt,
@@ -191,13 +191,22 @@ router.post('/stream', optionalAuth, async (req, res) => {
       signal: abortController.signal,
       onEvent: (evt) => {
         if (evt.event === 'ai:chunk') {
-          streamedAnyChunks = true;
           const content = evt.content || evt.text || '';
+          streamedTextContent += content;
           sendEvent('chunk', { type: 'chunk', content, text: content });
         } else if (evt.event === 'ai:complete') {
-          // Only send full content as chunk if nothing was streamed token-by-token (avoids duplicating response)
-          if (evt.text && !streamedAnyChunks) {
-            sendEvent('chunk', { type: 'chunk', content: evt.text, text: evt.text });
+          // If the final text has not been fully streamed, stream the missing remainder
+          const finalText = evt.text || '';
+          if (finalText && !streamedTextContent) {
+            sendEvent('chunk', { type: 'chunk', content: finalText, text: finalText });
+          } else if (finalText && streamedTextContent && !streamedTextContent.includes(finalText)) {
+            let missingContent = finalText;
+            if (finalText.startsWith(streamedTextContent)) {
+              missingContent = finalText.slice(streamedTextContent.length);
+            }
+            if (missingContent) {
+              sendEvent('chunk', { type: 'chunk', content: missingContent, text: missingContent });
+            }
           }
           sendEvent('ai:complete', evt);
         } else {
@@ -210,6 +219,7 @@ router.post('/stream', optionalAuth, async (req, res) => {
       type: 'done',
       done: true,
       success: true,
+      text: streamResult.text,
       provider: streamResult.provider,
       model: streamResult.model,
       finishReason: streamResult.finishReason || 'stop',
@@ -316,11 +326,14 @@ router.get('/image/models', optionalAuth, async (req, res) => {
 router.post('/image', optionalAuth, async (req, res) => {
   const {
     prompt,
+    mode = 'AUTO',
     model = 'AUTO',
     quality = 'HIGH',
+    resolution = '1K',
     style = 'photorealistic',
     aspectRatio = '1:1',
     enhance = true,
+    referenceImages = [],
     seed
   } = req.body || {};
 
@@ -328,15 +341,21 @@ router.post('/image', optionalAuth, async (req, res) => {
     return res.status(400).json({ success: false, error: 'Prompt is required for image generation.' });
   }
 
+  const verifiedUid = req.user?.uid || 'guest_user';
+
   try {
     const result = await ImageStudioService.generateImage({
       prompt: prompt.trim(),
+      mode,
       model,
       quality,
+      resolution,
       style,
       aspectRatio,
       enhance: enhance !== false,
-      seed
+      referenceImages,
+      seed,
+      firebaseUid: verifiedUid
     });
 
     if (!result.success) {
@@ -345,8 +364,11 @@ router.post('/image', optionalAuth, async (req, res) => {
         error: result.error || 'Image generation failed',
         errorCode: result.errorCode,
         requestId: result.requestId,
-        provider: result.provider,
-        requestedModel: result.requestedModel
+        primaryProvider: result.primaryProvider,
+        primaryFailed: result.primaryFailed,
+        primaryError: result.primaryError,
+        fallbackUsed: result.fallbackUsed,
+        fallbackError: result.fallbackError
       });
     }
 
@@ -354,26 +376,32 @@ router.post('/image', optionalAuth, async (req, res) => {
       success: true,
       imageUrl: result.imageUrl,
       directCdnUrl: result.directCdnUrl,
-      engine: `Epic Think AI Studio (${result.actualModelUsed || result.requestedModel})`,
       provider: result.provider,
+      model: result.model,
+      modelTitle: result.modelTitle,
       requestedModel: result.requestedModel,
       actualModelUsed: result.actualModelUsed,
-      modelTier: result.modelTier,
-      modelTitle: result.modelTitle,
-      qualityTier: result.qualityTier,
+      primaryProvider: result.primaryProvider,
+      primaryFailed: result.primaryFailed,
+      primaryError: result.primaryError,
+      primaryErrorCode: result.primaryErrorCode,
+      fallbackUsed: result.fallbackUsed,
+      fallbackNote: result.fallbackNote,
       requestedResolution: result.requestedResolution,
       actualResolution: result.actualResolution,
+      width: result.width,
+      height: result.height,
       is4K: result.is4K,
       is2K: result.is2K,
+      aspectRatio: result.aspectRatio,
       originalPrompt: result.originalPrompt,
       enhancedPrompt: result.enhancedPrompt,
       dimensionsReasoned: result.dimensionsReasoned,
       style,
-      aspectRatio: result.aspectRatio,
       durationMs: result.durationMs,
       watermarked: result.watermarked,
       watermarkNote: result.watermarkNote,
-      resolutionNote: result.resolutionNote,
+      isEditing: result.isEditing,
       requestId: result.requestId
     });
   } catch (err) {

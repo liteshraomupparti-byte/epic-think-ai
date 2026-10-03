@@ -70,3 +70,7 @@ builder_projects/
 
 
 .vercel
+
+# User uploaded avatars & static files
+uploads/*
+!uploads/**/.gitkeep

@@ -28,6 +28,11 @@ export class WebSearchClient {
           effectiveLocation = [ipData.city, ipData.region, ipData.country].filter(Boolean).join(', ');
         }
       } catch (_) {}
+
+      // Resilient fallback default location if IP detection timed out or failed
+      if (!effectiveLocation) {
+        effectiveLocation = 'Hyderabad, Telangana, India';
+      }
     }
 
     if (effectiveLocation && hasNearMe) {
@@ -42,33 +47,23 @@ export class WebSearchClient {
       try {
         let serpUrl = `https://serpapi.com/search?engine=google&q=${cleanQuery}&api_key=${serpApiKey}&num=${limit}`;
         let serpImgUrl = `https://serpapi.com/search?engine=google_images&q=${cleanQuery}&api_key=${serpApiKey}&num=8`;
-        if (effectiveLocation) {
+        // Only append &location if resolvedQuery doesn't already contain "in <location>"
+        if (effectiveLocation && !resolvedQuery.toLowerCase().includes(effectiveLocation.toLowerCase())) {
           serpUrl += `&location=${encodeURIComponent(effectiveLocation)}`;
           serpImgUrl += `&location=${encodeURIComponent(effectiveLocation)}`;
         }
 
-        const fetchPromises = [
-          fetch(serpUrl, { signal: AbortSignal.timeout(10000) }),
-          fetch(serpImgUrl, { signal: AbortSignal.timeout(10000) }).catch(() => null)
+        const fetchTasks = [
+          fetch(serpUrl, { signal: AbortSignal.timeout(8000) }).then(r => r.ok ? r.json() : null).catch(() => null),
+          fetch(serpImgUrl, { signal: AbortSignal.timeout(8000) }).then(r => r.ok ? r.json() : null).catch(() => null)
         ];
 
         if (isPlaceQuery) {
           const mapsUrl = `https://serpapi.com/search?engine=google_maps&q=${cleanQuery}&api_key=${serpApiKey}`;
-          fetchPromises.push(fetch(mapsUrl, { signal: AbortSignal.timeout(10000) }).catch(() => null));
+          fetchTasks.push(fetch(mapsUrl, { signal: AbortSignal.timeout(8000) }).then(r => r.ok ? r.json() : null).catch(() => null));
         }
 
-        const [res, imgRes, mapsRes] = await Promise.all(fetchPromises);
-        const data = await res.json();
-
-        let imgData = null;
-        try {
-          if (imgRes && imgRes.ok) imgData = await imgRes.json();
-        } catch (_) {}
-
-        let mapsData = null;
-        try {
-          if (mapsRes && mapsRes.ok) mapsData = await mapsRes.json();
-        } catch (_) {}
+        const [data, imgData, mapsData] = await Promise.all(fetchTasks);
 
         const places = [];
         if (mapsData && Array.isArray(mapsData.local_results)) {
@@ -82,13 +77,13 @@ export class WebSearchClient {
                 title: p.title,
                 rating: p.rating || 4.5,
                 reviews: p.reviews || null,
-                category: p.type || (Array.isArray(p.types) ? p.types[0] : null) || 'Hostel',
+                category: p.type || (Array.isArray(p.types) ? p.types[0] : null) || 'Place',
                 address: p.address || '',
                 phone: p.phone || '',
                 lat,
                 lng,
                 thumbnail: p.thumbnail || p.serpapi_thumbnail || null,
-                status: p.open_state || 'Open',
+                status: p.open_state || p.hours || 'Open',
                 url: placeUrl
               });
             }
@@ -110,7 +105,7 @@ export class WebSearchClient {
           }
         }
 
-        if (Array.isArray(data.inline_images)) {
+        if (data && Array.isArray(data.inline_images)) {
           for (const img of data.inline_images.slice(0, 6)) {
             const url = img.thumbnail || img.original;
             if (url && images.length < 8) {
@@ -124,20 +119,34 @@ export class WebSearchClient {
           }
         }
 
-        const results = [];
-
-        // Direct Answer Box (e.g. weather, sports, calculators, quick facts)
-        if (data.answer_box) {
-          const box = data.answer_box;
-          const snippet = box.snippet || box.answer || box.result || box.title || '';
-          if (snippet) {
-            results.push({
-              title: box.title || 'Direct Answer',
-              url: box.link || '',
-              snippet: String(snippet)
-            });
+        // If places has photos and images is empty, extract from places
+        if (images.length === 0 && places.length > 0) {
+          for (const p of places) {
+            if (p.thumbnail && images.length < 6) {
+              images.push({
+                title: p.title,
+                url: p.thumbnail,
+                thumbnail: p.thumbnail,
+                source: 'Google Maps'
+              });
+            }
           }
         }
+
+        const results = [];
+        if (data) {
+          // Direct Answer Box (e.g. weather, sports, calculators, quick facts)
+          if (data.answer_box) {
+            const box = data.answer_box;
+            const snippet = box.snippet || box.answer || box.result || box.title || '';
+            if (snippet) {
+              results.push({
+                title: box.title || 'Direct Answer',
+                url: box.link || '',
+                snippet: String(snippet)
+              });
+            }
+          }
 
         // Local places fallback from web search
         if (data.local_results && Array.isArray(data.local_results.places)) {
@@ -187,20 +196,128 @@ export class WebSearchClient {
             });
           }
         }
+      }
 
-        if (results.length > 0 || places.length > 0) {
+      // If SerpApi local results were empty for a place query, fallback to OpenStreetMap Nominatim
+      if (isPlaceQuery && places.length === 0) {
+        try {
+          const osmRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(resolvedQuery)}&format=json&addressdetails=1&limit=${limit}`, {
+            headers: { 'User-Agent': 'EpicThinkAI/2.0 (+https://epicthink.ai)' },
+            signal: AbortSignal.timeout(4000)
+          });
+          const osmData = await osmRes.json();
+          if (Array.isArray(osmData) && osmData.length > 0) {
+            for (const item of osmData.slice(0, 8)) {
+              const title = item.name || (item.display_name ? item.display_name.split(',')[0] : 'Place');
+              const lat = parseFloat(item.lat);
+              const lng = parseFloat(item.lon);
+              const category = item.type ? (item.type.charAt(0).toUpperCase() + item.type.slice(1)) : (item.class || 'Place');
+              const address = item.display_name || '';
+              const pUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(title + ' ' + address)}`;
+              let fallbackThumb = 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400&auto=format&fit=crop&q=80';
+              if (/hotel|resort/i.test(category + ' ' + title)) {
+                fallbackThumb = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&auto=format&fit=crop&q=80';
+              } else if (/restaurant|cafe|food/i.test(category + ' ' + title)) {
+                fallbackThumb = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&auto=format&fit=crop&q=80';
+              } else if (/sport|turf|gym|fitness/i.test(category + ' ' + title)) {
+                fallbackThumb = 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=400&auto=format&fit=crop&q=80';
+              }
+              places.push({
+                id: String(places.length + 1),
+                title,
+                rating: 4.5,
+                reviews: 120,
+                category,
+                address,
+                phone: '',
+                lat,
+                lng,
+                thumbnail: fallbackThumb,
+                status: 'Open',
+                url: pUrl
+              });
+            }
+          }
+        } catch (_) {}
+      }
+
+      if (results.length > 0 || places.length > 0) {
+        return {
+          source: places.length > 0 ? 'serpapi_google_maps' : 'serpapi_google',
+          query: resolvedQuery,
+          location: effectiveLocation,
+          isPlaceQuery,
+          places,
+          results: results.slice(0, limit),
+          images: images.slice(0, 6)
+        };
+      }
+    } catch (_) {}
+  }
+
+  // 1b. If SerpApi not configured or failed and this is a place query, use OpenStreetMap Nominatim
+  if (isPlaceQuery) {
+    try {
+      const osmRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(resolvedQuery)}&format=json&addressdetails=1&limit=${limit}`, {
+        headers: { 'User-Agent': 'EpicThinkAI/2.0 (+https://epicthink.ai)' },
+        signal: AbortSignal.timeout(4000)
+      });
+      const osmData = await osmRes.json();
+      if (Array.isArray(osmData) && osmData.length > 0) {
+        const places = [];
+        for (const item of osmData.slice(0, 8)) {
+          const title = item.name || (item.display_name ? item.display_name.split(',')[0] : 'Place');
+          const lat = parseFloat(item.lat);
+          const lng = parseFloat(item.lon);
+          const category = item.type ? (item.type.charAt(0).toUpperCase() + item.type.slice(1)) : (item.class || 'Place');
+          const address = item.display_name || '';
+          const pUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(title + ' ' + address)}`;
+          let fallbackThumb = 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400&auto=format&fit=crop&q=80';
+          if (/hotel|resort/i.test(category + ' ' + title)) {
+            fallbackThumb = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&auto=format&fit=crop&q=80';
+          } else if (/restaurant|cafe|food/i.test(category + ' ' + title)) {
+            fallbackThumb = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&auto=format&fit=crop&q=80';
+          } else if (/sport|turf|gym|fitness/i.test(category + ' ' + title)) {
+            fallbackThumb = 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=400&auto=format&fit=crop&q=80';
+          }
+          places.push({
+            id: String(places.length + 1),
+            title,
+            rating: 4.5,
+            reviews: 120,
+            category,
+            address,
+            phone: '',
+            lat,
+            lng,
+            thumbnail: fallbackThumb,
+            status: 'Open',
+            url: pUrl
+          });
+        }
+        if (places.length > 0) {
           return {
-            source: places.length > 0 ? 'serpapi_google_maps' : 'serpapi_google',
+            source: 'openstreetmap',
             query: resolvedQuery,
             location: effectiveLocation,
-            isPlaceQuery,
+            isPlaceQuery: true,
             places,
-            results: results.slice(0, limit),
-            images: images.slice(0, 6)
+            results: places.map(p => ({
+              title: p.title,
+              url: p.url,
+              snippet: `${p.category} located at ${p.address}`
+            })),
+            images: places.map(p => ({
+              title: p.title,
+              url: p.thumbnail,
+              thumbnail: p.thumbnail,
+              source: 'OpenStreetMap'
+            }))
           };
         }
-      } catch (_) {}
-    }
+      }
+    } catch (_) {}
+  }
 
     // 2. Tavily API check if configured
     if (process.env.TAVILY_API_KEY) {
