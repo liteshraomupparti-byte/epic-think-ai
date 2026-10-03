@@ -11765,9 +11765,8 @@
 
       // Settings Modal Handlers
       const settingsModal = $('#settingsModal');
-      $('#userSettingsBtn').addEventListener('click', () => settingsModal.classList.add('open'));
-      $('#closeSettingsBtn').addEventListener('click', () => settingsModal.classList.remove('open'));
-      $('#closeSettingsFooterBtn').addEventListener('click', () => settingsModal.classList.remove('open'));
+      $('#closeSettingsBtn')?.addEventListener('click', () => settingsModal?.classList.remove('open'));
+      $('#closeSettingsFooterBtn')?.addEventListener('click', () => settingsModal?.classList.remove('open'));
 
       // ======================================================================
       // PLUGIN STORE & AGENT TOOLS CONTROLLER
@@ -13195,12 +13194,10 @@
       });
 
       $('#openGlobalFeedbackBtn').addEventListener('click', openGeneralFeedbackModal);
-      if ($('#settingsFeedbackBtn')) {
-        $('#settingsFeedbackBtn').addEventListener('click', () => {
-          settingsModal.classList.remove('open');
-          openGeneralFeedbackModal();
-        });
-      }
+      $('#settingsFeedbackBtn')?.addEventListener('click', () => {
+        settingsModal?.classList.remove('open');
+        openGeneralFeedbackModal();
+      });
       $('#closeGeneralFeedbackBtn').addEventListener('click', closeGeneralFeedbackModal);
       $('#cancelGeneralFeedbackBtn').addEventListener('click', closeGeneralFeedbackModal);
 
@@ -13274,8 +13271,8 @@
         showToast(`Switched to ${next} mode`);
       };
 
-      $('#themeToggleBtn').addEventListener('click', toggleTheme);
-      $('#modalThemeToggleBtn').addEventListener('click', toggleTheme);
+      $('#themeToggleBtn')?.addEventListener('click', toggleTheme);
+      $('#modalThemeToggleBtn')?.addEventListener('click', toggleTheme);
 
       // Restore Theme Preference
       const savedTheme = storage.get('eta_theme', 'dark');
@@ -13515,9 +13512,9 @@
         }
       };
 
-      $('#sidebarLogoutBtn').addEventListener('click', performSignOut);
-      $('#modalLogoutBtn').addEventListener('click', () => {
-        $('#settingsModal').classList.remove('open');
+      $('#sidebarLogoutBtn')?.addEventListener('click', performSignOut);
+      $('#modalLogoutBtn')?.addEventListener('click', () => {
+        $('#settingsModal')?.classList.remove('open');
         performSignOut();
       });
 
@@ -13525,9 +13522,12 @@
       $('#copyUidBtn')?.addEventListener('click', () => {
         if (currentUser && currentUser.uid) {
           navigator.clipboard.writeText(currentUser.uid);
-          const originalText = $('#copyUidBtn').textContent;
-          $('#copyUidBtn').textContent = 'Copied!';
-          setTimeout(() => { if ($('#copyUidBtn')) $('#copyUidBtn').textContent = originalText; }, 2000);
+          const btn = $('#copyUidBtn');
+          if (btn) {
+            const originalText = btn.textContent;
+            btn.textContent = 'Copied!';
+            setTimeout(() => { if (btn) btn.textContent = originalText; }, 2000);
+          }
           showToast('Firebase UID copied to clipboard');
         }
       });
