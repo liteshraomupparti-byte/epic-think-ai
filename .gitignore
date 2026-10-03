@@ -56,6 +56,7 @@ logs/
 tasks/
 .system_generated/
 .user_uploaded/
+test/output_images/*.jpg
 
 # OS & Editor files
 .DS_Store

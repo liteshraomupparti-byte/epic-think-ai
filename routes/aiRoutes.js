@@ -15,6 +15,7 @@ import express from 'express';
 import { requireAuth } from '../services/firebaseAuthService.js';
 import { AIEngine, healthMonitor, modelRegistry, providers, diagnosticsStore } from '../ai/index.js';
 import { SafeLogger } from '../plugins/core/SafeLogger.js';
+import { ImageStudioService } from '../services/imageGeneration/ImageStudioService.js';
 
 const router = express.Router();
 
@@ -299,49 +300,81 @@ router.get('/diagnostics', optionalAuth, (req, res) => {
 });
 
 /**
- * AI Image Studio Generator Helper
+ * AI Image Studio Generator & Catalog Routes
+ * GET  /api/ai/image/models
  * POST /api/ai/image
  */
-router.post('/image', requireAuth, async (req, res) => {
-  const { prompt, style = 'photorealistic', aspectRatio = '1:1' } = req.body || {};
-  if (!prompt) {
+router.get('/image/models', optionalAuth, async (req, res) => {
+  try {
+    const metadata = await ImageStudioService.getStudioMetadata();
+    res.json({ success: true, ...metadata });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/image', optionalAuth, async (req, res) => {
+  const {
+    prompt,
+    model = 'AUTO',
+    quality = 'HIGH',
+    style = 'photorealistic',
+    aspectRatio = '1:1',
+    enhance = true,
+    seed
+  } = req.body || {};
+
+  if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
     return res.status(400).json({ success: false, error: 'Prompt is required for image generation.' });
   }
 
   try {
-    // Synthesize high-fidelity prompt expansion using Groq/OpenRouter
-    const synthPrompt = `Act as an expert generative AI prompt engineer.
-Create an ultra-detailed, cinematic visual prompt based on the user's concept: "${prompt}".
-Style: ${style}. Aspect Ratio: ${aspectRatio}.
-Respond with ONLY the optimized image generation prompt.`;
-
-    const generated = await AIEngine.generate({
-      prompt: synthPrompt,
-      modelPreset: 'Epic Think Fast'
+    const result = await ImageStudioService.generateImage({
+      prompt: prompt.trim(),
+      model,
+      quality,
+      style,
+      aspectRatio,
+      enhance: enhance !== false,
+      seed
     });
 
-    const enhanced = generated.content ? generated.content.trim() : prompt;
-
-    // Determine dimensions based on aspect ratio
-    let width = 1024;
-    let height = 1024;
-    if (aspectRatio === '16:9') { width = 1280; height = 720; }
-    else if (aspectRatio === '9:16') { width = 720; height = 1280; }
-    else if (aspectRatio === '4:3') { width = 1024; height = 768; }
-
-    const cleanPrompt = `${prompt}, ${style} style, high resolution, highly detailed, masterwork`;
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?width=${width}&height=${height}&nologo=true&enhance=true`;
+    if (!result.success) {
+      return res.status(502).json({
+        success: false,
+        error: result.error || 'Image generation failed',
+        errorCode: result.errorCode,
+        requestId: result.requestId,
+        provider: result.provider,
+        requestedModel: result.requestedModel
+      });
+    }
 
     res.json({
       success: true,
-      imageUrl,
-      engine: `Epic Think AI Studio (${generated.providerUsed || 'Groq LPU'})`,
-      originalPrompt: prompt,
-      enhancedPrompt: enhanced,
+      imageUrl: result.imageUrl,
+      directCdnUrl: result.directCdnUrl,
+      engine: `Epic Think AI Studio (${result.actualModelUsed || result.requestedModel})`,
+      provider: result.provider,
+      requestedModel: result.requestedModel,
+      actualModelUsed: result.actualModelUsed,
+      modelTier: result.modelTier,
+      modelTitle: result.modelTitle,
+      qualityTier: result.qualityTier,
+      requestedResolution: result.requestedResolution,
+      actualResolution: result.actualResolution,
+      is4K: result.is4K,
+      is2K: result.is2K,
+      originalPrompt: result.originalPrompt,
+      enhancedPrompt: result.enhancedPrompt,
+      dimensionsReasoned: result.dimensionsReasoned,
       style,
-      aspectRatio,
-      providerUsed: generated.providerUsed,
-      modelUsed: generated.modelUsed
+      aspectRatio: result.aspectRatio,
+      durationMs: result.durationMs,
+      watermarked: result.watermarked,
+      watermarkNote: result.watermarkNote,
+      resolutionNote: result.resolutionNote,
+      requestId: result.requestId
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

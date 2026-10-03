@@ -7294,6 +7294,25 @@
             </div>
           </div>
 
+          <div>
+            <label class="studio-label">Model Architecture</label>
+            <div class="studio-chips-row" id="imageModelChips">
+              <span class="studio-chip active" data-model="AUTO">Auto (Optimal Model)</span>
+              <span class="studio-chip" data-model="FLUX_2_PRO">FLUX.2 Pro</span>
+              <span class="studio-chip" data-model="FLUX_2_MAX">FLUX.2 Max</span>
+              <span class="studio-chip" data-model="FLUX_2_FLEX">FLUX.2 Flex</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="studio-label">Render Quality &amp; Target Resolution</label>
+            <div class="studio-chips-row" id="imageQualityChips">
+              <span class="studio-chip" data-quality="STANDARD">Standard HD (1024px)</span>
+              <span class="studio-chip active" data-quality="HIGH">High Definition (1440px / 1080p)</span>
+              <span class="studio-chip" data-quality="ULTRA">Ultra 2K / Max (2048px+)</span>
+            </div>
+          </div>
+
           <div style="display:flex;justify-content:space-between;align-items:center;">
             <span style="font-size:12px;color:var(--text-muted);" id="imageGenStatus">Ready to generate</span>
             <button class="primary-btn" id="generateImageBtn" type="button">
@@ -7314,6 +7333,12 @@
               <span>Generated image preview will appear here</span>
             </div>
             <img id="imageResultImg" class="studio-preview-img" style="display:none;" alt="Generated AI Artwork" />
+            <div id="imageResultDetails" style="display:none;margin-top:10px;padding:8px 12px;background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:8px;font-size:11px;color:var(--text-muted);text-align:left;line-height:1.5;width:100%;">
+              <div><strong>Model Used:</strong> <span id="imageResultModel" style="color:var(--text-primary);">-</span></div>
+              <div><strong>Resolution:</strong> <span id="imageResultRes" style="color:var(--text-primary);">-</span></div>
+              <div><strong>Render Time:</strong> <span id="imageResultTime" style="color:var(--text-primary);">-</span></div>
+              <div id="imageResultPromptBox" style="margin-top:4px;"><strong>Enhanced Prompt:</strong> <span id="imageResultPrompt" style="font-style:italic;">-</span></div>
+            </div>
             <div id="imageActions" style="display:none;margin-top:10px;gap:8px;">
               <a id="downloadImageBtn" class="secondary-btn" download="epic-think-ai-image.jpg" target="_blank">Download Image</a>
               <button class="secondary-btn" id="insertToChatBtn" type="button">Insert to Chat</button>
@@ -10543,17 +10568,17 @@
         chip.classList.add('active');
       });
 
-      $('#videoDurationChips')?.addEventListener('click', (e) => {
+      $('#imageModelChips')?.addEventListener('click', (e) => {
         const chip = e.target.closest('.studio-chip');
         if (!chip) return;
-        $('#videoDurationChips').querySelectorAll('.studio-chip').forEach(c => c.classList.remove('active'));
+        $('#imageModelChips').querySelectorAll('.studio-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
       });
 
-      $('#videoMotionChips')?.addEventListener('click', (e) => {
+      $('#imageQualityChips')?.addEventListener('click', (e) => {
         const chip = e.target.closest('.studio-chip');
         if (!chip) return;
-        $('#videoMotionChips').querySelectorAll('.studio-chip').forEach(c => c.classList.remove('active'));
+        $('#imageQualityChips').querySelectorAll('.studio-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
       });
 
@@ -10567,17 +10592,21 @@
 
         const activeStyle = $('#imageStyleChips .studio-chip.active')?.dataset.style || 'photorealistic';
         const activeRatio = $('#imageRatioChips .studio-chip.active')?.dataset.ratio || '1:1';
+        const activeModel = $('#imageModelChips .studio-chip.active')?.dataset.model || 'AUTO';
+        const activeQuality = $('#imageQualityChips .studio-chip.active')?.dataset.quality || 'HIGH';
 
         const btn = $('#generateImageBtn');
         const statusEl = $('#imageGenStatus');
         btn.disabled = true;
-        statusEl.textContent = 'Generating with AI image models...';
+        statusEl.textContent = 'Generating with high-fidelity image models...';
 
         try {
           const res = await AiService.generateImage({
             prompt,
             style: activeStyle,
-            aspectRatio: activeRatio
+            aspectRatio: activeRatio,
+            model: activeModel,
+            quality: activeQuality
           });
 
           if (res && res.imageUrl) {
@@ -10587,7 +10616,22 @@
             imgEl.style.display = 'block';
             $('#downloadImageBtn').href = res.imageUrl;
             $('#imageActions').style.display = 'flex';
-            statusEl.textContent = `Generated successfully (${res.engine || 'AI Engine'})!`;
+
+            const detailsEl = $('#imageResultDetails');
+            if (detailsEl) {
+              detailsEl.style.display = 'block';
+              $('#imageResultModel').textContent = `${res.actualModelUsed || res.requestedModel} (${res.modelTier || 'Active'})`;
+              $('#imageResultRes').textContent = `${res.actualResolution || res.requestedResolution} (Target: ${res.requestedResolution || 'Auto'})`;
+              $('#imageResultTime').textContent = `${((res.durationMs || 0) / 1000).toFixed(1)}s`;
+              if (res.enhancedPrompt) {
+                $('#imageResultPromptBox').style.display = 'block';
+                $('#imageResultPrompt').textContent = res.enhancedPrompt;
+              } else {
+                $('#imageResultPromptBox').style.display = 'none';
+              }
+            }
+
+            statusEl.textContent = `Generated successfully with ${res.actualModelUsed || res.requestedModel}!`;
             showToast('Artwork generated successfully!');
           } else {
             throw new Error(res.error || 'Failed to generate visual');
