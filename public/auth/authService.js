@@ -139,6 +139,7 @@ export async function logoutUser() {
   console.log("[Auth:SignOut] Signing out current user...");
   try {
     await signOut(auth);
+    try { sessionStorage.removeItem('epic_intro_seen'); } catch (_) {}
     console.log("[Auth:SignOut] Successfully signed out.");
     return { success: true, error: null };
   } catch (error) {

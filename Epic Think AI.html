@@ -4,18 +4,73 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Epic Think AI</title>
+  <title>Epic Think AI — Think. Build. Create. Autonomous AI Agent Workspace</title>
+  <meta name="description" content="Epic Think AI is a next-generation autonomous AI agent workspace with persistent semantic memory, website builder, multi-model intelligence, and integrated tools.">
+  <meta property="og:title" content="Epic Think AI — Think. Build. Create.">
+  <meta property="og:description" content="Next-generation autonomous AI agent workspace with persistent semantic memory, website builder, and integrated tools.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://epic-think-ai.vercel.app">
+  <link rel="canonical" href="https://epic-think-ai.vercel.app">
+
   <!-- Modern Inter & JetBrains Mono Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet">
+  <!-- Plus Jakarta Sans Font & Epic Think 3D Intro Scoped Styles -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="/intro/epic-think-intro.bundle.css">
   <!-- Leaflet CSS & JS for Interactive ChatGPT Map Cards -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <style>
+    /* ==========================================================================
+       EPIC THINK AI — 3D CINEMATIC INTRO & BRAND REVEAL STYLES
+       ========================================================================== */
+    .epic-intro-container {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: #000000;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.65s;
+    }
+
+    .epic-intro-container.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .epic-intro-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 1;
+    }
+
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border-width: 0;
+    }
+
     :root {
       --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -379,14 +434,20 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 6px;
+      padding: 6px 8px;
       border-radius: var(--radius-sm);
       flex: 1;
       text-align: left;
+      background: transparent;
+      border: 1px solid transparent;
+      cursor: pointer;
+      min-width: 0;
+      transition: background-color 0.15s ease, border-color 0.15s ease;
     }
 
     .user-profile-btn:hover {
       background-color: var(--bg-subtle);
+      border-color: var(--border-light, rgba(255, 255, 255, 0.08));
     }
 
     .avatar-circle {
@@ -755,24 +816,30 @@
       width: 100%;
     }
 
+    @media (max-width: 640px) {
+      .suggestion-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .suggestion-card {
-      background-color: var(--bg-card);
-      border: 1px solid var(--border-main);
-      border-radius: var(--radius-lg);
-      padding: 14px 16px;
+      background-color: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-lg, 12px);
+      padding: 13px 15px;
       text-align: left;
       cursor: pointer;
       display: flex;
       flex-direction: column;
       gap: 4px;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .suggestion-card:hover {
-      background-color: var(--bg-card-hover);
-      border-color: var(--border-focus);
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-sm);
+      background-color: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.16);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
 
     .suggestion-header {
@@ -890,7 +957,7 @@
       color: var(--text-secondary);
     }
 
-    /* Assistant Message Typography */
+    /* Assistant Message Typography & Layout Constraints */
     .assistant-content {
       color: var(--text-main);
       font-size: 15px;
@@ -903,6 +970,8 @@
 
     .assistant-content p {
       margin-bottom: 12px;
+      overflow-wrap: break-word;
+      word-break: normal;
     }
 
     .assistant-content p:last-child {
@@ -919,6 +988,8 @@
       font-weight: 600;
       line-height: 1.35;
       color: var(--text-main);
+      overflow-wrap: break-word;
+      word-break: normal;
     }
 
     .assistant-content h1 {
@@ -2258,7 +2329,8 @@
       position: fixed;
       inset: 0;
       background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(4px);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       z-index: 2000;
       display: none;
       place-items: center;
@@ -3306,76 +3378,56 @@
 
     .auth-card {
       width: 100%;
-      max-width: 440px;
-      background-color: var(--bg-card);
-      border: 1px solid var(--border-main);
-      border-radius: var(--radius-lg);
-      padding: 32px 28px;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
-      animation: modalScale 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      max-width: 410px;
+      background-color: var(--bg-card, #17191d);
+      border: 1px solid var(--border-main, rgba(255, 255, 255, 0.08));
+      border-radius: var(--radius-lg, 16px);
+      padding: 34px 30px;
+      box-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.04);
+      animation: modalScale 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .auth-header {
       text-align: center;
-      margin-bottom: 24px;
+      margin-bottom: 22px;
     }
 
     .auth-logo-badge {
-      width: 52px;
-      height: 52px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, var(--bg-subtle-hover), rgba(16, 163, 127, 0.15));
-      border: 1px solid var(--border-light);
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(16, 163, 127, 0.12));
+      border: 1px solid rgba(255, 255, 255, 0.08);
       display: inline-flex;
       align-items: center;
       justify-content: center;
       color: var(--accent);
-      margin-bottom: 12px;
-      box-shadow: 0 4px 16px var(--accent-glow);
+      margin-bottom: 14px;
     }
 
     .auth-title {
-      font-size: 22px;
+      font-size: 21px;
       font-weight: 700;
-      color: var(--text-main);
-      letter-spacing: -0.3px;
+      color: var(--text-main, #f1f5f9);
+      letter-spacing: -0.02em;
       margin-bottom: 6px;
     }
 
     .auth-subtitle {
       font-size: 13.5px;
-      color: var(--text-secondary);
+      color: var(--text-secondary, #94a3b8);
       line-height: 1.45;
+      max-width: 320px;
+      margin: 0 auto;
     }
 
+    /* Professional clean layout: Segmented tab bar removed */
     .auth-tabs {
-      display: flex;
-      background-color: var(--bg-main);
-      border: 1px solid var(--border-main);
-      border-radius: var(--radius-md);
-      padding: 4px;
-      margin-bottom: 20px;
-      gap: 4px;
+      display: none !important;
     }
 
     .auth-tab-btn {
-      flex: 1;
-      padding: 8px 10px;
-      border-radius: var(--radius-sm);
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-secondary);
-      transition: all 0.15s ease;
-    }
-
-    .auth-tab-btn:hover {
-      color: var(--text-main);
-    }
-
-    .auth-tab-btn.active {
-      background-color: var(--bg-card);
-      color: var(--text-main);
-      box-shadow: var(--shadow-sm);
+      display: none !important;
     }
 
     .auth-google-btn {
@@ -3384,19 +3436,20 @@
       align-items: center;
       justify-content: center;
       gap: 12px;
-      padding: 10px 16px;
-      border-radius: var(--radius-md);
-      background-color: var(--bg-main);
-      border: 1px solid var(--border-main);
-      color: var(--text-main);
+      padding: 11px 16px;
+      border-radius: var(--radius-md, 10px);
+      background-color: var(--bg-main, #0f1115);
+      border: 1px solid var(--border-main, rgba(255, 255, 255, 0.12));
+      color: var(--text-main, #f1f5f9);
       font-size: 14px;
       font-weight: 500;
-      transition: all 0.2s ease;
+      cursor: pointer;
+      transition: all 0.18s ease;
     }
 
     .auth-google-btn:hover {
-      background-color: var(--bg-card-hover);
-      border-color: var(--border-focus);
+      background-color: var(--bg-card-hover, #1f2329);
+      border-color: rgba(255, 255, 255, 0.22);
     }
 
     .auth-divider {
@@ -3404,21 +3457,21 @@
       align-items: center;
       text-align: center;
       margin: 18px 0;
-      color: var(--text-muted);
-      font-size: 12px;
+      color: var(--text-muted, #64748b);
+      font-size: 11.5px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.8px;
     }
 
     .auth-divider::before,
     .auth-divider::after {
       content: '';
       flex: 1;
-      border-bottom: 1px solid var(--border-main);
+      border-bottom: 1px solid var(--border-main, rgba(255, 255, 255, 0.08));
     }
 
     .auth-divider span {
-      padding: 0 10px;
+      padding: 0 12px;
     }
 
     .auth-input-group {
@@ -3432,32 +3485,80 @@
     .auth-input-group label {
       font-size: 12.5px;
       font-weight: 500;
-      color: var(--text-secondary);
+      color: var(--text-secondary, #cbd5e1);
+    }
+
+    .auth-password-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
     }
 
     .auth-input-group input {
       width: 100%;
-      background-color: var(--bg-main);
-      border: 1px solid var(--border-main);
-      border-radius: var(--radius-md);
-      padding: 10px 14px;
+      background-color: var(--bg-main, #0f1115);
+      border: 1px solid var(--border-main, rgba(255, 255, 255, 0.12));
+      border-radius: var(--radius-md, 10px);
+      padding: 10.5px 14px;
       font-size: 14px;
-      color: var(--text-main);
+      color: var(--text-main, #f1f5f9);
       outline: none;
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
 
+    .auth-password-wrapper input {
+      padding-right: 42px;
+    }
+
+    .auth-toggle-password-btn {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted, #94a3b8);
+      border-radius: 6px;
+      transition: color 0.15s ease;
+    }
+
+    .auth-toggle-password-btn:hover {
+      color: var(--text-main, #f1f5f9);
+    }
+
+    /* WebKit & Browser Autofill Fix (Prevents ugly light-blue #e8f0fe background) */
+    .auth-input-group input:-webkit-autofill,
+    .auth-input-group input:-webkit-autofill:hover,
+    .auth-input-group input:-webkit-autofill:focus,
+    .auth-input-group input:-webkit-autofill:active {
+      -webkit-box-shadow: 0 0 0 1000px #0f1115 inset !important;
+      -webkit-text-fill-color: #f1f5f9 !important;
+      caret-color: #f1f5f9 !important;
+      background-color: #0f1115 !important;
+      transition: background-color 5000s ease-in-out 0s !important;
+      border-color: rgba(255, 255, 255, 0.18) !important;
+    }
+
     .auth-input-group input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px var(--accent-glow);
+      border-color: var(--accent, #10a37f);
+      box-shadow: 0 0 0 2px rgba(16, 163, 127, 0.2);
     }
 
     .auth-inline-link {
       font-size: 12px;
-      color: var(--accent);
+      color: var(--accent, #10a37f);
       font-weight: 500;
       text-decoration: none;
       padding: 0;
+      background: none;
+      border: none;
+      cursor: pointer;
     }
 
     .auth-inline-link:hover {
@@ -3467,21 +3568,24 @@
     .auth-btn-primary {
       width: 100%;
       padding: 11px 16px;
-      background-color: var(--accent);
+      background-color: var(--accent, #10a37f);
       color: #ffffff;
-      border-radius: var(--radius-md);
+      border: none;
+      border-radius: var(--radius-md, 10px);
       font-size: 14px;
       font-weight: 600;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      margin-top: 6px;
-      transition: background-color 0.15s ease, transform 0.1s ease;
+      margin-top: 8px;
+      cursor: pointer;
+      transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
     }
 
     .auth-btn-primary:hover:not(:disabled) {
-      background-color: var(--accent-hover);
+      background-color: var(--accent-hover, #0e8c6d);
+      box-shadow: 0 4px 12px rgba(16, 163, 127, 0.25);
     }
 
     .auth-btn-primary:active:not(:disabled) {
@@ -3492,18 +3596,36 @@
       text-align: center;
       margin-top: 18px;
       font-size: 13px;
-      color: var(--text-secondary);
+      color: var(--text-secondary, #94a3b8);
     }
 
     .auth-link {
-      color: var(--accent);
+      color: var(--accent, #10a37f);
       font-weight: 600;
       padding: 0 2px;
       font-size: 13px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
     }
 
     .auth-link:hover {
       text-decoration: underline;
+    }
+
+    @media (max-width: 480px) {
+      .auth-card {
+        padding: 24px 18px;
+        margin: 12px;
+        border-radius: 14px;
+      }
+      .auth-title {
+        font-size: 19px;
+      }
+      .auth-subtitle {
+        font-size: 12.5px;
+      }
     }
 
     /* Auth Alerts */
@@ -5699,6 +5821,17 @@
       z-index: 1;
     }
 
+    /* OpenStreetMap Free Dark Mode Filter - 100% Free, NO API Key Required */
+    .chatgpt-map-tiles {
+      filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+      transition: filter 0.3s ease;
+    }
+
+    [data-theme="light"] .chatgpt-map-tiles,
+    body.light-theme .chatgpt-map-tiles {
+      filter: none;
+    }
+
     /* Top Overlay Bar */
     .chatgpt-map-top-bar {
       position: absolute;
@@ -6160,11 +6293,11 @@
 
     @media (max-width: 768px) {
       .chatgpt-map-card {
-        height: 320px;
+        height: 300px;
       }
       .chatgpt-place-chip {
-        min-width: 220px;
-        max-width: 250px;
+        min-width: 200px;
+        max-width: 240px;
       }
       .chatgpt-map-expanded-body {
         flex-direction: column;
@@ -6212,10 +6345,20 @@
       }
       .table-responsive-container {
         margin: 12px 0;
+        border-radius: 8px;
+      }
+      .modern-markdown-table {
+        min-width: 520px;
+        font-size: 12.5px;
+      }
+      .modern-markdown-table th,
+      .modern-markdown-table td {
+        padding: 10px 12px;
       }
     }
+
     /* ==========================================================================
-       EPIC THINK AI - USER PROFILE, SETTINGS & ACCOUNT DROPDOWN STYLES
+       EPIC THINK AI - USER PROFILE & SETTINGS MODAL STYLES
        ========================================================================== */
     .user-status-dot {
       width: 7px;
@@ -6227,148 +6370,28 @@
       flex-shrink: 0;
     }
 
-    .profile-account-dropdown {
-      position: absolute;
-      bottom: 60px;
-      left: 10px;
-      width: 255px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-main);
-      border-radius: 14px;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
-      z-index: 1050;
-      display: none;
-      flex-direction: column;
-      overflow: hidden;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      transform-origin: bottom left;
-      animation: profileDropdownIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    @keyframes profileDropdownIn {
-      from { opacity: 0; transform: scale(0.95) translateY(6px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
-    }
-
-    .profile-account-dropdown.open {
-      display: flex;
-    }
-
-    .profile-dropdown-header {
-      padding: 12px 14px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: var(--bg-subtle);
-      border-bottom: 1px solid var(--border-light);
-    }
-
-    .profile-dropdown-meta {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .profile-dropdown-name {
-      font-size: 13.5px;
-      font-weight: 600;
-      color: var(--text-main);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .profile-dropdown-handle {
-      font-size: 11.5px;
-      color: var(--accent);
-      font-weight: 500;
-    }
-
-    .profile-dropdown-email {
-      font-size: 11px;
-      color: var(--text-muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 170px;
-    }
-
-    .profile-dropdown-divider {
-      height: 1px;
-      background: var(--border-light);
-      margin: 4px 0;
-    }
-
-    .profile-dropdown-items {
-      padding: 4px;
-      display: flex;
-      flex-direction: column;
-      gap: 1px;
-    }
-
-    .profile-dropdown-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 13px;
-      color: var(--text-main);
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      text-align: left;
-      width: 100%;
-      transition: background 0.12s ease;
-    }
-
-    .profile-dropdown-item:hover {
-      background: var(--bg-subtle);
-    }
-
-    .profile-dropdown-item svg {
-      color: var(--text-muted);
-      flex-shrink: 0;
-    }
-
-    .profile-dropdown-item:hover svg {
-      color: var(--accent);
-    }
-
-    .profile-dropdown-logout {
-      color: #ef4444 !important;
-    }
-
-    .profile-dropdown-logout svg {
-      color: #ef4444 !important;
-    }
-
-    .profile-dropdown-logout:hover {
-      background: rgba(239, 68, 68, 0.12) !important;
-    }
-
     /* Large Pro Settings Modal */
     .settings-dialog-pro {
-      max-width: 920px;
-      width: 94vw;
+      max-width: 960px;
+      width: 92vw;
       height: 82vh;
-      max-height: 720px;
+      max-height: 740px;
       display: flex;
       flex-direction: column;
       border-radius: 16px;
       overflow: hidden;
-      background: var(--bg-card);
-      border: 1px solid var(--border-main);
-      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+      background: var(--bg-card, #212124);
+      border: 1px solid var(--border-main, rgba(255, 255, 255, 0.12));
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.06);
     }
 
     .settings-dialog-header {
-      padding: 14px 20px;
-      border-bottom: 1px solid var(--border-main);
+      padding: 14px 22px;
+      border-bottom: 1px solid var(--border-main, rgba(255, 255, 255, 0.1));
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: var(--bg-subtle);
+      background: var(--bg-subtle, rgba(255, 255, 255, 0.04));
       flex-shrink: 0;
     }
 
@@ -6380,14 +6403,14 @@
     }
 
     .settings-nav-sidebar {
-      width: 220px;
-      min-width: 200px;
-      border-right: 1px solid var(--border-main);
-      background: var(--bg-subtle);
-      padding: 12px 8px;
+      width: 230px;
+      min-width: 210px;
+      border-right: 1px solid var(--border-main, rgba(255, 255, 255, 0.1));
+      background: var(--bg-sidebar, #18181b);
+      padding: 12px 10px;
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 3px;
       overflow-y: auto;
       flex-shrink: 0;
     }
@@ -6396,28 +6419,29 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 8px 12px;
+      padding: 9px 12px;
       border-radius: 8px;
       font-size: 13px;
       font-weight: 500;
-      color: var(--text-muted);
+      color: var(--text-muted, #9ca3af);
       background: transparent;
       border: none;
       cursor: pointer;
       text-align: left;
       width: 100%;
-      transition: all 0.12s ease;
+      transition: all 0.15s ease;
     }
 
     .settings-nav-tab:hover {
-      color: var(--text-main);
-      background: rgba(255,255,255,0.04);
+      color: var(--text-main, #ffffff);
+      background: rgba(255, 255, 255, 0.06);
     }
 
     .settings-nav-tab.active {
-      color: var(--accent);
-      background: var(--accent-glow);
+      color: #ffffff;
+      background: rgba(16, 163, 127, 0.2);
       font-weight: 600;
+      border-left: 2px solid var(--accent, #10a37f);
     }
 
     .settings-nav-tab svg {
@@ -6427,6 +6451,7 @@
 
     .settings-nav-tab.active svg {
       opacity: 1;
+      color: var(--accent, #10a37f);
     }
 
     .settings-nav-tab.danger-tab {
@@ -6436,6 +6461,7 @@
 
     .settings-nav-tab.danger-tab.active {
       background: rgba(239, 68, 68, 0.14);
+      border-left-color: #ef4444;
     }
 
     .settings-content-viewport {
@@ -6445,6 +6471,7 @@
       display: flex;
       flex-direction: column;
       gap: 20px;
+      background: var(--bg-card, #212124);
     }
 
     .settings-panel {
@@ -6459,10 +6486,10 @@
     }
 
     .settings-card {
-      background: var(--bg-sidebar);
-      border: 1px solid var(--border-main);
+      background: var(--bg-sidebar, #18181b);
+      border: 1px solid var(--border-main, rgba(255, 255, 255, 0.08));
       border-radius: 12px;
-      padding: 18px 20px;
+      padding: 20px 22px;
       display: flex;
       flex-direction: column;
       gap: 14px;
@@ -6471,13 +6498,13 @@
     .settings-card-title {
       font-size: 14.5px;
       font-weight: 600;
-      color: var(--text-main);
+      color: var(--text-main, #ffffff);
       margin: 0;
     }
 
     .settings-card-desc {
       font-size: 12.5px;
-      color: var(--text-muted);
+      color: var(--text-muted, #9ca3af);
       margin-top: 2px;
     }
 
@@ -6496,23 +6523,37 @@
     .form-group-pro label {
       font-size: 12.5px;
       font-weight: 500;
-      color: var(--text-muted);
+      color: var(--text-muted, #9ca3af);
     }
 
     .form-input-pro {
-      padding: 9px 12px;
+      padding: 10px 13px;
       font-size: 13.5px;
       border-radius: 8px;
-      border: 1px solid var(--border-main);
-      background: var(--bg-card);
-      color: var(--text-main);
+      border: 1px solid var(--border-main, rgba(255, 255, 255, 0.14));
+      background: #141518;
+      color: var(--text-main, #f3f4f6);
       outline: none;
-      transition: border-color 0.15s ease;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      font-family: inherit;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    textarea.form-input-pro {
+      resize: vertical;
+      min-height: 80px;
+      line-height: 1.5;
+    }
+
+    select.form-input-pro {
+      cursor: pointer;
     }
 
     .form-input-pro:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px var(--accent-glow);
+      border-color: var(--accent, #10a37f);
+      box-shadow: 0 0 0 2px var(--accent-glow, rgba(16, 163, 127, 0.25));
+      background: #16171b;
     }
 
     .avatar-uploader-pro {
@@ -6676,26 +6717,18 @@
 </head>
 
 <body>
-  <script>
-    // Global Safety Timeout: Ensure loading screen never blocks user if network or auth takes > 3.5s
-    window.__authTimeout = setTimeout(function() {
-      var loader = document.getElementById('authLoadingScreen');
-      var overlay = document.getElementById('authOverlay');
-      var app = document.getElementById('appView');
-      if (loader && !loader.classList.contains('hidden')) {
-        console.warn('[SafetyTimeout] Auth check exceeded 3.5s. Dismissing loading screen.');
-        loader.classList.add('hidden');
-        if (overlay && (!app || app.style.display === 'none')) {
-          overlay.style.display = 'flex';
-        }
-      }
-    }, 3500);
-  </script>
+  <!-- ==========================================================================
+     EPIC THINK AI — 3D CINEMATIC INTRO & BRAND REVEAL
+     ========================================================================== -->
+  <div class="epic-intro-container" id="epicIntroContainer" aria-label="Epic Think AI 3D Introduction">
+    <!-- Dedicated 3D Intro Experience Mount Layer (New Intro from 3D website) -->
+    <div id="epicThinkIntroMount" class="epic-think-intro-mount-layer" style="position: absolute; inset: 0; z-index: 10; width: 100%; height: 100%;"></div>
+  </div>
 
   <!-- ==========================================================================
-     AUTHENTICATION CHECK SCREEN (Prevents UI flash)
+     AUTHENTICATION CHECK SCREEN (Fast-path / Prevents UI flash)
      ========================================================================== -->
-  <div class="auth-loading-screen" id="authLoadingScreen">
+  <div class="auth-loading-screen hidden" id="authLoadingScreen" style="display:none;">
     <div class="auth-loading-card">
       <div class="auth-brand-logo spinning-glow">
         <svg viewBox="0 0 24 24" width="48" height="48">
@@ -6716,19 +6749,13 @@
       <!-- Brand & Header -->
       <div class="auth-header">
         <div class="auth-logo-badge">
-          <svg viewBox="0 0 24 24" width="30" height="30">
+          <svg viewBox="0 0 24 24" width="28" height="28">
             <path fill="currentColor"
               d="M22.28 9.87a6.04 6.04 0 0 0-.5-4.75 6.07 6.07 0 0 0-5.78-3.08 6.04 6.04 0 0 0-4.3 1.9 6.05 6.05 0 0 0-4.66.42 6.08 6.08 0 0 0-3.32 4.49 6.03 6.03 0 0 0-1.8 4.41 6.07 6.07 0 0 0 1.25 4.86 6.05 6.05 0 0 0 .5 4.75 6.07 6.07 0 0 0 5.78 3.08 6.05 6.05 0 0 0 4.3-1.9 6.07 6.07 0 0 0 4.66-.42 6.07 6.07 0 0 0 3.32-4.49 6.03 6.03 0 0 0 1.8-4.41 6.07 6.07 0 0 0-1.25-4.86zm-8.8 11.23a4.57 4.57 0 0 1-2.92-1.07l.15-.08 4.83-2.79a.77.77 0 0 0 .39-.67v-6.8l2.05 1.18v6.78a4.56 4.56 0 0 1-4.5 3.45zm-8.5-4.14a4.56 4.56 0 0 1-.57-3.13l.14.09 4.83 2.79a.78.78 0 0 0 .78 0l5.89-3.4v2.37l-5.87 3.39a4.56 4.56 0 0 1-5.2-2.11zm-1.12-9.43a4.56 4.56 0 0 1 2.35-2.07v5.77l5.89 3.4a.79.79 0 0 0 .78 0l-4.83-2.79a.77.77 0 0 0-.78 0l-3.41 1.97v-6.28zm14.18 5.75l-5.89-3.4 4.83-2.79a.78.78 0 0 0 .39-.67v-1.97a4.55 4.55 0 0 1 2.92 1.07l-.15.08-4.83 2.79a.77.77 0 0 0-.39.67v6.8l-2.05-1.18v-6.78a4.56 4.56 0 0 1 4.5-3.45zm-2.06 6.81l-4.83-2.79a.78.78 0 0 0-.78 0l-5.89 3.4v-2.37l5.87-3.39a4.56 4.56 0 0 1 5.2 2.11 4.56 4.56 0 0 1 .57 3.13l-.14-.09zm1.12-2.42l-5.89-3.4a.79.79 0 0 0-.78 0l4.83 2.79a.77.77 0 0 0 .78 0l3.41-1.97v6.28a4.56 4.56 0 0 1-2.35-2.07z" />
           </svg>
         </div>
-        <h2 class="auth-title">Welcome to Epic Think AI</h2>
-        <p class="auth-subtitle">Your AI agent that remembers, learns, and helps you build.</p>
-      </div>
-
-      <!-- Navigation Tabs (Sign In, Sign Up) -->
-      <div class="auth-tabs" id="authTabsNav">
-        <button type="button" class="auth-tab-btn active" data-tab="signin">Sign In</button>
-        <button type="button" class="auth-tab-btn" data-tab="signup">Sign Up</button>
+        <h2 class="auth-title" id="authTitle">Welcome back</h2>
+        <p class="auth-subtitle" id="authSubtitle">Sign in to your Epic Think AI account to continue.</p>
       </div>
 
       <!-- Alerts / Feedback Banner -->
@@ -6761,19 +6788,24 @@
           <span>Continue with Google</span>
         </button>
 
-        <div class="auth-divider"><span>or continue with email</span></div>
+        <div class="auth-divider"><span>OR CONTINUE WITH EMAIL</span></div>
 
-        <form id="signInForm" onsubmit="return false;">
+        <form id="signInForm" autocomplete="off" onsubmit="return false;">
           <div class="auth-input-group">
             <label for="signInEmail">Email address</label>
-            <input type="email" id="signInEmail" placeholder="name@domain.com" required autocomplete="email">
+            <input type="email" id="signInEmail" placeholder="name@domain.com" required autocomplete="off" spellcheck="false">
           </div>
           <div class="auth-input-group">
             <div style="display:flex;justify-content:space-between;align-items:center;">
               <label for="signInPassword">Password</label>
               <button type="button" class="auth-inline-link" id="forgotPasswordLink">Forgot password?</button>
             </div>
-            <input type="password" id="signInPassword" placeholder="••••••••" required autocomplete="current-password">
+            <div class="auth-password-wrapper">
+              <input type="password" id="signInPassword" placeholder="••••••••" required autocomplete="new-password">
+              <button type="button" class="auth-toggle-password-btn" data-toggle-pass="signInPassword" title="Show or hide password" aria-label="Toggle password visibility">
+                <svg class="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
           </div>
           <button type="submit" class="auth-btn-primary" id="signInSubmitBtn">
             <span class="btn-text">Sign In</span>
@@ -6795,23 +6827,34 @@
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
           </svg>
-          <span>Sign up with Google</span>
+          <span>Continue with Google</span>
         </button>
 
-        <div class="auth-divider"><span>or register with email</span></div>
+        <div class="auth-divider"><span>OR CONTINUE WITH EMAIL</span></div>
 
-        <form id="signUpForm" onsubmit="return false;">
-          <div class="auth-input-group">
-            <label for="signUpName">Full Name</label>
-            <input type="text" id="signUpName" placeholder="Your Name" autocomplete="name">
+        <form id="signUpForm" autocomplete="off" onsubmit="return false;">
+          <div class="form-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:0;">
+            <div class="auth-input-group">
+              <label for="signUpFirstName">First Name</label>
+              <input type="text" id="signUpFirstName" placeholder="Jane" required autocomplete="off" spellcheck="false">
+            </div>
+            <div class="auth-input-group">
+              <label for="signUpLastName">Last Name</label>
+              <input type="text" id="signUpLastName" placeholder="Doe" autocomplete="off" spellcheck="false">
+            </div>
           </div>
           <div class="auth-input-group">
             <label for="signUpEmail">Email address</label>
-            <input type="email" id="signUpEmail" placeholder="name@domain.com" required autocomplete="email">
+            <input type="email" id="signUpEmail" placeholder="name@domain.com" required autocomplete="off" spellcheck="false">
           </div>
           <div class="auth-input-group">
             <label for="signUpPassword">Password</label>
-            <input type="password" id="signUpPassword" placeholder="At least 6 characters" minlength="6" required autocomplete="new-password">
+            <div class="auth-password-wrapper">
+              <input type="password" id="signUpPassword" placeholder="At least 6 characters" minlength="6" required autocomplete="new-password">
+              <button type="button" class="auth-toggle-password-btn" data-toggle-pass="signUpPassword" title="Show or hide password" aria-label="Toggle password visibility">
+                <svg class="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
           </div>
           <button type="submit" class="auth-btn-primary" id="signUpSubmitBtn">
             <span class="btn-text">Create Account</span>
@@ -6826,13 +6869,10 @@
 
       <!-- TAB 3: FORGOT PASSWORD -->
       <div class="auth-panel" id="panelReset" style="display:none;">
-        <p style="font-size:13.5px;color:var(--text-secondary);margin-bottom:16px;">
-          Enter your registered email address and we'll send you a secure link to reset your password.
-        </p>
-        <form id="resetPasswordForm" onsubmit="return false;">
+        <form id="resetPasswordForm" autocomplete="off" onsubmit="return false;">
           <div class="auth-input-group">
             <label for="resetEmailInput">Email address</label>
-            <input type="email" id="resetEmailInput" placeholder="name@domain.com" required autocomplete="email">
+            <input type="email" id="resetEmailInput" placeholder="name@domain.com" required autocomplete="off" spellcheck="false">
           </div>
           <button type="submit" class="auth-btn-primary" id="resetSubmitBtn">
             <span class="btn-text">Send Reset Email</span>
@@ -6843,7 +6883,6 @@
           Remember your password? <button type="button" class="auth-link" data-switch-tab="signin">Back to Sign In</button>
         </div>
       </div>
-
     </div>
   </div>
 
@@ -6958,8 +6997,8 @@
       </div>
 
       <!-- Sidebar Bottom Profile / Settings -->
-      <div class="sidebar-footer" style="position:relative;">
-        <button class="user-profile-btn" id="userSettingsBtn" aria-haspopup="true" aria-expanded="false" title="Account & Preferences">
+      <div class="sidebar-footer">
+        <button class="user-profile-btn" id="userSettingsBtn" aria-haspopup="dialog" aria-expanded="false" title="Settings & Preferences">
           <div class="avatar-circle" id="userAvatar">ET</div>
           <div class="user-info">
             <span class="user-name" id="userNameLabel">You</span>
@@ -6991,54 +7030,6 @@
             <line x1="21" y1="12" x2="9" y2="12"></line>
           </svg>
         </button>
-
-        <!-- Professional Account Menu Popup -->
-        <div class="profile-account-dropdown" id="profileAccountDropdown" role="menu" aria-label="Account Settings Menu">
-          <div class="profile-dropdown-header">
-            <div class="profile-dropdown-avatar" id="dropdownUserAvatar">ET</div>
-            <div class="profile-dropdown-meta">
-              <div class="profile-dropdown-name" id="dropdownUserName">You</div>
-              <div class="profile-dropdown-handle" id="dropdownUserHandle">@thinker</div>
-              <div class="profile-dropdown-email" id="dropdownUserEmail">auth@epicthink.ai</div>
-            </div>
-          </div>
-          <div class="profile-dropdown-divider"></div>
-          <div class="profile-dropdown-items">
-            <button type="button" class="profile-dropdown-item" data-tab="profile" role="menuitem">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              <span>View Profile</span>
-            </button>
-            <button type="button" class="profile-dropdown-item" data-tab="account" role="menuitem">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <span>Settings</span>
-            </button>
-            <button type="button" class="profile-dropdown-item" data-tab="personalization" role="menuitem">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-              <span>Personalization</span>
-            </button>
-            <button type="button" class="profile-dropdown-item" data-tab="usage" role="menuitem">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-              <span>Usage & Activity</span>
-            </button>
-            <button type="button" class="profile-dropdown-item" data-tab="connected-apps" role="menuitem">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
-              <span>Connected Apps</span>
-            </button>
-            <button type="button" class="profile-dropdown-item" data-tab="security" role="menuitem">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              <span>Security</span>
-            </button>
-            <button type="button" class="profile-dropdown-item" id="dropdownHelpBtn" role="menuitem">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              <span>Help & Support</span>
-            </button>
-          </div>
-          <div class="profile-dropdown-divider"></div>
-          <button type="button" class="profile-dropdown-item profile-dropdown-logout" id="dropdownLogoutBtn" role="menuitem">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            <span>Log out</span>
-          </button>
-        </div>
       </div>
     </aside>
 
@@ -8132,25 +8123,19 @@
               <h4 class="settings-card-title">Identity & Authentication</h4>
               <div class="settings-card-desc">Your authentication credentials are cryptographically verified by Firebase Auth.</div>
               
-              <div class="form-grid-2">
-                <div class="form-group-pro">
-                  <label>Email Address</label>
-                  <input type="text" id="settingsAccountEmail" class="form-input-pro" readonly style="opacity:0.8;cursor:default;" />
-                </div>
-                <div class="form-group-pro">
-                  <label>Login Provider</label>
-                  <input type="text" id="settingsAccountProvider" class="form-input-pro" readonly style="opacity:0.8;cursor:default;" />
-                </div>
+              <div class="form-group-pro">
+                <label>Email Address</label>
+                <input type="text" id="settingsAccountEmail" class="form-input-pro" readonly style="opacity:0.85;cursor:default;" />
               </div>
 
               <div class="form-grid-2">
                 <div class="form-group-pro">
-                  <label>Member Since</label>
-                  <input type="text" id="settingsAccountCreated" class="form-input-pro" readonly style="opacity:0.8;cursor:default;" />
+                  <label>Login Provider</label>
+                  <input type="text" id="settingsAccountProvider" class="form-input-pro" readonly style="opacity:0.85;cursor:default;" />
                 </div>
                 <div class="form-group-pro">
-                  <label>Canonical User ID (Firebase UID)</label>
-                  <input type="text" id="settingsAccountUid" class="form-input-pro" readonly style="opacity:0.7;font-family:monospace;font-size:12px;cursor:default;" />
+                  <label>Member Since</label>
+                  <input type="text" id="settingsAccountCreated" class="form-input-pro" readonly style="opacity:0.85;cursor:default;" />
                 </div>
               </div>
             </div>
@@ -9070,6 +9055,7 @@
     import { AiService } from "./auth/aiService.js";
     import { UserService, renderAvatarHtml } from "./auth/userService.js";
     import { ProfileUI } from "./auth/profileUiController.js";
+    import { IntroController } from "./intro/introController.js";
 
     // DOM Selector Helpers
     const $ = selector => document.querySelector(selector);
@@ -9306,9 +9292,27 @@
       showToast: (msg) => showToast(msg)
     });
 
+    // Initialize 3D Cinematic Intro & Brand Controller
+    IntroController.init({
+      onShowLogin: () => {
+        const curPath = window.location.pathname;
+        if (curPath === '/signup') {
+          switchAuthTab('signup');
+        } else {
+          switchAuthTab('signin');
+        }
+      },
+      onShowApp: (user) => {
+        // Normal 2D workspace ready
+      },
+      getCurrentUser: () => currentUser,
+      showToast: (msg) => showToast(msg)
+    });
+
     window.UserService = UserService;
     window.ProfileUI = ProfileUI;
     window.renderAvatarHtml = renderAvatarHtml;
+    window.IntroController = IntroController;
 
     const saveState = (immediate = false) => {
       if (currentUser && currentUser.uid) {
@@ -10877,6 +10881,14 @@
         text = (text || '').trim();
         if (!text || state.isStreaming) return;
 
+        if (!currentUser || !currentUser.uid) {
+          showAuthError('Please sign in to start chatting with Epic Think AI.');
+          const authOverlay = $('#authOverlay');
+          if (authOverlay) authOverlay.style.display = 'flex';
+          switchAuthTab('signin');
+          return;
+        }
+
         let chat = state.chats.find(c => c.id === state.activeChatId);
         if (!chat) {
           chat = {
@@ -11336,6 +11348,13 @@
 
       // New Chat
       $('#newChatBtn').addEventListener('click', () => {
+        if (!currentUser || !currentUser.uid) {
+          showAuthError('Please sign in to start a new chat.');
+          const authOverlay = $('#authOverlay');
+          if (authOverlay) authOverlay.style.display = 'flex';
+          switchAuthTab('signin');
+          return;
+        }
         state.activeChatId = null;
         renderHistory();
         renderMessages();
@@ -11800,6 +11819,13 @@
       // Open / Close Plugin Store
       const openPluginStoreModal = (e) => {
         if (e && e.preventDefault) e.preventDefault();
+        if (!currentUser || !currentUser.uid) {
+          showAuthError('Please sign in to access Plugins & Tools.');
+          const authOverlay = $('#authOverlay');
+          if (authOverlay) authOverlay.style.display = 'flex';
+          switchAuthTab('signin');
+          return;
+        }
         closeMobileDrawer();
         renderPluginsGrid();
         pluginStoreModal.classList.add('open');
@@ -12357,12 +12383,12 @@
               preferCanvas: true
             });
 
-            // CartoDB Dark Matter retina tiles (ChatGPT / Claude modern dark aesthetic)
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-              subdomains: 'abcd',
-              maxNativeZoom: 19,
-              maxZoom: 20,
-              attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+            // OpenStreetMap Standard Tiles with Dark Theme CSS (100% Free, NO API Key Required, Zero Watermarks)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              subdomains: 'abc',
+              maxZoom: 19,
+              className: 'chatgpt-map-tiles',
+              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
             }).addTo(map);
 
             window.__activeLeafletMaps[cardId] = map;
@@ -12574,12 +12600,12 @@
               preferCanvas: true
             });
 
-            // CartoDB Dark Matter retina tiles
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-              subdomains: 'abcd',
-              maxNativeZoom: 19,
-              maxZoom: 20,
-              attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+            // OpenStreetMap Standard Tiles with Dark Theme CSS (100% Free, NO API Key Required, Zero Watermarks)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              subdomains: 'abc',
+              maxZoom: 19,
+              className: 'chatgpt-map-tiles',
+              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
             }).addTo(expandedMap);
 
             window.__expandedLeafletMap = expandedMap;
@@ -12648,6 +12674,13 @@
       const aiStudioModal = $('#aiStudioModal');
       const openAiStudioModal = (e) => {
         if (e && e.preventDefault) e.preventDefault();
+        if (!currentUser || !currentUser.uid) {
+          showAuthError('Please sign in to access AI Studio.');
+          const authOverlay = $('#authOverlay');
+          if (authOverlay) authOverlay.style.display = 'flex';
+          switchAuthTab('signin');
+          return;
+        }
         closeMobileDrawer();
         aiStudioModal.classList.add('open');
       };
@@ -13388,18 +13421,69 @@
 
       function switchAuthTab(tabId) {
         clearAuthAlerts();
+        const titleEl = $('#authTitle');
+        const subEl = $('#authSubtitle');
+
+        // Clear all inputs on switch so no false/stale credentials persist without explicit user entry
+        const clearFields = ['#signInEmail', '#signInPassword', '#signUpFirstName', '#signUpLastName', '#signUpEmail', '#signUpPassword', '#resetEmailInput'];
+        clearFields.forEach(sel => {
+          const el = $(sel);
+          if (el) el.value = '';
+        });
+
         $$('.auth-tab-btn').forEach(btn => {
           btn.classList.toggle('active', btn.dataset.tab === tabId);
         });
         $$('.auth-panel').forEach(p => p.style.display = 'none');
+
         if (tabId === 'signin') {
+          if (titleEl) titleEl.textContent = 'Welcome back';
+          if (subEl) subEl.textContent = 'Sign in to your Epic Think AI account to continue.';
           $('#panelSignin').style.display = 'block';
+          if (window.location.pathname !== '/login' && window.location.pathname !== '/' && !currentUser) {
+            try { window.history.replaceState({ page: 'login' }, 'Epic Think AI — Login', '/login'); } catch (_) {}
+          }
         } else if (tabId === 'signup') {
+          if (titleEl) titleEl.textContent = 'Create your account';
+          if (subEl) subEl.textContent = 'Your AI agent that remembers, learns, and helps you build.';
           $('#panelSignup').style.display = 'block';
+          if (window.location.pathname !== '/signup' && !currentUser) {
+            try { window.history.replaceState({ page: 'signup' }, 'Epic Think AI — Sign Up', '/signup'); } catch (_) {}
+          }
         } else if (tabId === 'reset') {
+          if (titleEl) titleEl.textContent = 'Reset your password';
+          if (subEl) subEl.textContent = 'Enter your registered email address and we will send a recovery link.';
           $('#panelReset').style.display = 'block';
         }
       }
+
+      // Password Visibility Eye Toggle
+      $$('[data-toggle-pass]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const targetInputId = btn.dataset.togglePass;
+          const input = $(`#${targetInputId}`);
+          if (!input) return;
+          const isPass = input.type === 'password';
+          input.type = isPass ? 'text' : 'password';
+          btn.innerHTML = isPass
+            ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`
+            : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+        });
+      });
+
+      // Clear credential inputs on load so stale browser cache / false autofill is removed
+      ['DOMContentLoaded', 'load'].forEach(evt => {
+        window.addEventListener(evt, () => {
+          setTimeout(() => {
+            const clearFields = ['#signInEmail', '#signInPassword', '#signUpFirstName', '#signUpLastName', '#signUpEmail', '#signUpPassword', '#resetEmailInput'];
+            clearFields.forEach(sel => {
+              const el = $(sel);
+              if (el) el.value = '';
+            });
+          }, 80);
+        });
+      });
 
       // Tab switcher clicks
       $$('.auth-tab-btn').forEach(btn => {
@@ -13426,6 +13510,21 @@
         btn.disabled = false;
         if (error) {
           showAuthError(error);
+        } else if (user) {
+          try {
+            const rawName = user.displayName || '';
+            const nameParts = rawName.trim().split(/\s+/);
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
+            await UserService.updateProfile({
+              firstName: firstName || undefined,
+              lastName: lastName || undefined,
+              displayName: rawName || undefined,
+              profilePhotoUrl: user.photoURL || undefined
+            });
+          } catch (profileErr) {
+            console.warn('[GoogleAuth:ProfileSync]', profileErr);
+          }
         }
       };
 
@@ -13453,10 +13552,17 @@
       $('#signUpForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         clearAuthAlerts();
-        const name = $('#signUpName').value;
-        const email = $('#signUpEmail').value;
+        const firstName = $('#signUpFirstName')?.value?.trim() || '';
+        const lastName = $('#signUpLastName')?.value?.trim() || '';
+        const name = `${firstName} ${lastName}`.trim();
+        const email = $('#signUpEmail').value.trim();
         const password = $('#signUpPassword').value;
         const submitBtn = $('#signUpSubmitBtn');
+
+        if (!firstName) {
+          showAuthError("Please enter your first name.");
+          return;
+        }
 
         if (password.length < 6) {
           showAuthError("Password must be at least 6 characters long.");
@@ -13465,11 +13571,27 @@
 
         setBtnLoading(submitBtn, true);
         const { user, error } = await signUpWithEmail(email, password, name);
-        setBtnLoading(submitBtn, false);
 
         if (error) {
+          setBtnLoading(submitBtn, false);
           showAuthError(error);
+          return;
         }
+
+        // Successfully created account - persist profile with first and last name to MongoDB
+        try {
+          if (user) {
+            await UserService.updateProfile({
+              firstName,
+              lastName,
+              displayName: name
+            });
+          }
+        } catch (profileErr) {
+          console.warn('[SignUp:ProfileUpdate]', profileErr);
+        }
+
+        setBtnLoading(submitBtn, false);
       });
 
       // Password Reset Request
@@ -13519,6 +13641,7 @@
           showToast('Firebase UID copied to clipboard');
         }
       });
+
 
 
       // Real-Time Cross-Tab / Remote Event Listener
@@ -13581,6 +13704,8 @@
       // ======================================================================
       // REACTIVE FIREBASE AUTHENTICATION LISTENER & SESSION PERSISTENCE
       // ======================================================================
+      let initialAuthChecked = false;
+
       onAuthChange(async (user) => {
         const loadingScreen = $('#authLoadingScreen');
         const authOverlay = $('#authOverlay');
@@ -13588,7 +13713,9 @@
 
         try {
           if (user) {
-            // User is authenticated
+            // User is authenticated - bypass intro & login with smooth 0.4s fast transition
+            IntroController.handleAuthenticatedReturningUser(user);
+
             currentUser = user;
             updateProfileUI(user);
             try {
@@ -13653,7 +13780,7 @@
 
             showToast(`Welcome back, ${user.displayName || user.email?.split('@')[0] || 'Epic Thinker'}`);
           } else {
-            // User is unauthenticated - enforce login gating
+            // User is unauthenticated - enforce public intro or login gating
             currentUser = null;
             try {
               ProfileUI.onUserSignedOut();
@@ -13675,8 +13802,29 @@
             try { MongoChatService.init(null); } catch (e) { console.warn('[MongoChatService:InitNull]', e); }
 
             appView.style.display = 'none';
-            authOverlay.style.display = 'flex';
-            switchAuthTab('signin');
+
+            const currentPath = window.location.pathname;
+            const isDirectAuthRoute = currentPath === '/login' || currentPath === '/signup';
+            const isWorkspaceRoute = currentPath === '/app' || currentPath === '/chat' || currentPath.startsWith('/app');
+            const shouldSkip = IntroController.shouldSkipIntro();
+
+            if (!initialAuthChecked) {
+              initialAuthChecked = true;
+              // Compulsory 3D intro before showing login system on all unauthenticated entries
+              if (isWorkspaceRoute) {
+                try { window.history.replaceState({ page: 'login' }, 'Epic Think AI — Login', '/login'); } catch (_) {}
+              }
+              // Keep login overlay hidden while compulsory 3D intro is displayed
+              authOverlay.style.display = 'none';
+              IntroController.playIntro();
+            } else {
+              // Sign out or state change after initial load -> Compulsory intro before showing login system
+              if (currentPath.startsWith('/app') || currentPath === '/chat') {
+                try { window.history.replaceState({ page: 'login' }, 'Epic Think AI — Login', '/login'); } catch (_) {}
+              }
+              authOverlay.style.display = 'none';
+              IntroController.playIntro(true);
+            }
           }
         } catch (err) {
           console.error('[Auth:State] Error handling auth state change:', err);
@@ -14065,6 +14213,17 @@
           // Unified Global Hash Router & Deep Link Dispatcher
           const handleGlobalRoute = () => {
             const hash = window.location.hash || '#chat';
+            if (!currentUser || !currentUser.uid) {
+              if (hash === '#website-builder' || hash === '#plugins' || hash === '#ai-studio') {
+                window.location.hash = '';
+                showAuthError('Please sign in to access the AI workspace.');
+                const authOverlay = document.getElementById('authOverlay');
+                if (authOverlay) authOverlay.style.display = 'flex';
+                switchAuthTab('signin');
+                return;
+              }
+            }
+
             if (hash === '#website-builder') {
               if (pluginStoreModal?.classList.contains('open')) pluginStoreModal.classList.remove('open');
               if (aiStudioModal?.classList.contains('open')) aiStudioModal.classList.remove('open');
@@ -14856,6 +15015,14 @@
         },
 
         openWorkspace(targetProjectId) {
+          if (!currentUser || !currentUser.uid) {
+            showAuthError('Please sign in to access the Website Builder.');
+            const authOverlay = document.getElementById('authOverlay');
+            if (authOverlay) authOverlay.style.display = 'flex';
+            switchAuthTab('signin');
+            return;
+          }
+
           if (targetProjectId) {
             this.projectId = targetProjectId;
             const select = document.getElementById('builderProjectSelect');

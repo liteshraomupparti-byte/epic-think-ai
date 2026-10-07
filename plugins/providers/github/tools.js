@@ -30,10 +30,16 @@ export const githubTools = [
       required: ['query']
     },
     handler: async (args, context) => {
-      return await context.credentialHandle.getAuthorizedClient(async (credentials) => {
-        const client = new GitHubClient(credentials.accessToken);
-        return await client.searchRepositories(args);
-      });
+      if (context?.credentialHandle?.getAuthorizedClient) {
+        try {
+          return await context.credentialHandle.getAuthorizedClient(async (credentials) => {
+            const client = new GitHubClient(credentials?.accessToken);
+            return await client.searchRepositories(args);
+          });
+        } catch (_) {}
+      }
+      const client = new GitHubClient();
+      return await client.searchRepositories(args);
     }
   },
   {
@@ -63,10 +69,16 @@ export const githubTools = [
       required: ['owner', 'repo', 'path']
     },
     handler: async (args, context) => {
-      return await context.credentialHandle.getAuthorizedClient(async (credentials) => {
-        const client = new GitHubClient(credentials.accessToken);
-        return await client.readCodeFile(args);
-      });
+      if (context?.credentialHandle?.getAuthorizedClient) {
+        try {
+          return await context.credentialHandle.getAuthorizedClient(async (credentials) => {
+            const client = new GitHubClient(credentials?.accessToken);
+            return await client.readCodeFile(args);
+          });
+        } catch (_) {}
+      }
+      const client = new GitHubClient();
+      return await client.readCodeFile(args);
     }
   },
   {
@@ -97,10 +109,16 @@ export const githubTools = [
       required: ['owner', 'repo']
     },
     handler: async (args, context) => {
-      return await context.credentialHandle.getAuthorizedClient(async (credentials) => {
-        const client = new GitHubClient(credentials.accessToken);
-        return await client.listPullRequests(args);
-      });
+      if (context?.credentialHandle?.getAuthorizedClient) {
+        try {
+          return await context.credentialHandle.getAuthorizedClient(async (credentials) => {
+            const client = new GitHubClient(credentials?.accessToken);
+            return await client.listPullRequests(args);
+          });
+        } catch (_) {}
+      }
+      const client = new GitHubClient();
+      return await client.listPullRequests(args);
     }
   },
   {
@@ -135,10 +153,13 @@ export const githubTools = [
       required: ['owner', 'repo', 'title']
     },
     handler: async (args, context) => {
-      return await context.credentialHandle.getAuthorizedClient(async (credentials) => {
-        const client = new GitHubClient(credentials.accessToken);
-        return await client.createIssue(args);
-      });
+      if (context?.credentialHandle?.getAuthorizedClient) {
+        return await context.credentialHandle.getAuthorizedClient(async (credentials) => {
+          const client = new GitHubClient(credentials?.accessToken);
+          return await client.createIssue(args);
+        });
+      }
+      throw new Error('Connecting your GitHub account is required to create issues.');
     }
   }
 ];

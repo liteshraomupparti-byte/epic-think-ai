@@ -119,16 +119,6 @@ export const ProfileUI = {
     if (nameEl) nameEl.textContent = displayName;
     if (handleEl) handleEl.textContent = username;
 
-    // 2. Account Menu Dropdown Header
-    const dropAvatarEl = $('#dropdownUserAvatar');
-    const dropNameEl = $('#dropdownUserName');
-    const dropHandleEl = $('#dropdownUserHandle');
-    const dropEmailEl = $('#dropdownUserEmail');
-
-    if (dropAvatarEl) dropAvatarEl.innerHTML = renderAvatarHtml(p, 42);
-    if (dropNameEl) dropNameEl.textContent = displayName;
-    if (dropHandleEl) dropHandleEl.textContent = username;
-    if (dropEmailEl) dropEmailEl.textContent = email;
 
     // 3. Settings Header & Profile Fields
     const settingsAvatarEl = $('#settingsAvatarPreview');
@@ -148,7 +138,6 @@ export const ProfileUI = {
     const fUsername = $('#settingsUsername');
     const fBio = $('#settingsBio');
     const fEmail = $('#settingsAccountEmail');
-    const fUid = $('#settingsAccountUid');
     const fCreated = $('#settingsAccountCreated');
     const fProvider = $('#settingsAccountProvider');
 
@@ -158,7 +147,6 @@ export const ProfileUI = {
     if (fUsername && document.activeElement !== fUsername) fUsername.value = p.username || '';
     if (fBio && document.activeElement !== fBio) fBio.value = p.bio || '';
     if (fEmail) fEmail.value = email;
-    if (fUid) fUid.value = p.firebaseUid || user?.uid || '';
     if (fCreated) {
       const date = p.createdAt ? new Date(p.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'Recently';
       fCreated.value = date;
@@ -204,58 +192,20 @@ export const ProfileUI = {
   },
 
   /**
-   * Bind Sidebar Profile Button and Account Dropdown
+   * Bind Sidebar Profile Button to directly open the Settings Modal (ChatGPT / Claude pattern)
    */
   bindSidebarProfile() {
     const btn = $('#userSettingsBtn');
-    const dropdown = $('#profileAccountDropdown');
-
-    if (btn && dropdown) {
+    if (btn) {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        dropdown.classList.toggle('open');
+        this.openSettings('profile');
       });
-
-      // Close dropdown when clicking outside
-      document.addEventListener('click', (e) => {
-        if (!dropdown.contains(e.target) && !btn.contains(e.target)) {
-          dropdown.classList.remove('open');
-        }
-      });
-
-      // Dropdown menu items
-      $$('.profile-dropdown-item[data-tab]').forEach((item) => {
-        item.addEventListener('click', () => {
-          const tab = item.getAttribute('data-tab');
-          dropdown.classList.remove('open');
-          this.openSettings(tab);
-        });
-      });
-
-      const logoutBtn = $('#dropdownLogoutBtn');
-      if (logoutBtn) {
-        logoutBtn.addEventListener('click', async () => {
-          dropdown.classList.remove('open');
-          if (typeof configCallbacks.onSignOut === 'function') {
-            await configCallbacks.onSignOut();
-          }
-        });
-      }
-
-      const helpBtn = $('#dropdownHelpBtn');
-      if (helpBtn) {
-        helpBtn.addEventListener('click', () => {
-          dropdown.classList.remove('open');
-          const feedbackModal = $('#generalFeedbackModal');
-          if (feedbackModal) feedbackModal.classList.add('open');
-        });
-      }
     }
   },
 
   closeDropdown() {
-    const dropdown = $('#profileAccountDropdown');
-    if (dropdown) dropdown.classList.remove('open');
+    // Dropdown replaced with direct settings dialog
   },
 
   /**
@@ -268,6 +218,18 @@ export const ProfileUI = {
 
     if (closeBtn) closeBtn.addEventListener('click', () => this.closeSettings());
     if (closeFooterBtn) closeFooterBtn.addEventListener('click', () => this.closeSettings());
+
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) this.closeSettings();
+      });
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal?.classList.contains('open')) {
+        this.closeSettings();
+      }
+    });
 
     // Navigation tab switching
     $$('.settings-nav-tab').forEach((tabBtn) => {

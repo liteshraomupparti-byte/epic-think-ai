@@ -5,22 +5,22 @@
  */
 
 export class GitHubClient {
-  constructor(accessToken) {
-    if (!accessToken) {
-      throw new Error('GitHubClient requires an authenticated access token.');
-    }
-    this.accessToken = accessToken;
+  constructor(accessToken = null) {
+    this.accessToken = accessToken || null;
     this.baseUrl = 'https://api.github.com';
   }
 
   async _request(endpoint, options = {}) {
     const url = `${this.baseUrl}${endpoint}`;
     const headers = {
-      'Authorization': `Bearer ${this.accessToken}`,
       'Accept': 'application/vnd.github.v3+json',
       'User-Agent': 'Epic-Think-AI/1.0.0',
       ...(options.headers || {})
     };
+
+    if (this.accessToken) {
+      headers['Authorization'] = `Bearer ${this.accessToken}`;
+    }
 
     const response = await fetch(url, {
       ...options,
@@ -127,6 +127,9 @@ export class GitHubClient {
    * Create an issue
    */
   async createIssue({ owner, repo, title, body = '', labels = [] }) {
+    if (!this.accessToken) {
+      throw new Error('Authentication required: A connected GitHub access token is required to create issues.');
+    }
     const endpoint = `/repos/${owner}/${repo}/issues`;
 
     const payload = {

@@ -571,14 +571,35 @@ app.get('/auth/:file', (req, res) => {
   res.status(404).send('Not found');
 });
 
-// Route root to index.html
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+// Explicit client intro module route with application/javascript MIME type
+app.get('/intro/:file', (req, res) => {
+  const fileName = path.basename(req.params.file);
+  const publicPath = path.join(__dirname, 'public', 'intro', fileName);
+  if (fileName.endsWith('.css')) {
+    res.type('text/css');
+  } else if (fileName.endsWith('.js')) {
+    res.type('application/javascript');
+  }
+  if (fs.existsSync(publicPath)) {
+    return res.sendFile(publicPath);
+  }
+  res.status(404).send('Not found');
 });
 
-// Route /app or /chat to Epic Think AI.html
-app.get('/chat', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Epic Think AI.html'));
+// Explicit client assets route (three.min.js, etc.)
+app.get('/assets/:file', (req, res) => {
+  const fileName = path.basename(req.params.file);
+  const publicPath = path.join(__dirname, 'public', 'assets', fileName);
+  if (fs.existsSync(publicPath)) {
+    if (fileName.endsWith('.js')) res.type('application/javascript');
+    return res.sendFile(publicPath);
+  }
+  res.status(404).send('Not found');
+});
+
+// Route public landing and application routes to index.html
+app.get(['/', '/login', '/signup', '/app', '/chat', '/app/chat', '/app/*'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Create HTTP server

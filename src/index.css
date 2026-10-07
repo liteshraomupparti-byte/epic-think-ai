@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-black text-white antialiased;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+}
+
+@keyframes text-chroma {
+  0% {
+    background-position: 0% 50%;
+    filter: drop-shadow(0 0 25px rgba(56, 189, 248, 0.5)) drop-shadow(0 0 50px rgba(99, 102, 241, 0.3));
+  }
+  25% {
+    background-position: 50% 100%;
+    filter: drop-shadow(0 0 32px rgba(168, 85, 247, 0.65)) drop-shadow(0 0 55px rgba(236, 72, 153, 0.35));
+  }
+  50% {
+    background-position: 100% 50%;
+    filter: drop-shadow(0 0 35px rgba(244, 63, 94, 0.6)) drop-shadow(0 0 60px rgba(251, 146, 60, 0.35));
+  }
+  75% {
+    background-position: 50% 0%;
+    filter: drop-shadow(0 0 32px rgba(52, 211, 153, 0.65)) drop-shadow(0 0 55px rgba(56, 189, 248, 0.4));
+  }
+  100% {
+    background-position: 0% 50%;
+    filter: drop-shadow(0 0 25px rgba(56, 189, 248, 0.5)) drop-shadow(0 0 50px rgba(99, 102, 241, 0.3));
+  }
+}
+
+.animate-text-chroma {
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    #38bdf8 18%,
+    #a855f7 36%,
+    #f43f5e 54%,
+    #34d399 72%,
+    #60a5fa 90%,
+    #ffffff 100%
+  );
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: text-chroma 5s ease-in-out infinite;
+}
+
+@keyframes beam-pulse {
+  0%, 100% {
+    opacity: 0.85;
+    transform: scaleY(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleY(1.3);
+  }
+}
+
+.animate-beam-pulse {
+  animation: beam-pulse 3s ease-in-out infinite;
+}
+
+@keyframes button-chroma {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-button-chroma {
+  background: linear-gradient(
+    90deg,
+    #06b6d4,
+    #3b82f6,
+    #8b5cf6,
+    #d946ef,
+    #f43f5e,
+    #10b981,
+    #06b6d4
+  );
+  background-size: 300% 300%;
+  animation: button-chroma 4s ease infinite;
+}
