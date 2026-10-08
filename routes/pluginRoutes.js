@@ -168,20 +168,7 @@ function resolveOAuthRedirectUri(req, pluginId) {
   }
 
   if (pluginId === 'notion') {
-    const configuredUri = process.env.NOTION_REDIRECT_URI || process.env.NOTION_CALLBACK_URL;
-    if (configuredUri) {
-      if (isLocalhost && (configuredUri.includes('localhost') || configuredUri.includes('127.0.0.1'))) {
-        return configuredUri;
-      }
-      if (!isLocalhost && configuredUri.startsWith('https://')) {
-        return configuredUri;
-      }
-      return configuredUri;
-    }
-    if (!isLocalhost) {
-      return `https://${host}/api/plugins/notion/oauth/callback`;
-    }
-    return 'https://epic-think-ai.vercel.app/api/plugins/notion/oauth/callback';
+    return process.env.NOTION_REDIRECT_URI || 'https://epic-think-ai.vercel.app/api/plugins/notion/oauth/callback';
   }
 
   // Non-Google plugins (e.g. github)

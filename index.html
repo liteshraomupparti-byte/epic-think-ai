@@ -12199,7 +12199,11 @@
       async function handlePluginAction(pluginId, action) {
         const user = currentUser || getCurrentUser();
         if (!user) {
-          showToast('Please sign in to your account to connect or configure plugins');
+          showToast(`Please sign in first to connect ${pluginId === 'notion' ? 'Notion' : pluginId}`);
+          const pluginsModal = $('#pluginsModal');
+          if (pluginsModal) pluginsModal.classList.remove('open');
+          const authOverlay = $('#authOverlay');
+          if (authOverlay) authOverlay.style.display = 'flex';
           return;
         }
         try {
@@ -12222,9 +12226,40 @@
               showToast(`${pluginId} disconnected & credentials purged.`);
             }
           } else if (action === 'connect-oauth') {
-            showToast(`Initiating OAuth for ${pluginId}...`);
-            const authUrl = await PluginService.getOAuthUrl(pluginId);
-            window.location.href = authUrl;
+            showToast(`Initiating OAuth for ${pluginId === 'notion' ? 'Notion' : pluginId}...`);
+            let authUrl;
+            try {
+              authUrl = await PluginService.getOAuthUrl(pluginId);
+            } catch (err) {
+              console.warn('[PluginAction:OAuth] getOAuthUrl error:', err);
+              if (pluginId === 'notion') {
+                const fallbackClientId = '3f3d872b-594c-81be-9261-003761500dc0';
+                const fallbackRedirect = encodeURIComponent('https://epic-think-ai.vercel.app/api/plugins/notion/oauth/callback');
+                authUrl = `https://api.notion.com/v1/oauth/authorize?client_id=${fallbackClientId}&response_type=code&owner=user&redirect_uri=${fallbackRedirect}`;
+              } else {
+                throw err;
+              }
+            }
+
+            if (!authUrl && pluginId === 'notion') {
+              const fallbackClientId = '3f3d872b-594c-81be-9261-003761500dc0';
+              const fallbackRedirect = encodeURIComponent('https://epic-think-ai.vercel.app/api/plugins/notion/oauth/callback');
+              authUrl = `https://api.notion.com/v1/oauth/authorize?client_id=${fallbackClientId}&response_type=code&owner=user&redirect_uri=${fallbackRedirect}`;
+            }
+
+            if (authUrl) {
+              try {
+                if (window.top && window.top !== window) {
+                  window.top.location.href = authUrl;
+                } else {
+                  window.location.href = authUrl;
+                }
+              } catch (_) {
+                window.location.href = authUrl;
+              }
+            } else {
+              throw new Error('Unable to construct authorization URL.');
+            }
             return;
           } else if (action === 'connect-token') {
             state.pendingBotTokenPluginId = pluginId;
@@ -12237,6 +12272,7 @@
 
           await refreshPluginsState();
         } catch (err) {
+          console.error('[PluginAction:Error]', err);
           showToast(`Error: ${err.message}`);
         }
       }
