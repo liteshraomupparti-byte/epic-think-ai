@@ -175,7 +175,10 @@ export class OAuthManager {
     }
 
     // 2. Exchange authorization code with provider
-    const effectiveRedirectUri = redirectUri || state.redirectUri || (adapter instanceof GoogleOAuthAdapter ? process.env.GOOGLE_REDIRECT_URI : null);
+    const effectiveRedirectUri = redirectUri
+      || state.redirectUri
+      || (adapter instanceof GoogleOAuthAdapter ? process.env.GOOGLE_REDIRECT_URI : null)
+      || (adapter instanceof NotionOAuthAdapter ? (process.env.NOTION_REDIRECT_URI || 'https://epic-think-ai.vercel.app/api/plugins/notion/oauth/callback') : null);
     const tokenResult = await adapter.exchangeCode({
       code,
       redirectUri: effectiveRedirectUri,

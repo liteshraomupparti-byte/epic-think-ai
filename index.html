@@ -6573,10 +6573,45 @@
       border-radius: 50%;
       overflow: hidden;
       position: relative;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.35);
       display: flex;
       align-items: center;
       justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 2px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .avatar-preview-circle:hover {
+      border-color: #10b981;
+      transform: scale(1.02);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25), 0 6px 18px rgba(0,0,0,0.45);
+    }
+
+    .avatar-preview-circle.drag-over {
+      border-color: #10b981;
+      transform: scale(1.06);
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.35);
+    }
+
+    .avatar-preview-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      pointer-events: none;
+      z-index: 5;
+      border-radius: 50%;
+    }
+
+    .avatar-preview-circle:hover .avatar-preview-overlay {
+      opacity: 1;
     }
 
     .username-input-container {
@@ -8065,14 +8100,19 @@
                 <div class="settings-card-desc">Supported formats: JPG, PNG, WEBP (Max 5MB). Changes sync in real-time.</div>
               </div>
               <div class="avatar-uploader-pro">
-                <div class="avatar-preview-circle" id="settingsAvatarPreview"></div>
+                <div class="avatar-preview-circle" id="settingsAvatarPreview" title="Click or drop an image to change photo"></div>
                 <div style="display:flex;flex-direction:column;gap:8px;">
-                  <div style="display:flex;gap:10px;">
-                    <button type="button" class="primary-btn" id="settingsUploadAvatarBtn" style="padding:7px 14px;font-size:13px;">Change Photo</button>
-                    <button type="button" class="secondary-btn" id="settingsRemoveAvatarBtn" style="padding:7px 14px;font-size:13px;display:none;color:#ef4444;">Remove Photo</button>
+                  <div style="display:flex;gap:10px;align-items:center;">
+                    <button type="button" class="primary-btn" id="settingsUploadAvatarBtn" style="padding:7px 16px;font-size:13px;display:inline-flex;align-items:center;gap:6px;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                      Change Photo
+                    </button>
+                    <button type="button" class="secondary-btn" id="settingsRemoveAvatarBtn" style="padding:7px 14px;font-size:13px;display:none;color:#ef4444;border-color:rgba(239,68,68,0.3);">
+                      Remove Photo
+                    </button>
                   </div>
-                  <span style="font-size:11.5px;color:var(--text-muted);">If no photo is uploaded, your deterministic initials avatar is used.</span>
-                  <input type="file" id="settingsAvatarFileInput" accept="image/png,image/jpeg,image/webp" style="display:none;" />
+                  <span style="font-size:11.5px;color:var(--text-muted);">Click your avatar or the button above to upload. If no photo is uploaded, your initials avatar is used.</span>
+                  <input type="file" id="settingsAvatarFileInput" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none;" />
                 </div>
               </div>
             </div>
@@ -8661,7 +8701,6 @@
           <div>
             <div style="display:flex;align-items:center;gap:8px;">
               <h3 class="modal-title" style="margin:0;">Plugin & Tool Store</h3>
-              <span class="pro-ecosystem-tag">Ecosystem 2.0</span>
             </div>
             <p style="font-size:12.5px;color:var(--text-muted);margin:2px 0 0;">Equip your AI Agent with verified OAuth tools, developer APIs, and messaging capabilities</p>
           </div>
@@ -8707,11 +8746,7 @@
         </div>
       </div>
 
-      <div class="modal-footer" style="justify-content:space-between;align-items:center;">
-        <span class="security-vault-indicator">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-          Credentials encrypted via AES-256-GCM in Token Vault • Zero Plaintext Storage
-        </span>
+      <div class="modal-footer" style="justify-content:flex-end;align-items:center;">
         <button type="button" class="secondary-btn" id="donePluginStoreBtn">Done</button>
       </div>
     </div>
@@ -9048,14 +9083,14 @@
       logoutUser,
       onAuthChange,
       formatAuthError
-    } from "./auth/authService.js";
-    import { MemoryService } from "./auth/memoryService.js";
-    import { MongoChatService } from "./auth/mongoChatService.js";
-    import { PluginService } from "./auth/pluginService.js";
-    import { AiService } from "./auth/aiService.js";
-    import { UserService, renderAvatarHtml } from "./auth/userService.js";
-    import { ProfileUI } from "./auth/profileUiController.js";
-    import { IntroController } from "./intro/introController.js";
+    } from "/auth/authService.js";
+    import { MemoryService } from "/auth/memoryService.js";
+    import { MongoChatService } from "/auth/mongoChatService.js";
+    import { PluginService } from "/auth/pluginService.js";
+    import { AiService } from "/auth/aiService.js";
+    import { UserService, renderAvatarHtml } from "/auth/userService.js";
+    import { ProfileUI } from "/auth/profileUiController.js";
+    import { IntroController } from "/intro/introController.js";
 
     // DOM Selector Helpers
     const $ = selector => document.querySelector(selector);
@@ -15111,6 +15146,8 @@
         },
 
         connectWebSocket() {
+          const isServerless = location.hostname.endsWith('vercel.app') || location.hostname.includes('vercel');
+          if (isServerless) return;
           try {
             if (this.ws) this.ws.close();
             const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -15131,6 +15168,7 @@
                 }
               } catch (_) {}
             };
+            this.ws.onerror = () => {};
           } catch (e) {
             console.warn('[WebsiteBuilder WS Error]', e);
           }

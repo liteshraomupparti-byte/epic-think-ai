@@ -56,7 +56,9 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase() || '.png';
-    const cleanExt = ['.jpg', '.jpeg', '.png', '.webp'].includes(ext) ? ext : '.png';
+    const cleanExt = ['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(ext)
+      ? (ext === '.jpeg' ? '.jpg' : ext)
+      : '.png';
     const safeUid = String(req.user.uid).replace(/[^a-zA-Z0-9_-]/g, '_');
     cb(null, `avatar_${safeUid}_${Date.now()}${cleanExt}`);
   }
@@ -69,11 +71,20 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024 // 5 MB max
   },
   fileFilter: (req, file, cb) => {
-    const allowedMime = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowedMime.includes(file.mimetype.toLowerCase())) {
-      return cb(new Error('Invalid image format. Supported formats: JPEG, PNG, WEBP.'));
+    const allowedMime = [
+      'image/jpeg', 'image/jpg', 'image/pjpeg',
+      'image/png', 'image/x-png',
+      'image/webp',
+      'image/gif'
+    ];
+    const mime = (file.mimetype || '').toLowerCase();
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    const allowedExts = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+
+    if (allowedMime.includes(mime) || allowedExts.includes(ext)) {
+      return cb(null, true);
     }
-    cb(null, true);
+    cb(new Error('Invalid image format. Supported formats: JPG, PNG, WEBP, GIF.'));
   }
 });
 
@@ -82,9 +93,9 @@ const upload = multer({
  */
 function verifyImageBuffer(filePath) {
   try {
-    const buffer = Buffer.alloc(12);
+    const buffer = Buffer.alloc(16);
     const fd = fs.openSync(filePath, 'r');
-    fs.readSync(fd, buffer, 0, 12, 0);
+    fs.readSync(fd, buffer, 0, 16, 0);
     fs.closeSync(fd);
 
     // PNG: 89 50 4E 47 0D 0A 1A 0A
@@ -97,6 +108,10 @@ function verifyImageBuffer(filePath) {
     }
     // WebP: 'RIFF'....'WEBP'
     if (buffer.toString('utf8', 0, 4) === 'RIFF' && buffer.toString('utf8', 8, 12) === 'WEBP') {
+      return true;
+    }
+    // GIF: GIF87a or GIF89a
+    if (buffer.toString('utf8', 0, 3) === 'GIF') {
       return true;
     }
     return false;
@@ -190,6 +205,95 @@ router.patch('/profile', requireAuth, async (req, res) => {
  * Upload and update profile photo with verification
  */
 router.post('/profile/avatar', requireAuth, (req, res) => {
+  const contentType = (req.headers['content-type'] || '').toLowerCase();
+
+  // 1. JSON Data URL or direct Base64 upload
+  if (contentType.includes('application/json')) {
+    const rawData = req.body?.avatarDataUrl || req.body?.avatar || req.body?.profilePhotoUrl;
+    if (!rawData || typeof rawData !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'NO_IMAGE_DATA', message: 'Please select a valid image file to upload.' }
+      });
+    }
+
+    try {
+      let photoUrl = rawData;
+      // If it is a base64 data URL, persist to disk in uploads directory
+      if (rawData.startsWith('data:image/')) {
+        const matches = rawData.match(/^data:image\/([a-zA-Z0-9+.-]+);base64,(.+)$/);
+        if (matches) {
+          const rawExt = matches[1].toLowerCase().replace('jpeg', 'jpg');
+          const ext = ['.jpg', '.png', '.webp', '.gif'].includes(`.${rawExt}`) ? `.${rawExt}` : '.png';
+          const base64Data = matches[2];
+          const buffer = Buffer.from(base64Data, 'base64');
+
+          if (buffer.length > 5 * 1024 * 1024) {
+            return res.status(400).json({
+              success: false,
+              error: { code: 'FILE_TOO_LARGE', message: 'Image exceeds 5MB size limit.' }
+            });
+          }
+
+          const safeUid = String(req.user.uid).replace(/[^a-zA-Z0-9_-]/g, '_');
+          const filename = `avatar_${safeUid}_${Date.now()}${ext}`;
+          const diskPath = path.join(UPLOADS_DIR, filename);
+
+          try {
+            fs.writeFileSync(diskPath, buffer);
+            if (verifyImageBuffer(diskPath)) {
+              photoUrl = `/uploads/avatars/${filename}`;
+            } else {
+              try { fs.unlinkSync(diskPath); } catch (_) {}
+            }
+          } catch (writeErr) {
+            console.warn('[AVATAR:DISK_WRITE] Falling back to Data URL storage:', writeErr.message);
+          }
+        }
+      }
+
+      // Clean up previous disk avatar if replaced
+      getUserProfile(req.user.uid).then((previous) => {
+        if (previous?.profilePhotoUrl && previous.profilePhotoUrl.startsWith('/uploads/avatars/')) {
+          const oldFile = path.resolve(__dirname, '..', previous.profilePhotoUrl.replace(/^\//, ''));
+          if (fs.existsSync(oldFile) && !photoUrl.includes(path.basename(oldFile))) {
+            try { fs.unlinkSync(oldFile); } catch (_) {}
+          }
+        }
+      }).catch(() => {});
+
+      updateUserProfile(req.user.uid, { profilePhotoUrl: photoUrl }).then((updated) => {
+        broadcastToUser(req.user.uid, {
+          type: 'profile_updated',
+          profile: updated,
+          timestamp: Date.now()
+        });
+
+        res.json({
+          success: true,
+          data: {
+            profilePhotoUrl: photoUrl,
+            profile: updated
+          },
+          profile: updated,
+          profilePhotoUrl: photoUrl
+        });
+      }).catch((updateErr) => {
+        res.status(500).json({
+          success: false,
+          error: { code: 'AVATAR_SAVE_FAILED', message: updateErr.message }
+        });
+      });
+      return;
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        error: { code: 'AVATAR_PROCESSING_FAILED', message: err.message }
+      });
+    }
+  }
+
+  // 2. Standard Multipart / Multer upload
   upload.single('avatar')(req, res, async (err) => {
     if (err) {
       return res.status(400).json({

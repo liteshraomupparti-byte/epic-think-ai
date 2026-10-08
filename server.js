@@ -557,11 +557,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(__dirname));
 
 // Explicit client auth module route with application/javascript MIME type
-app.get('/auth/:file', (req, res) => {
+app.get(['/auth/:file', '/api/auth/:file'], (req, res) => {
   const fileName = path.basename(req.params.file);
   const publicPath = path.join(__dirname, 'public', 'auth', fileName);
   const rootPath = path.join(__dirname, 'auth', fileName);
-  res.type('application/javascript');
+  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
   if (fs.existsSync(publicPath)) {
     return res.sendFile(publicPath);
   }
@@ -572,16 +572,20 @@ app.get('/auth/:file', (req, res) => {
 });
 
 // Explicit client intro module route with application/javascript MIME type
-app.get('/intro/:file', (req, res) => {
+app.get(['/intro/:file', '/api/intro/:file'], (req, res) => {
   const fileName = path.basename(req.params.file);
   const publicPath = path.join(__dirname, 'public', 'intro', fileName);
+  const rootPath = path.join(__dirname, 'intro', fileName);
   if (fileName.endsWith('.css')) {
-    res.type('text/css');
-  } else if (fileName.endsWith('.js')) {
-    res.type('application/javascript');
+    res.setHeader('Content-Type', 'text/css; charset=utf-8');
+  } else {
+    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
   }
   if (fs.existsSync(publicPath)) {
     return res.sendFile(publicPath);
+  }
+  if (fs.existsSync(rootPath)) {
+    return res.sendFile(rootPath);
   }
   res.status(404).send('Not found');
 });

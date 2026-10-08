@@ -231,19 +231,23 @@ const INJECTED_PREVIEW_SCRIPT = `
 
   // WebSocket Live Reload Bridge
   try {
-    const wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = wsProto + '//' + location.host + '/ws/preview/' + location.pathname.split('/')[2];
-    const reloadSocket = new WebSocket(wsUrl);
+    const isServerless = location.hostname.endsWith('vercel.app') || location.hostname.includes('vercel');
+    if (!isServerless) {
+      const wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = wsProto + '//' + location.host + '/ws/preview/' + location.pathname.split('/')[2];
+      const reloadSocket = new WebSocket(wsUrl);
 
-    reloadSocket.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'reload') {
-          console.log('[Epic Think Preview] Hot reload triggered by file update.');
-          location.reload();
-        }
-      } catch (_) {}
-    };
+      reloadSocket.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'reload') {
+            console.log('[Epic Think Preview] Hot reload triggered by file update.');
+            location.reload();
+          }
+        } catch (_) {}
+      };
+      reloadSocket.onerror = () => {};
+    }
   } catch (_) {}
 })();
 </script>

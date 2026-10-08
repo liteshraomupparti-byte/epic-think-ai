@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "build:intro": "vite build --config vite.bundle.config.ts",
+    "build:intro": "vite build --config vite.bundle.config.ts && node -e \"const fs=require('fs'); fs.cpSync('public/intro', 'intro', {recursive:true});\"",
     "build": "npm run build:intro",
     "test:memory": "node test/test-hindsight-integration.js",
     "test:mongo": "node test/test-mongo-realtime.js",

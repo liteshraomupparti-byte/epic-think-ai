@@ -125,7 +125,16 @@ export const ProfileUI = {
     const completionFill = $('#settingsCompletionFill');
     const completionText = $('#settingsCompletionText');
 
-    if (settingsAvatarEl) settingsAvatarEl.innerHTML = renderAvatarHtml(p, 76);
+    if (settingsAvatarEl) {
+      settingsAvatarEl.innerHTML = renderAvatarHtml(p, 76) + `
+        <div class="avatar-preview-overlay">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+            <circle cx="12" cy="13" r="4"></circle>
+          </svg>
+          <span style="font-size:9.5px;margin-top:2px;font-weight:600;letter-spacing:0.4px;">CHANGE</span>
+        </div>`;
+    }
 
     const completion = calculateProfileCompletion(p);
     if (completionFill) completionFill.style.width = `${completion.percentage}%`;
@@ -322,24 +331,105 @@ export const ProfileUI = {
     const uploadBtn = $('#settingsUploadAvatarBtn');
     const fileInput = $('#settingsAvatarFileInput');
     const removeAvatarBtn = $('#settingsRemoveAvatarBtn');
+    const previewCircle = $('#settingsAvatarPreview');
+
+    const handleAvatarUpload = async (file) => {
+      if (!file) return;
+
+      if (!file.type || !file.type.startsWith('image/')) {
+        const ext = file.name ? file.name.split('.').pop().toLowerCase() : '';
+        if (!['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) {
+          if (configCallbacks.showToast) configCallbacks.showToast('Please select a valid image file (JPG, PNG, WEBP).');
+          return;
+        }
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        if (configCallbacks.showToast) configCallbacks.showToast('Image exceeds 5MB size limit. Please select a smaller photo.');
+        return;
+      }
+
+      // Optimistic instant preview on client
+      let optimizedDataUrl = null;
+      try {
+        const { optimizeImageFile } = await import('./userService.js');
+        if (typeof optimizeImageFile === 'function') {
+          optimizedDataUrl = await optimizeImageFile(file);
+        }
+      } catch (optErr) {
+        console.warn('[Avatar:ClientOptimize]', optErr);
+      }
+
+      if (optimizedDataUrl && previewCircle) {
+        const tempProfile = { ...(currentProfile || {}), profilePhotoUrl: optimizedDataUrl };
+        previewCircle.innerHTML = renderAvatarHtml(tempProfile, 76) + `
+          <div class="avatar-preview-overlay">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+            <span style="font-size:9.5px;margin-top:2px;font-weight:600;letter-spacing:0.4px;">CHANGE</span>
+          </div>`;
+        const sidebarAvatar = $('#userAvatar');
+        if (sidebarAvatar) sidebarAvatar.innerHTML = renderAvatarHtml(tempProfile, 34);
+      }
+
+      try {
+        if (uploadBtn) {
+          uploadBtn.disabled = true;
+          uploadBtn.innerHTML = '<span style="display:inline-block;animation:spin 1s linear infinite;margin-right:6px;">⏳</span> Uploading...';
+        }
+        await UserService.uploadAvatar(file, optimizedDataUrl);
+        if (configCallbacks.showToast) configCallbacks.showToast('Profile photo updated successfully.');
+        if (removeAvatarBtn) removeAvatarBtn.style.display = 'inline-flex';
+      } catch (err) {
+        console.error('[AvatarUploadError]', err);
+        // If upload had error and no local photo was saved, re-render current profile
+        if (!UserService.getProfile()?.profilePhotoUrl) {
+          this.renderProfileUI(currentProfile);
+        }
+        if (configCallbacks.showToast) configCallbacks.showToast(err.message || 'Avatar upload failed.');
+      } finally {
+        if (uploadBtn) {
+          uploadBtn.disabled = false;
+          uploadBtn.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            Change Photo`;
+        }
+        if (fileInput) fileInput.value = '';
+      }
+    };
+
+    if (previewCircle && fileInput) {
+      previewCircle.addEventListener('click', () => fileInput.click());
+
+      previewCircle.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        previewCircle.classList.add('drag-over');
+      });
+
+      previewCircle.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        previewCircle.classList.remove('drag-over');
+      });
+
+      previewCircle.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        previewCircle.classList.remove('drag-over');
+        if (e.dataTransfer?.files?.length > 0) {
+          handleAvatarUpload(e.dataTransfer.files[0]);
+        }
+      });
+    }
 
     if (uploadBtn && fileInput) {
       uploadBtn.addEventListener('click', () => fileInput.click());
-      fileInput.addEventListener('change', async () => {
+      fileInput.addEventListener('change', () => {
         if (!fileInput.files || fileInput.files.length === 0) return;
-        const file = fileInput.files[0];
-        try {
-          uploadBtn.disabled = true;
-          uploadBtn.textContent = 'Uploading...';
-          await UserService.uploadAvatar(file);
-          if (configCallbacks.showToast) configCallbacks.showToast('Profile photo updated.');
-        } catch (err) {
-          if (configCallbacks.showToast) configCallbacks.showToast(err.message || 'Avatar upload failed.');
-        } finally {
-          uploadBtn.disabled = false;
-          uploadBtn.textContent = 'Change Photo';
-          fileInput.value = '';
-        }
+        handleAvatarUpload(fileInput.files[0]);
       });
     }
 
@@ -347,12 +437,15 @@ export const ProfileUI = {
       removeAvatarBtn.addEventListener('click', async () => {
         try {
           removeAvatarBtn.disabled = true;
+          removeAvatarBtn.textContent = 'Removing...';
           await UserService.deleteAvatar();
+          removeAvatarBtn.style.display = 'none';
           if (configCallbacks.showToast) configCallbacks.showToast('Profile photo removed.');
         } catch (err) {
           if (configCallbacks.showToast) configCallbacks.showToast(err.message || 'Failed to remove photo.');
         } finally {
           removeAvatarBtn.disabled = false;
+          removeAvatarBtn.textContent = 'Remove Photo';
         }
       });
     }
@@ -712,15 +805,30 @@ export const ProfileUI = {
       obUploadBtn.addEventListener('click', () => obAvatarInput.click());
       obAvatarInput.addEventListener('change', async () => {
         if (!obAvatarInput.files || obAvatarInput.files.length === 0) return;
+        const file = obAvatarInput.files[0];
         try {
           obUploadBtn.disabled = true;
           obUploadBtn.textContent = 'Uploading...';
-          const res = await UserService.uploadAvatar(obAvatarInput.files[0]);
+
+          let optimizedDataUrl = null;
+          try {
+            const { optimizeImageFile } = await import('./userService.js');
+            if (typeof optimizeImageFile === 'function') {
+              optimizedDataUrl = await optimizeImageFile(file);
+            }
+          } catch (_) {}
+
           const preview = $('#onboardingAvatarPreview');
+          if (preview && optimizedDataUrl) {
+            preview.innerHTML = renderAvatarHtml({ ...(currentProfile || {}), profilePhotoUrl: optimizedDataUrl }, 96);
+          }
+
+          const res = await UserService.uploadAvatar(file, optimizedDataUrl);
           if (preview) preview.innerHTML = renderAvatarHtml(res.profile, 96);
           if (obRemoveBtn) obRemoveBtn.style.display = 'inline-flex';
+          if (configCallbacks.showToast) configCallbacks.showToast('Profile photo updated.');
         } catch (e) {
-          if (configCallbacks.showToast) configCallbacks.showToast(e.message);
+          if (configCallbacks.showToast) configCallbacks.showToast(e.message || 'Avatar upload failed.');
         } finally {
           obUploadBtn.disabled = false;
           obUploadBtn.textContent = 'Change Photo';
@@ -731,10 +839,15 @@ export const ProfileUI = {
 
     if (obRemoveBtn) {
       obRemoveBtn.addEventListener('click', async () => {
-        await UserService.deleteAvatar();
-        const preview = $('#onboardingAvatarPreview');
-        if (preview) preview.innerHTML = renderAvatarHtml(UserService.getProfile(), 96);
-        obRemoveBtn.style.display = 'none';
+        try {
+          obRemoveBtn.disabled = true;
+          await UserService.deleteAvatar();
+          const preview = $('#onboardingAvatarPreview');
+          if (preview) preview.innerHTML = renderAvatarHtml(UserService.getProfile(), 96);
+          obRemoveBtn.style.display = 'none';
+        } catch (_) {} finally {
+          obRemoveBtn.disabled = false;
+        }
       });
     }
 

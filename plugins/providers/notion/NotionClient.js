@@ -94,6 +94,10 @@ export class NotionClient {
     };
   }
 
+  async readPage(args) {
+    return await this.readContent(args);
+  }
+
   async queryDatabase({ databaseId, pageSize = 10, filter = null }) {
     const cleanId = databaseId.replace(/-/g, '');
     const limit = Math.min(Math.max(1, Number(pageSize) || 10), 50);
