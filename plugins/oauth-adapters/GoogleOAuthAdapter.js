@@ -12,7 +12,10 @@ export const GOOGLE_DEFAULT_SCOPES = [
   'profile',
   'https://www.googleapis.com/auth/gmail.modify',
   'https://www.googleapis.com/auth/calendar',
-  'https://www.googleapis.com/auth/drive.file'
+  'https://www.googleapis.com/auth/drive.file',
+  'https://www.googleapis.com/auth/spreadsheets',
+  'https://www.googleapis.com/auth/documents',
+  'https://www.googleapis.com/auth/presentations'
 ];
 
 export class GoogleOAuthAdapter extends BaseOAuthAdapter {
@@ -33,13 +36,13 @@ export class GoogleOAuthAdapter extends BaseOAuthAdapter {
 
     if (envUri) {
       if (isVercel && (envUri.includes('localhost') || envUri.includes('127.0.0.1'))) {
-        return 'https://hink-ai.vercel.app/api/plugins/google/oauth/callback';
+        return 'https://epic-think-ai.vercel.app/api/plugins/google/oauth/callback';
       }
       return envUri;
     }
 
     if (isVercel) {
-      return 'https://hink-ai.vercel.app/api/plugins/google/oauth/callback';
+      return 'https://epic-think-ai.vercel.app/api/plugins/google/oauth/callback';
     }
 
     const port = process.env.PORT || 3001;

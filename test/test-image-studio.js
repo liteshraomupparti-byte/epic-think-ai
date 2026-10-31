@@ -81,13 +81,48 @@ async function runTestSuite() {
   console.log('- Fast Tier Model:', GeminiImageProvider.DEFAULT_FAST_MODEL);
 
   const capabilities = ImageModelRouter.getCapabilities();
-  console.log('- Supported Modes:', capabilities.modes.map(m => m.id).join(', '));
-  console.log('- Supported Resolutions:', capabilities.resolutions.map(r => r.id).join(', '));
-  console.log('- Supported Aspect Ratios:', capabilities.aspectRatios.map(a => a.id).join(', '));
+  console.log('- Supported Modes:', capabilities.modes.map(m => m.id || m).join(', '));
+  console.log('- Supported Resolutions:', capabilities.resolutions.map(r => r.id || r).join(', '));
+  console.log('- Supported Aspect Ratios:', capabilities.aspectRatios.map(a => a.id || a).join(', '));
+  console.log('- Gemini Quota Circuit Status:', GeminiImageProvider.getQuotaStatus());
   console.log('\n----------------------------------------------------------------\n');
 
-  // Test Error Handling: Invalid API Key Fallback
-  console.log('[TEST: ERROR HANDLING & FALLBACK WITH INVALID KEY]');
+  // Test 1: Quota Circuit Breaker & Error Classification
+  console.log('[TEST 1: GEMINI QUOTA CIRCUIT BREAKER & ERROR-AWARE ROUTING]');
+  try {
+    // Reset circuit first to test live detection
+    GeminiImageProvider.resetCircuit();
+    const liveStatus = GeminiImageProvider.getQuotaStatus();
+    console.log('  Initial Circuit Status (Reset):', liveStatus.circuitOpen ? 'OPEN' : 'CLOSED');
+
+    // Run generation in HIGH_QUALITY mode to trigger live Gemini quota check
+    const quotaTestRes = await ImageStudioService.generateImage({
+      prompt: 'A golden coin with star symbol',
+      mode: 'HIGH_QUALITY',
+      resolution: '1K',
+      aspectRatio: '1:1',
+      enhance: false,
+      forceLiveCheck: true
+    });
+
+    console.log('  Result with Live Quota Check:');
+    console.log('  - Success:', quotaTestRes.success);
+    console.log('  - Primary Provider:', quotaTestRes.primaryProvider);
+    console.log('  - Primary Failed:', quotaTestRes.primaryFailed);
+    console.log('  - Primary Error Code:', quotaTestRes.primaryErrorCode);
+    console.log('  - Fallback Used:', quotaTestRes.fallbackUsed);
+    console.log('  - Active Generator Model:', quotaTestRes.generationModel);
+    console.log('  - Prompt Enhancement Model:', quotaTestRes.enhancementModel);
+    console.log('  - Circuit Breaker Tripped:', GeminiImageProvider.isQuotaExhausted() ? '✅ YES (Protected against futile retries)' : 'NO');
+    console.log('  - Circuit Status:', GeminiImageProvider.getQuotaStatus());
+  } catch (err) {
+    console.log('  Live quota check error:', err.message);
+  }
+
+  console.log('\n----------------------------------------------------------------\n');
+
+  // Test 2: Error Handling with Invalid API Key
+  console.log('[TEST 2: ERROR HANDLING & FALLBACK WITH INVALID KEY]');
   try {
     const originalKey = process.env.GEMINI_API_KEY;
     process.env.GEMINI_API_KEY = 'AIzaSy_fake_invalid_key_for_testing';
@@ -97,7 +132,8 @@ async function runTestSuite() {
       mode: 'HIGH_QUALITY',
       resolution: '1K',
       aspectRatio: '1:1',
-      enhance: false
+      enhance: false,
+      forceLiveCheck: true
     });
 
     console.log('  Result with invalid key:');
@@ -119,6 +155,7 @@ async function runTestSuite() {
 
   // Execute the 5 Required Prompts
   const results = [];
+  await new Promise(r => setTimeout(r, 3000));
 
   for (const test of REQUIRED_TESTS) {
     console.log(`\n================================================================`);
@@ -215,6 +252,9 @@ async function runTestSuite() {
         error: testErr.message
       });
     }
+
+    // Brief pacing between test runs
+    await new Promise(r => setTimeout(r, 5000));
   }
 
   // Test Image Editing / Reference Image input
@@ -232,12 +272,16 @@ async function runTestSuite() {
       referenceImages: [sampleRefImage]
     });
 
-    console.log('✅ Image Editing Test Success:');
-    console.log('   - Mode: Conversational Image Editing');
-    console.log('   - Provider:', editRes.provider);
-    console.log('   - Model:', editRes.actualModelUsed);
-    console.log('   - Actual Resolution:', editRes.actualResolution);
-    console.log('   - Is Editing Active:', editRes.isEditing);
+    if (editRes.success) {
+      console.log('✅ Image Editing Test Success:');
+      console.log('   - Mode: Conversational Image Editing');
+      console.log('   - Provider:', editRes.provider);
+      console.log('   - Model:', editRes.actualModelUsed);
+      console.log('   - Actual Resolution:', editRes.actualResolution);
+      console.log('   - Is Editing Active:', editRes.isEditing);
+    } else {
+      console.warn('   Image editing test completed with fallback status:', editRes.error || editRes.primaryError);
+    }
   } catch (editErr) {
     console.warn('   Image editing test note:', editErr.message);
   }

@@ -12,6 +12,22 @@
       "destination": "/api"
     },
     {
+      "source": "/uploads/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy.html"
+    },
+    {
+      "source": "/terms",
+      "destination": "/terms.html"
+    },
+    {
+      "source": "/terms-of-service",
+      "destination": "/terms.html"
+    },
+    {
       "source": "/login",
       "destination": "/index.html"
     },
@@ -30,10 +46,6 @@
     {
       "source": "/chat",
       "destination": "/index.html"
-    },
-    {
-      "source": "/preview/(.*)",
-      "destination": "/api"
     }
   ],
   "headers": [

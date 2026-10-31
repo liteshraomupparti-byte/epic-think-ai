@@ -45,11 +45,9 @@ import { initRealtimeSync, broadcastToUser } from './services/realtimeSync.js';
 import pluginRoutes from './routes/pluginRoutes.js';
 import agentRoutes from './routes/agentRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
-import imageRoutes from './routes/imageRoutes.js';
-import builderRoutes from './routes/builderRoutes.js';
 import userRoutes from './routes/userRoutes.js';
-import { PreviewServer } from './services/websiteBuilder/PreviewServer.js';
-import { ProjectManager } from './services/websiteBuilder/ProjectManager.js';
+import { UsageMeter } from './services/media/UsageMeter.js';
+import { QuotaTrackingService } from './services/usage/QuotaTrackingService.js';
 import { initializePlugins } from './plugins/index.js';
 import { initAIEngine } from './ai/index.js';
 
@@ -80,23 +78,23 @@ app.use(express.json({ limit: '15mb' }));
 // Request logging (sanitized - no tokens or keys logged)
 app.use((req, res, next) => {
   const timestamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true });
-  if (req.path.startsWith('/api/memory') || req.path.startsWith('/api/conversations') || req.path.startsWith('/api/plugins') || req.path.startsWith('/api/agent') || req.path.startsWith('/api/ai') || req.path.startsWith('/api/builder') || req.path.startsWith('/preview')) {
+  if (req.path.startsWith('/api/memory') || req.path.startsWith('/api/conversations') || req.path.startsWith('/api/plugins') || req.path.startsWith('/api/agent') || req.path.startsWith('/api/ai')) {
     console.log(`[HTTP IST ${timestamp}] ${req.method} ${req.path}`);
   }
   next();
 });
 
 // ============================================================================
-// PLUGIN, AGENT, MULTI-PROVIDER AI & WEBSITE BUILDER API ROUTES
+// PLUGIN, AGENT & MULTI-PROVIDER AI API ROUTES
 // ============================================================================
 app.use('/api/plugins', pluginRoutes);
 app.use('/api/agent', agentRoutes);
 app.use('/api', agentRoutes); // Exposes /api/confirmations and aliases
 app.use('/api/ai', aiRoutes);
-app.use('/api/image', imageRoutes);
-app.use('/api/builder', builderRoutes);
 app.use('/api/user', userRoutes);
-app.use('/preview', PreviewServer.createExpressHandler());
+app.get('/api/usage/status', (req, res) => {
+  res.json({ success: true, ...UsageMeter.getUsageSummary() });
+});
 
 // ============================================================================
 // REAL-TIME CONVERSATIONS & MONGODB API (PROTECTED BY FIREBASE AUTH)
@@ -411,7 +409,7 @@ app.get('/api/memory/status', async (req, res) => {
  * POST /api/memory/recall
  * Body: { query: string, maxTokens?: number }
  */
-app.post('/api/memory/recall', requireAuth, async (req, res) => {
+app.post('/api/memory/recall', requireAuth, QuotaTrackingService.createMiddleware({ type: 'memory', estimatedCostInr: 0.01 }), async (req, res) => {
   const { query, maxTokens } = req.body || {};
   if (!query || typeof query !== 'string') {
     return res.status(400).json({
@@ -449,7 +447,7 @@ app.post('/api/memory/recall', requireAuth, async (req, res) => {
  * POST /api/memory/retain
  * Body: { content?: string, text?: string, context?: string, tags?: string[] }
  */
-app.post('/api/memory/retain', requireAuth, async (req, res) => {
+app.post('/api/memory/retain', requireAuth, QuotaTrackingService.createMiddleware({ type: 'memory', estimatedCostInr: 0.01 }), async (req, res) => {
   const content = req.body.content || req.body.text;
   const context = req.body.context || 'general';
   const tags = req.body.tags || ['epic-think'];
@@ -601,6 +599,19 @@ app.get('/assets/:file', (req, res) => {
   res.status(404).send('Not found');
 });
 
+// Route legal compliance pages for Google OAuth Verification & Branding
+app.get(['/privacy', '/privacy.html'], (req, res) => {
+  const publicPath = path.join(__dirname, 'public', 'privacy.html');
+  if (fs.existsSync(publicPath)) return res.sendFile(publicPath);
+  res.sendFile(path.join(__dirname, 'privacy.html'));
+});
+
+app.get(['/terms', '/terms.html', '/terms-of-service'], (req, res) => {
+  const publicPath = path.join(__dirname, 'public', 'terms.html');
+  if (fs.existsSync(publicPath)) return res.sendFile(publicPath);
+  res.sendFile(path.join(__dirname, 'terms.html'));
+});
+
 // Route public landing and application routes to index.html
 app.get(['/', '/login', '/signup', '/app', '/chat', '/app/chat', '/app/*'], (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
@@ -611,17 +622,6 @@ const server = http.createServer(app);
 
 // Initialize WebSocket real-time synchronization
 initRealtimeSync(server);
-
-// Initialize Website Builder Live Preview WebSocket synchronization
-PreviewServer.attachWebSocket(server);
-
-// Ensure default projects exist with verified templates
-try {
-  await ProjectManager.ensureProjectFiles('devika_collections');
-  console.log('[BUILDER] Default project "devika_collections" verified & ready.');
-} catch (err) {
-  console.warn('[BUILDER] Default project init note:', err.message);
-}
 
 // Initialize MongoDB connection
 initMongoDB().catch((err) => {
@@ -635,7 +635,6 @@ if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
     console.log(` Epic Think AI Backend Server Running on Port ${PORT}`);
     console.log(` Web Interface:   http://localhost:${PORT}/`);
     console.log(` Alternative URL: http://localhost:${PORT}/Epic%20Think%20AI.html`);
-    console.log(` Website Builder: http://localhost:${PORT}/#website-builder`);
     console.log(` Memory Status:   http://localhost:${PORT}/api/memory/status`);
     console.log(` Mongo Status:    http://localhost:${PORT}/api/conversations/status`);
     console.log(` Real-Time WS:    ws://localhost:${PORT}/ws`);

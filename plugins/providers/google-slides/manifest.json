@@ -1,0 +1,32 @@
+{
+  "id": "google_slides",
+  "name": "Google Slides (PPT)",
+  "version": "1.0.0",
+  "description": "Create professional pitch decks, presentations, add formatted slides with bullet points, and inspect PPT decks with Google Slides.",
+  "author": "Epic Think AI Team",
+  "category": "productivity",
+  "authType": "oauth2",
+  "icon": "presentation",
+  "requiredScopes": [
+    "https://www.googleapis.com/auth/presentations",
+    "https://www.googleapis.com/auth/drive.file"
+  ],
+  "tools": [
+    {
+      "name": "create_presentation",
+      "description": "Create a multi-slide Google Slides presentation / pitch deck with titles, subtitles, and bullet points in high speed.",
+      "permissionTier": "WRITE"
+    },
+    {
+      "name": "add_slide",
+      "description": "Add a new slide with custom title and bullet points to an existing Google Slides presentation.",
+      "permissionTier": "WRITE"
+    },
+    {
+      "name": "read_presentation",
+      "description": "Read all slides, text runs, and structure from a Google Slides presentation by ID.",
+      "permissionTier": "READ"
+    }
+  ]
+}
+

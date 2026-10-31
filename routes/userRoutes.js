@@ -30,45 +30,47 @@ import {
   updateUserPersonalization,
   checkUsernameAvailability,
   getUserUsageStats,
+  getUserDetailedUsage,
+  updateUserTier,
   deleteUserProfileAndData
 } from '../services/mongoService.js';
 import { broadcastToUser } from '../services/realtimeSync.js';
 import { clearMemory } from '../services/hindsightService.js';
+import { QuotaTrackingService, USER_TIERS } from '../services/usage/QuotaTrackingService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const router = express.Router();
 
-// Ensure local avatar storage directory exists
+// Serverless hosts (Vercel, Lambda) have a read-only / ephemeral filesystem.
+// Files written there disappear between invocations, so avatars MUST be
+// persisted inside the user document (as an optimized data URL) instead.
+const IS_SERVERLESS = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+
+// Max size of an avatar data URL stored directly in the profile document (~3 MB)
+const MAX_DB_AVATAR_BYTES = 3 * 1024 * 1024;
+
+// Ensure local avatar storage directory exists (local / long-running servers only)
 const UPLOADS_DIR = path.resolve(__dirname, '../uploads/avatars');
-try {
-  if (!fs.existsSync(UPLOADS_DIR)) {
-    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+if (!IS_SERVERLESS) {
+  try {
+    if (!fs.existsSync(UPLOADS_DIR)) {
+      fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    }
+  } catch (err) {
+    console.warn('[AVATAR:STORAGE] Note creating uploads directory:', err.message);
   }
-} catch (err) {
-  console.warn('[AVATAR:STORAGE] Note creating uploads directory:', err.message);
 }
 
-// Multer storage engine with cryptographic filename generation
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, UPLOADS_DIR);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase() || '.png';
-    const cleanExt = ['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(ext)
-      ? (ext === '.jpeg' ? '.jpg' : ext)
-      : '.png';
-    const safeUid = String(req.user.uid).replace(/[^a-zA-Z0-9_-]/g, '_');
-    cb(null, `avatar_${safeUid}_${Date.now()}${cleanExt}`);
-  }
-});
+// Keep uploads in memory so we can validate and choose the persistence strategy
+const storage = multer.memoryStorage();
 
 // Multer upload middleware with strict security rules
 const upload = multer({
   storage,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5 MB max
+    fileSize: 5 * 1024 * 1024, // 5 MB max
+    fieldSize: 8 * 1024 * 1024 // allow the optimized avatarDataUrl text field
   },
   fileFilter: (req, file, cb) => {
     const allowedMime = [
@@ -91,12 +93,18 @@ const upload = multer({
 /**
  * Verify image magic numbers to prevent malicious executable files disguised as images
  */
-function verifyImageBuffer(filePath) {
+function verifyImageBuffer(input) {
   try {
-    const buffer = Buffer.alloc(16);
-    const fd = fs.openSync(filePath, 'r');
-    fs.readSync(fd, buffer, 0, 16, 0);
-    fs.closeSync(fd);
+    let buffer;
+    if (Buffer.isBuffer(input)) {
+      buffer = input.subarray(0, 16);
+    } else {
+      buffer = Buffer.alloc(16);
+      const fd = fs.openSync(input, 'r');
+      fs.readSync(fd, buffer, 0, 16, 0);
+      fs.closeSync(fd);
+    }
+    if (buffer.length < 4) return false;
 
     // PNG: 89 50 4E 47 0D 0A 1A 0A
     if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
@@ -131,6 +139,18 @@ function verifyImageBuffer(filePath) {
 router.get('/profile', requireAuth, async (req, res) => {
   try {
     const profile = await getUserProfile(req.user.uid, req.user);
+    if (profile?.profilePhotoUrl && typeof profile.profilePhotoUrl === 'string' && profile.profilePhotoUrl.startsWith('/uploads/avatars/')) {
+      try {
+        const diskFile = path.resolve(__dirname, '..', profile.profilePhotoUrl.replace(/^\//, ''));
+        if (fs.existsSync(diskFile)) {
+          const buf = fs.readFileSync(diskFile);
+          const ext = path.extname(diskFile).toLowerCase().replace('.', '') || 'png';
+          const mime = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
+          profile.profilePhotoUrl = `data:${mime};base64,${buf.toString('base64')}`;
+          await updateUserProfile(req.user.uid, { profilePhotoUrl: profile.profilePhotoUrl });
+        }
+      } catch (_) {}
+    }
     res.json({
       success: true,
       data: profile,
@@ -201,96 +221,144 @@ router.patch('/profile', requireAuth, async (req, res) => {
 });
 
 /**
+ * Decode a base64 image data URL into { buffer, ext, mime }. Returns null if invalid.
+ */
+function decodeImageDataUrl(dataUrl) {
+  if (!dataUrl || typeof dataUrl !== 'string') return null;
+  const matches = dataUrl.match(/^data:image\/([a-zA-Z0-9+.-]+);base64,(.+)$/);
+  if (!matches) return null;
+  const rawExt = matches[1].toLowerCase().replace('jpeg', 'jpg');
+  const ext = ['jpg', 'png', 'webp', 'gif'].includes(rawExt) ? rawExt : 'png';
+  try {
+    const buffer = Buffer.from(matches[2], 'base64');
+    return { buffer, ext, mime: `image/${ext === 'jpg' ? 'jpeg' : ext}` };
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * Remove a previously stored on-disk avatar (local servers only)
+ */
+function removeOldDiskAvatar(previousUrl, keepFilename = '') {
+  if (IS_SERVERLESS) return;
+  if (!previousUrl || typeof previousUrl !== 'string' || !previousUrl.startsWith('/uploads/avatars/')) return;
+  try {
+    const oldFile = path.resolve(__dirname, '..', previousUrl.replace(/^\//, ''));
+    if (!oldFile.startsWith(UPLOADS_DIR)) return;
+    if (keepFilename && path.basename(oldFile) === keepFilename) return;
+    if (fs.existsSync(oldFile)) fs.unlinkSync(oldFile);
+  } catch (_) {}
+}
+
+/**
+ * Persist a validated avatar image and return the URL to store on the profile.
+ *
+ * - Serverless (Vercel): the filesystem is ephemeral, so the optimized image is
+ *   stored inline as a data URL inside the user document. This is what keeps the
+ *   avatar alive after a page refresh / cold start.
+ * - Local / long-running servers: written to /uploads/avatars, falling back to an
+ *   inline data URL if the disk write fails.
+ */
+function persistAvatarImage(uid, { buffer, ext, mime }) {
+  const inlineDataUrl = `data:${mime};base64,${buffer.toString('base64')}`;
+
+  let filename = '';
+  if (!IS_SERVERLESS) {
+    try {
+      if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+      const safeUid = String(uid).replace(/[^a-zA-Z0-9_-]/g, '_');
+      filename = `avatar_${safeUid}_${Date.now()}.${ext}`;
+      fs.writeFileSync(path.join(UPLOADS_DIR, filename), buffer);
+    } catch (writeErr) {
+      console.warn('[AVATAR:DISK_WRITE] Note writing local disk backup:', writeErr.message);
+    }
+  }
+
+  if (inlineDataUrl.length > MAX_DB_AVATAR_BYTES) {
+    const err = new Error('Image is too large to store. Please choose a smaller photo.');
+    err.status = 413;
+    throw err;
+  }
+  return { photoUrl: inlineDataUrl, filename };
+}
+
+/**
+ * Shared avatar save flow for JSON and multipart uploads
+ */
+async function saveAvatarForRequest(req, res, image) {
+  if (!image || !image.buffer || image.buffer.length === 0) {
+    return res.status(400).json({
+      success: false,
+      error: { code: 'NO_IMAGE_DATA', message: 'Please select a valid image file to upload.' }
+    });
+  }
+
+  if (image.buffer.length > 5 * 1024 * 1024) {
+    return res.status(400).json({
+      success: false,
+      error: { code: 'FILE_TOO_LARGE', message: 'Image exceeds 5MB size limit.' }
+    });
+  }
+
+  // Verify binary magic bytes
+  if (!verifyImageBuffer(image.buffer)) {
+    return res.status(400).json({
+      success: false,
+      error: { code: 'MALICIOUS_FILE', message: 'The uploaded file is not a valid image.' }
+    });
+  }
+
+  try {
+    const previous = await getUserProfile(req.user.uid);
+    const { photoUrl, filename } = persistAvatarImage(req.user.uid, image);
+
+    const updated = await updateUserProfile(req.user.uid, { profilePhotoUrl: photoUrl });
+
+    // Only remove the old file once the new avatar is safely saved
+    removeOldDiskAvatar(previous?.profilePhotoUrl, filename);
+
+    broadcastToUser(req.user.uid, {
+      type: 'profile_updated',
+      profile: updated,
+      timestamp: Date.now()
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        profilePhotoUrl: photoUrl,
+        profile: updated
+      },
+      profile: updated,
+      profilePhotoUrl: photoUrl
+    });
+  } catch (err) {
+    return res.status(err.status || 500).json({
+      success: false,
+      error: { code: 'AVATAR_SAVE_FAILED', message: err.message }
+    });
+  }
+}
+
+/**
  * POST /api/user/profile/avatar
  * Upload and update profile photo with verification
  */
 router.post('/profile/avatar', requireAuth, (req, res) => {
   const contentType = (req.headers['content-type'] || '').toLowerCase();
 
-  // 1. JSON Data URL or direct Base64 upload
+  // 1. JSON Data URL upload (preferred: client sends an optimized 512px image)
   if (contentType.includes('application/json')) {
     const rawData = req.body?.avatarDataUrl || req.body?.avatar || req.body?.profilePhotoUrl;
-    if (!rawData || typeof rawData !== 'string') {
+    const image = decodeImageDataUrl(rawData);
+    if (!image) {
       return res.status(400).json({
         success: false,
         error: { code: 'NO_IMAGE_DATA', message: 'Please select a valid image file to upload.' }
       });
     }
-
-    try {
-      let photoUrl = rawData;
-      // If it is a base64 data URL, persist to disk in uploads directory
-      if (rawData.startsWith('data:image/')) {
-        const matches = rawData.match(/^data:image\/([a-zA-Z0-9+.-]+);base64,(.+)$/);
-        if (matches) {
-          const rawExt = matches[1].toLowerCase().replace('jpeg', 'jpg');
-          const ext = ['.jpg', '.png', '.webp', '.gif'].includes(`.${rawExt}`) ? `.${rawExt}` : '.png';
-          const base64Data = matches[2];
-          const buffer = Buffer.from(base64Data, 'base64');
-
-          if (buffer.length > 5 * 1024 * 1024) {
-            return res.status(400).json({
-              success: false,
-              error: { code: 'FILE_TOO_LARGE', message: 'Image exceeds 5MB size limit.' }
-            });
-          }
-
-          const safeUid = String(req.user.uid).replace(/[^a-zA-Z0-9_-]/g, '_');
-          const filename = `avatar_${safeUid}_${Date.now()}${ext}`;
-          const diskPath = path.join(UPLOADS_DIR, filename);
-
-          try {
-            fs.writeFileSync(diskPath, buffer);
-            if (verifyImageBuffer(diskPath)) {
-              photoUrl = `/uploads/avatars/${filename}`;
-            } else {
-              try { fs.unlinkSync(diskPath); } catch (_) {}
-            }
-          } catch (writeErr) {
-            console.warn('[AVATAR:DISK_WRITE] Falling back to Data URL storage:', writeErr.message);
-          }
-        }
-      }
-
-      // Clean up previous disk avatar if replaced
-      getUserProfile(req.user.uid).then((previous) => {
-        if (previous?.profilePhotoUrl && previous.profilePhotoUrl.startsWith('/uploads/avatars/')) {
-          const oldFile = path.resolve(__dirname, '..', previous.profilePhotoUrl.replace(/^\//, ''));
-          if (fs.existsSync(oldFile) && !photoUrl.includes(path.basename(oldFile))) {
-            try { fs.unlinkSync(oldFile); } catch (_) {}
-          }
-        }
-      }).catch(() => {});
-
-      updateUserProfile(req.user.uid, { profilePhotoUrl: photoUrl }).then((updated) => {
-        broadcastToUser(req.user.uid, {
-          type: 'profile_updated',
-          profile: updated,
-          timestamp: Date.now()
-        });
-
-        res.json({
-          success: true,
-          data: {
-            profilePhotoUrl: photoUrl,
-            profile: updated
-          },
-          profile: updated,
-          profilePhotoUrl: photoUrl
-        });
-      }).catch((updateErr) => {
-        res.status(500).json({
-          success: false,
-          error: { code: 'AVATAR_SAVE_FAILED', message: updateErr.message }
-        });
-      });
-      return;
-    } catch (err) {
-      return res.status(500).json({
-        success: false,
-        error: { code: 'AVATAR_PROCESSING_FAILED', message: err.message }
-      });
-    }
+    return saveAvatarForRequest(req, res, image);
   }
 
   // 2. Standard Multipart / Multer upload
@@ -302,6 +370,12 @@ router.post('/profile/avatar', requireAuth, (req, res) => {
       });
     }
 
+    // Prefer the client-optimized data URL if supplied alongside the file
+    const optimized = decodeImageDataUrl(req.body?.avatarDataUrl);
+    if (optimized) {
+      return saveAvatarForRequest(req, res, optimized);
+    }
+
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -309,56 +383,13 @@ router.post('/profile/avatar', requireAuth, (req, res) => {
       });
     }
 
-    const filePath = req.file.path;
-
-    // Verify binary magic bytes
-    if (!verifyImageBuffer(filePath)) {
-      try { fs.unlinkSync(filePath); } catch (_) {}
-      return res.status(400).json({
-        success: false,
-        error: { code: 'MALICIOUS_FILE', message: 'The uploaded file is not a valid image.' }
-      });
-    }
-
-    try {
-      // Build relative URL to serve statically
-      const photoUrl = `/uploads/avatars/${req.file.filename}`;
-
-      // Retrieve previous profile to safely remove previous custom uploaded avatar
-      const previous = await getUserProfile(req.user.uid);
-      if (previous?.profilePhotoUrl && previous.profilePhotoUrl.startsWith('/uploads/avatars/')) {
-        const oldFile = path.resolve(__dirname, '..', previous.profilePhotoUrl.replace(/^\//, ''));
-        if (fs.existsSync(oldFile) && oldFile !== filePath) {
-          try { fs.unlinkSync(oldFile); } catch (_) {}
-        }
-      }
-
-      const updated = await updateUserProfile(req.user.uid, {
-        profilePhotoUrl: photoUrl
-      });
-
-      broadcastToUser(req.user.uid, {
-        type: 'profile_updated',
-        profile: updated,
-        timestamp: Date.now()
-      });
-
-      res.json({
-        success: true,
-        data: {
-          profilePhotoUrl: photoUrl,
-          profile: updated
-        },
-        profile: updated,
-        profilePhotoUrl: photoUrl
-      });
-    } catch (updateErr) {
-      try { fs.unlinkSync(filePath); } catch (_) {}
-      res.status(500).json({
-        success: false,
-        error: { code: 'AVATAR_SAVE_FAILED', message: updateErr.message }
-      });
-    }
+    const ext = (path.extname(req.file.originalname || '').toLowerCase().replace('.', '') || 'png').replace('jpeg', 'jpg');
+    const safeExt = ['jpg', 'png', 'webp', 'gif'].includes(ext) ? ext : 'png';
+    return saveAvatarForRequest(req, res, {
+      buffer: req.file.buffer,
+      ext: safeExt,
+      mime: `image/${safeExt === 'jpg' ? 'jpeg' : safeExt}`
+    });
   });
 });
 
@@ -596,22 +627,95 @@ router.post('/logout-all', requireAuth, (req, res) => {
 // USAGE & ACTIVITY ENDPOINT
 // ============================================================================
 
+// Helper to support both authenticated users and guest sessions
+const optionalUserAuth = (req, res, next) => {
+  if (req.headers.authorization) {
+    return requireAuth(req, res, next);
+  }
+  req.user = { uid: 'guest_user', email: 'guest@epicthink.ai' };
+  next();
+};
+
+/**
+ * GET /api/user/quota
+ * Real-time quota, rate limits, tier status, and reset timers
+ */
+router.get('/quota', optionalUserAuth, async (req, res) => {
+  try {
+    const profile = req.user.uid !== 'guest_user' ? await getUserProfile(req.user.uid, req.user) : null;
+    const tier = profile?.tier || (req.user.uid === 'guest_user' ? 'guest' : 'free');
+    const summary = QuotaTrackingService.getUsageSummary(req.user.uid, tier);
+    res.json({
+      success: true,
+      data: summary,
+      ...summary
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: { code: 'QUOTA_FETCH_FAILED', message: err.message }
+    });
+  }
+});
+
 /**
  * GET /api/user/usage
- * Real usage telemetry directly from MongoDB
+ * Real usage telemetry and activity records directly from MongoDB
  */
-router.get('/usage', requireAuth, async (req, res) => {
+router.get('/usage', optionalUserAuth, async (req, res) => {
   try {
+    const detailed = await getUserDetailedUsage(req.user.uid, 30);
     const stats = await getUserUsageStats(req.user.uid);
     res.json({
       success: true,
-      data: stats,
-      ...stats
+      data: {
+        ...stats,
+        ...detailed
+      },
+      ...stats,
+      records: detailed.records,
+      summary: detailed.summary
     });
   } catch (err) {
     res.status(500).json({
       success: false,
       error: { code: 'USAGE_FETCH_FAILED', message: err.message }
+    });
+  }
+});
+
+/**
+ * POST /api/user/tier
+ * Update account tier (e.g. 'free' -> 'pro' -> 'admin')
+ */
+router.post('/tier', requireAuth, async (req, res) => {
+  try {
+    const { tier } = req.body || {};
+    if (!tier || !USER_TIERS[tier]) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_TIER', message: `Invalid tier. Allowed: ${Object.keys(USER_TIERS).join(', ')}` }
+      });
+    }
+
+    const updatedProfile = await updateUserTier(req.user.uid, tier);
+
+    broadcastToUser(req.user.uid, {
+      type: 'profile_updated',
+      profile: updatedProfile,
+      timestamp: Date.now()
+    });
+
+    res.json({
+      success: true,
+      message: `Account tier updated to ${USER_TIERS[tier].name}`,
+      tier: updatedProfile.tier,
+      tierDetails: USER_TIERS[tier]
+    });
+  } catch (err) {
+    res.status(400).json({
+      success: false,
+      error: { code: 'TIER_UPDATE_FAILED', message: err.message }
     });
   }
 });

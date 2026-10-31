@@ -137,7 +137,12 @@ function resolveOAuthRedirectUri(req, pluginId) {
     return req.query.redirectUri;
   }
 
-  const isGooglePlugin = ['google', 'gmail', 'google-drive', 'google_drive', 'google-calendar', 'google_calendar'].includes(String(pluginId).toLowerCase());
+  const isGooglePlugin = [
+    'google', 'gmail', 'google-drive', 'google_drive',
+    'google-calendar', 'google_calendar',
+    'google-slides', 'google_slides',
+    'google-workspace', 'google_workspace'
+  ].includes(String(pluginId).toLowerCase());
 
   // Detect host and protocol reliably (supporting Vercel edge proxies and local dev)
   const forwardedProto = req.headers['x-forwarded-proto'];

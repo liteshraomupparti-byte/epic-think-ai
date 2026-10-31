@@ -36,9 +36,18 @@ async function fetchWithAuth(endpoint, options = {}) {
     headers
   });
 
-  const data = await response.json();
+  let data = {};
+  try {
+    data = await response.json();
+  } catch (_) {}
+
   if (!response.ok) {
-    throw new Error(data.error || `Request failed with status ${response.status}`);
+    const err = new Error(data.error || `Request failed with status ${response.status}`);
+    err.status = response.status;
+    err.code = data.code;
+    err.retryAfter = data.retryAfter;
+    err.details = data;
+    throw err;
   }
 
   return data;
@@ -279,9 +288,56 @@ export class AiService {
    * @param {string} [params.style]
    */
   static async generateVideo(params) {
+    if (params.renderVideo || params.asyncJob) {
+      return await fetchWithAuth('/api/video/generate', {
+        method: 'POST',
+        body: JSON.stringify(params)
+      });
+    }
     return await fetchWithAuth('/api/ai/video', {
       method: 'POST',
       body: JSON.stringify(params)
     });
   }
+
+  /**
+   * Submit an asynchronous video generation job
+   */
+  static async submitVideoJob(params) {
+    return await fetchWithAuth('/api/video/generate', {
+      method: 'POST',
+      body: JSON.stringify(params)
+    });
+  }
+
+  /**
+   * Poll video job status
+   */
+  static async getVideoJob(jobId) {
+    return await fetchWithAuth(`/api/video/jobs/${jobId}`);
+  }
+
+  /**
+   * Cancel an active video job
+   */
+  static async cancelVideoJob(jobId) {
+    return await fetchWithAuth(`/api/video/jobs/${jobId}/cancel`, {
+      method: 'POST'
+    });
+  }
+
+  /**
+   * Get video provider capabilities and catalog
+   */
+  static async getVideoCapabilities() {
+    return await fetchWithAuth('/api/video/capabilities');
+  }
+
+  /**
+   * Get real-time spending, quota and usage telemetry
+   */
+  static async getUsageStatus() {
+    return await fetchWithAuth('/api/usage/status');
+  }
 }
+

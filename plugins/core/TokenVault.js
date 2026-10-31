@@ -179,7 +179,22 @@ export class TokenVault {
   static async getCredentials(uid, pluginId) {
     if (!uid || !pluginId) return null;
 
-    const record = vaultFallbackStore.credentials[uid]?.[pluginId];
+    let record = vaultFallbackStore.credentials[uid]?.[pluginId];
+
+    // Shared Google Workspace credentials fallback across all Google services
+    const googlePlugins = [
+      'google', 'google_drive', 'google-drive', 'google_slides', 'google-slides',
+      'google_workspace', 'google-workspace', 'gmail', 'google_calendar', 'google-calendar'
+    ];
+    if (!record && googlePlugins.includes(String(pluginId).toLowerCase())) {
+      for (const altId of googlePlugins) {
+        if (vaultFallbackStore.credentials[uid]?.[altId]) {
+          record = vaultFallbackStore.credentials[uid][altId];
+          break;
+        }
+      }
+    }
+
     if (!record) return null;
 
     try {
@@ -200,7 +215,18 @@ export class TokenVault {
    */
   static async hasCredentials(uid, pluginId) {
     if (!uid || !pluginId) return false;
-    return !!vaultFallbackStore.credentials[uid]?.[pluginId];
+    if (vaultFallbackStore.credentials[uid]?.[pluginId]) return true;
+
+    // Check shared Google credentials
+    const googlePlugins = [
+      'google', 'google_drive', 'google-drive', 'google_slides', 'google-slides',
+      'google_workspace', 'google-workspace', 'gmail', 'google_calendar', 'google-calendar'
+    ];
+    if (googlePlugins.includes(String(pluginId).toLowerCase())) {
+      return googlePlugins.some(altId => !!vaultFallbackStore.credentials[uid]?.[altId]);
+    }
+
+    return false;
   }
 
   /**

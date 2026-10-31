@@ -15,7 +15,7 @@ import express from 'express';
 import { requireAuth } from '../services/firebaseAuthService.js';
 import { AIEngine, healthMonitor, modelRegistry, providers, diagnosticsStore } from '../ai/index.js';
 import { SafeLogger } from '../plugins/core/SafeLogger.js';
-import { ImageStudioService } from '../services/imageGeneration/ImageStudioService.js';
+import { QuotaTrackingService } from '../services/usage/QuotaTrackingService.js';
 
 const router = express.Router();
 
@@ -32,7 +32,7 @@ const optionalAuth = (req, res, next) => {
  * Primary AI Chat & Tool Execution
  * POST /api/ai/chat
  */
-router.post('/chat', optionalAuth, async (req, res) => {
+router.post('/chat', optionalAuth, QuotaTrackingService.createMiddleware({ type: 'text', estimatedCostInr: 0.01, estimatedTokens: 800 }), async (req, res) => {
   const {
     prompt,
     text,
@@ -80,6 +80,25 @@ router.post('/chat', optionalAuth, async (req, res) => {
       location
     });
 
+    // Record real usage tokens and duration
+    const approxPromptTokens = Math.round((userPrompt || '').length / 4);
+    const approxCompletionTokens = Math.round((result.text || '').length / 4);
+    QuotaTrackingService.recordUsageEvent({
+      uid: req.user.uid,
+      email: req.user.email,
+      tier: req.userTier?.id || 'free',
+      type: 'text',
+      provider: result.provider || 'groq',
+      model: result.model || 'unknown',
+      promptTokens: approxPromptTokens,
+      completionTokens: approxCompletionTokens,
+      totalTokens: approxPromptTokens + approxCompletionTokens,
+      durationMs: result.durationMs || result.latency || 0,
+      status: 'success',
+      ip: req.ip || req.headers['x-forwarded-for'],
+      userAgent: req.headers['user-agent']
+    }).catch(() => {});
+
     res.json({
       success: true,
       text: result.text,
@@ -107,8 +126,7 @@ router.post('/chat', optionalAuth, async (req, res) => {
         params: result.confirmationTicket.parameters || result.confirmationTicket.params,
         parameters: result.confirmationTicket.parameters || result.confirmationTicket.params
       } : null,
-      durationMs: result.durationMs || result.latency,
-      builderProject: result.builderProject
+      durationMs: result.durationMs || result.latency
     });
   } catch (err) {
     SafeLogger.error('AI chat endpoint failure', {
@@ -128,7 +146,7 @@ router.post('/chat', optionalAuth, async (req, res) => {
  * Server-Sent Events (SSE) Real-Time AI Streaming
  * POST /api/ai/stream
  */
-router.post('/stream', optionalAuth, async (req, res) => {
+router.post('/stream', optionalAuth, QuotaTrackingService.createMiddleware({ type: 'text', estimatedCostInr: 0.01, estimatedTokens: 800 }), async (req, res) => {
   const {
     prompt,
     text,
@@ -215,6 +233,25 @@ router.post('/stream', optionalAuth, async (req, res) => {
       }
     });
 
+    // Record streaming completion usage
+    const approxPromptTokens = Math.round((userPrompt || '').length / 4);
+    const approxCompletionTokens = Math.round((streamResult.text || streamedTextContent || '').length / 4);
+    QuotaTrackingService.recordUsageEvent({
+      uid: req.user.uid,
+      email: req.user.email,
+      tier: req.userTier?.id || 'free',
+      type: 'text',
+      provider: streamResult.provider || 'groq',
+      model: streamResult.model || 'unknown',
+      promptTokens: approxPromptTokens,
+      completionTokens: approxCompletionTokens,
+      totalTokens: approxPromptTokens + approxCompletionTokens,
+      durationMs: streamResult.durationMs || streamResult.latency || 0,
+      status: 'success',
+      ip: req.ip || req.headers['x-forwarded-for'],
+      userAgent: req.headers['user-agent']
+    }).catch(() => {});
+
     sendEvent('ai:done', {
       type: 'done',
       done: true,
@@ -226,8 +263,7 @@ router.post('/stream', optionalAuth, async (req, res) => {
       isTruncated: Boolean(streamResult.isTruncated || streamResult.finishReason === 'length'),
       canContinue: Boolean(streamResult.canContinue || streamResult.isTruncated || streamResult.finishReason === 'length'),
       maxOutputTokens: streamResult.maxOutputTokens,
-      durationMs: streamResult.durationMs || streamResult.latency,
-      builderProject: streamResult.builderProject || null
+      durationMs: streamResult.durationMs || streamResult.latency
     });
     res.end();
   } catch (err) {
@@ -307,198 +343,6 @@ router.get('/diagnostics', optionalAuth, (req, res) => {
     summary: diagnosticsStore.getSummary(),
     recent: diagnosticsStore.getRecent(30)
   });
-});
-
-/**
- * AI Image Studio Generator & Catalog Routes
- * GET  /api/ai/image/models
- * POST /api/ai/image
- */
-router.get('/image/models', optionalAuth, async (req, res) => {
-  try {
-    const metadata = await ImageStudioService.getStudioMetadata();
-    res.json({ success: true, ...metadata });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-router.post('/image', optionalAuth, async (req, res) => {
-  const {
-    prompt,
-    mode = 'AUTO',
-    model = 'AUTO',
-    quality = 'HIGH',
-    resolution = '1K',
-    style = 'photorealistic',
-    aspectRatio = '1:1',
-    enhance = true,
-    referenceImages = [],
-    seed
-  } = req.body || {};
-
-  if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
-    return res.status(400).json({ success: false, error: 'Prompt is required for image generation.' });
-  }
-
-  const verifiedUid = req.user?.uid || 'guest_user';
-
-  try {
-    const result = await ImageStudioService.generateImage({
-      prompt: prompt.trim(),
-      mode,
-      model,
-      quality,
-      resolution,
-      style,
-      aspectRatio,
-      enhance: enhance !== false,
-      referenceImages,
-      seed,
-      firebaseUid: verifiedUid
-    });
-
-    if (!result.success) {
-      return res.status(502).json({
-        success: false,
-        error: result.error || 'Image generation failed',
-        errorCode: result.errorCode,
-        requestId: result.requestId,
-        primaryProvider: result.primaryProvider,
-        primaryFailed: result.primaryFailed,
-        primaryError: result.primaryError,
-        fallbackUsed: result.fallbackUsed,
-        fallbackError: result.fallbackError
-      });
-    }
-
-    res.json({
-      success: true,
-      imageUrl: result.imageUrl,
-      directCdnUrl: result.directCdnUrl,
-      provider: result.provider,
-      model: result.model,
-      modelTitle: result.modelTitle,
-      requestedModel: result.requestedModel,
-      actualModelUsed: result.actualModelUsed,
-      primaryProvider: result.primaryProvider,
-      primaryFailed: result.primaryFailed,
-      primaryError: result.primaryError,
-      primaryErrorCode: result.primaryErrorCode,
-      fallbackUsed: result.fallbackUsed,
-      fallbackNote: result.fallbackNote,
-      requestedResolution: result.requestedResolution,
-      actualResolution: result.actualResolution,
-      width: result.width,
-      height: result.height,
-      is4K: result.is4K,
-      is2K: result.is2K,
-      aspectRatio: result.aspectRatio,
-      originalPrompt: result.originalPrompt,
-      enhancedPrompt: result.enhancedPrompt,
-      dimensionsReasoned: result.dimensionsReasoned,
-      style,
-      durationMs: result.durationMs,
-      watermarked: result.watermarked,
-      watermarkNote: result.watermarkNote,
-      isEditing: result.isEditing,
-      requestId: result.requestId
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-/**
- * AI Video Prompt & Storyboard Studio Helper
- * POST /api/ai/video
- */
-router.post('/video', requireAuth, async (req, res) => {
-  const { prompt, duration = '5s', durationSeconds, cameraMotion = 'cinematic dolly' } = req.body || {};
-  if (!prompt) {
-    return res.status(400).json({ success: false, error: 'Prompt is required for video generation.' });
-  }
-
-  const durationSec = durationSeconds || parseInt(duration, 10) || 5;
-
-  try {
-    const videoPrompt = `You are a film director and AI video generator specialist.
-Create a structured scene-by-scene storyboard JSON for the following concept: "${prompt}".
-Target Duration: ${durationSec} seconds. Camera Motion Style: ${cameraMotion}.
-
-Format your response strictly as valid JSON with NO commentary:
-{
-  "scenes": [
-    {
-      "scene": 1,
-      "timeframe": "0s - 2s",
-      "cameraMotion": "Wide establishing dolly-in",
-      "description": "Short scene narrative description",
-      "visualPrompt": "Detailed visual generator prompt for scene 1"
-    }
-  ]
-}`;
-
-    const generated = await AIEngine.generate({
-      prompt: videoPrompt,
-      modelPreset: 'Epic Think Fast'
-    });
-
-    let storyboard = [];
-    try {
-      const raw = generated.content || '';
-      const match = raw.match(/\{[\s\S]*\}/);
-      if (match) {
-        const parsed = JSON.parse(match[0]);
-        if (Array.isArray(parsed.scenes) && parsed.scenes.length > 0) {
-          storyboard = parsed.scenes;
-        }
-      }
-    } catch {
-      // Fallback manual scene generation if model output was not strict JSON
-    }
-
-    if (storyboard.length === 0) {
-      const sceneDur = Math.max(2, Math.round(durationSec / 3));
-      storyboard = [
-        {
-          scene: 1,
-          timeframe: `0s - ${sceneDur}s`,
-          cameraMotion: cameraMotion || 'Wide Establishing Shot',
-          description: `Opening hook: Visual introduction for "${prompt}"`,
-          visualPrompt: `Cinematic wide shot, ${prompt}, atmospheric lighting, 4k ultra-detailed`
-        },
-        {
-          scene: 2,
-          timeframe: `${sceneDur}s - ${sceneDur * 2}s`,
-          cameraMotion: 'Dynamic Tracking Pan',
-          description: `Core action and focus development`,
-          visualPrompt: `Dynamic tracking medium shot, intricate details of ${prompt}, cinematic depth of field`
-        },
-        {
-          scene: 3,
-          timeframe: `${sceneDur * 2}s - ${durationSec}s`,
-          cameraMotion: 'Slow Motion Orbit Close-up',
-          description: `Climactic resolution and lasting visual impact`,
-          visualPrompt: `Dramatic slow-motion close-up, vivid colors, resolution for ${prompt}`
-        }
-      ];
-    }
-
-    res.json({
-      success: true,
-      storyboard,
-      scenesCount: storyboard.length,
-      originalPrompt: prompt,
-      videoScript: generated.content?.trim(),
-      cameraMotion,
-      duration: `${durationSec}s`,
-      providerUsed: generated.providerUsed,
-      modelUsed: generated.modelUsed
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
 });
 
 export default router;

@@ -16,6 +16,15 @@
 import { ImageProvider } from './ImageProvider.js';
 import { getImageDimensions } from './imageUtils.js';
 
+const quotaCircuitState = {
+  circuitOpen: false,
+  limitZero: false,
+  resetTime: 0,
+  reason: null,
+  lastError: null,
+  lastChecked: 0
+};
+
 export class GeminiImageProvider extends ImageProvider {
   static get DEFAULT_HIGH_QUALITY_MODEL() {
     return process.env.GEMINI_IMAGE_MODEL || 'gemini-3-pro-image-preview';
@@ -38,13 +47,53 @@ export class GeminiImageProvider extends ImageProvider {
   }
 
   /**
+   * Return current quota circuit breaker status
+   */
+  static getQuotaStatus() {
+    const now = Date.now();
+    const isOpen = quotaCircuitState.circuitOpen && now < quotaCircuitState.resetTime;
+    return {
+      hasKey: GeminiImageProvider.hasApiKey(),
+      circuitOpen: isOpen,
+      limitZero: quotaCircuitState.limitZero,
+      resetTime: quotaCircuitState.resetTime,
+      remainingSeconds: Math.max(0, Math.ceil((quotaCircuitState.resetTime - now) / 1000)),
+      reason: quotaCircuitState.reason,
+      lastError: quotaCircuitState.lastError,
+      lastChecked: quotaCircuitState.lastChecked
+    };
+  }
+
+  /**
+   * Check if Gemini image quota is currently exhausted
+   */
+  static isQuotaExhausted() {
+    const status = GeminiImageProvider.getQuotaStatus();
+    return status.circuitOpen;
+  }
+
+  /**
+   * Manually reset the circuit breaker (e.g. after adding billing or changing keys)
+   */
+  static resetCircuit() {
+    quotaCircuitState.circuitOpen = false;
+    quotaCircuitState.limitZero = false;
+    quotaCircuitState.resetTime = 0;
+    quotaCircuitState.reason = null;
+    quotaCircuitState.lastError = null;
+    quotaCircuitState.lastChecked = Date.now();
+  }
+
+  /**
    * Returns provider capabilities
    */
   getCapabilities() {
+    const quotaStatus = GeminiImageProvider.getQuotaStatus();
     return {
       provider: this.name,
       id: this.id,
       hasApiKey: GeminiImageProvider.hasApiKey(),
+      quotaStatus,
       models: [
         {
           id: GeminiImageProvider.DEFAULT_HIGH_QUALITY_MODEL,
@@ -87,7 +136,6 @@ export class GeminiImageProvider extends ImageProvider {
       if (!item) continue;
 
       if (typeof item === 'string') {
-        // Check if data URI: data:image/png;base64,...
         const match = item.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
         if (match) {
           formatted.push({
@@ -96,13 +144,11 @@ export class GeminiImageProvider extends ImageProvider {
             mime_type: match[1]
           });
         } else if (item.startsWith('http://') || item.startsWith('https://')) {
-          // If URL, we pass as URI or we note it
           formatted.push({
             type: 'image',
             uri: item
           });
         } else {
-          // Assume raw base64 jpeg
           formatted.push({
             type: 'image',
             data: item,
@@ -146,7 +192,7 @@ export class GeminiImageProvider extends ImageProvider {
   }
 
   /**
-   * Generate image via Google Gemini API
+   * Generate image via Google Gemini API with error-aware circuit breaker and bounded backoff
    * @param {Object} params
    */
   async generateImage(params) {
@@ -165,13 +211,26 @@ export class GeminiImageProvider extends ImageProvider {
       model = GeminiImageProvider.DEFAULT_HIGH_QUALITY_MODEL,
       resolution = '1K',
       aspectRatio = '1:1',
-      referenceImages = []
+      referenceImages = [],
+      forceLiveCheck = false
     } = params;
 
     if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
       const err = new Error('Visual prompt is required for image generation.');
       err.code = 'INVALID_PROMPT';
       err.canFallback = false;
+      throw err;
+    }
+
+    // Error-Aware Circuit Breaker check: avoid futile repeated retries when quota is known zero
+    if (!forceLiveCheck && GeminiImageProvider.isQuotaExhausted()) {
+      const status = GeminiImageProvider.getQuotaStatus();
+      const err = new Error(status.reason || 'Gemini image generation quota is exhausted (limit: 0 requests/day on Free Tier). Upgrade to Pay-As-You-Go in Google AI Studio.');
+      err.code = 'QUOTA_EXCEEDED';
+      err.status = 429;
+      err.canFallback = true;
+      err.limitZero = status.limitZero;
+      err.circuitOpen = true;
       throw err;
     }
 
@@ -207,29 +266,51 @@ export class GeminiImageProvider extends ImageProvider {
     };
 
     const endpoint = 'https://generativelanguage.googleapis.com/v1beta/interactions';
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 45000);
 
+    // Bounded execution with 1 backoff retry for transient network / 5xx errors
     let res;
-    try {
-      res = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey
-        },
-        body: JSON.stringify(requestBody),
-        signal: controller.signal
-      });
-    } catch (fetchErr) {
-      clearTimeout(timeout);
-      const isTimeout = fetchErr.name === 'AbortError';
-      const err = new Error(isTimeout ? 'Gemini image generation timed out after 45s.' : `Gemini network error: ${fetchErr.message}`);
+    let lastNetworkErr = null;
+    const maxAttempts = 2;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 45000);
+
+      try {
+        res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal
+        });
+        clearTimeout(timeout);
+
+        // If 5xx error and we have an attempt remaining, apply bounded backoff (1.5s)
+        if (res.status >= 500 && attempt < maxAttempts) {
+          await new Promise(r => setTimeout(r, 1500));
+          continue;
+        }
+
+        break;
+      } catch (fetchErr) {
+        clearTimeout(timeout);
+        lastNetworkErr = fetchErr;
+        if (attempt < maxAttempts) {
+          await new Promise(r => setTimeout(r, 1200));
+          continue;
+        }
+      }
+    }
+
+    if (!res && lastNetworkErr) {
+      const isTimeout = lastNetworkErr.name === 'AbortError';
+      const err = new Error(isTimeout ? 'Gemini image generation timed out after 45s.' : `Gemini network error: ${lastNetworkErr.message}`);
       err.code = isTimeout ? 'TIMEOUT' : 'NETWORK_ERROR';
       err.canFallback = true;
       throw err;
-    } finally {
-      clearTimeout(timeout);
     }
 
     const durationMs = Date.now() - startTime;
@@ -246,10 +327,24 @@ export class GeminiImageProvider extends ImageProvider {
 
       if (res.status === 429) {
         structuredCode = 'QUOTA_EXCEEDED';
-        if (rawMsg.includes('Free Tier') || rawMsg.includes('limit: 0')) {
-          cleanMessage = `Rate limit exceeded for model ${targetModel} on Free Tier (limit: 0 requests/day). Upgrade to Pay-As-You-Go for unmetered Gemini 3 Pro Image generation.`;
+        const isLimitZero = rawMsg.includes('Free Tier') || rawMsg.includes('limit: 0') || rawMsg.includes('RESOURCE_EXHAUSTED');
+
+        if (isLimitZero) {
+          cleanMessage = `Rate limit exceeded for model ${targetModel} on Free Tier (limit: 0 requests per day on Free Tier). Upgrade to Pay-As-You-Go at https://ai.dev/rate-limit for unmetered Gemini 3 Pro Image generation.`;
+          quotaCircuitState.circuitOpen = true;
+          quotaCircuitState.limitZero = true;
+          quotaCircuitState.resetTime = Date.now() + (30 * 60 * 1000); // 30 min circuit break
+          quotaCircuitState.reason = cleanMessage;
+          quotaCircuitState.lastError = rawMsg;
+          quotaCircuitState.lastChecked = Date.now();
         } else {
           cleanMessage = `Gemini API rate limit or quota exceeded: ${rawMsg}`;
+          quotaCircuitState.circuitOpen = true;
+          quotaCircuitState.limitZero = false;
+          quotaCircuitState.resetTime = Date.now() + (2 * 60 * 1000); // 2 min for transient rate limits
+          quotaCircuitState.reason = cleanMessage;
+          quotaCircuitState.lastError = rawMsg;
+          quotaCircuitState.lastChecked = Date.now();
         }
       } else if (res.status === 401 || res.status === 403) {
         structuredCode = 'INVALID_API_KEY';
@@ -266,8 +361,12 @@ export class GeminiImageProvider extends ImageProvider {
       err.code = structuredCode;
       err.canFallback = true;
       err.targetModel = targetModel;
+      err.limitZero = quotaCircuitState.limitZero;
       throw err;
     }
+
+    // Success! Clear circuit breaker
+    GeminiImageProvider.resetCircuit();
 
     let data;
     try {

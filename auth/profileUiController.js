@@ -12,7 +12,7 @@
  * 8. GDPR account deletion with strict confirmation
  */
 
-import { UserService, renderAvatarHtml } from './userService.js';
+import { UserService, renderAvatarHtml, getCachedAvatar, getCachedProfile } from './userService.js';
 import { PluginService } from './pluginService.js';
 
 let initialized = false;
@@ -73,12 +73,37 @@ export const ProfileUI = {
   },
 
   /**
-   * Handle user login
+   * Handle user login with instant cached render + server sync
    */
   async onUserAuthenticated(firebaseUser, profile = null) {
     currentFirebaseUser = firebaseUser;
-    currentProfile = profile || (await UserService.fetchProfile(true));
-    this.renderProfileUI(currentProfile);
+    if (typeof UserService.setActiveUser === 'function') {
+      UserService.setActiveUser(firebaseUser);
+    }
+
+    // 1. Instantly paint cached profile to avoid any visual flicker or reset to initials
+    const initialProfile = profile || UserService.getProfile() || getCachedProfile(firebaseUser?.uid) || {
+      firebaseUid: firebaseUser?.uid,
+      uid: firebaseUser?.uid,
+      displayName: firebaseUser?.displayName,
+      email: firebaseUser?.email,
+      photoURL: firebaseUser?.photoURL,
+      profilePhotoUrl: getCachedAvatar(firebaseUser?.uid) || firebaseUser?.photoURL
+    };
+
+    currentProfile = initialProfile;
+    this.renderProfileUI(initialProfile);
+
+    // 2. Fetch fresh canonical profile from server
+    try {
+      const serverProfile = await UserService.fetchProfile(true, firebaseUser);
+      if (serverProfile) {
+        currentProfile = serverProfile;
+        this.renderProfileUI(currentProfile);
+      }
+    } catch (err) {
+      console.warn('[ProfileUI:fetch]', err.message);
+    }
 
     // If onboarding not completed, launch onboarding modal
     if (currentProfile && currentProfile.onboardingCompleted !== true) {
@@ -102,11 +127,30 @@ export const ProfileUI = {
    */
   renderProfileUI(profile) {
     const user = currentFirebaseUser;
-    const p = profile || {};
+    const uid = user?.uid || profile?.firebaseUid || profile?.uid || '';
+    let p = profile || currentProfile || UserService.getProfile() || getCachedProfile(uid) || {};
+
+    if (!p.profilePhotoUrl && uid) {
+      const cached = getCachedAvatar(uid);
+      if (cached) p.profilePhotoUrl = cached;
+    }
+    if (!p.profilePhotoUrl && user?.photoURL) {
+      p.profilePhotoUrl = user.photoURL;
+    }
+    if (!p.firebaseUid && uid) {
+      p.firebaseUid = uid;
+    }
 
     const displayName = p.displayName || `${p.firstName || ''} ${p.lastName || ''}`.trim() || user?.displayName || 'Epic Thinker';
     const email = p.email || user?.email || 'Authenticated User';
-    const username = p.username ? `@${p.username}` : '@thinker';
+    let handle = '@thinker';
+    if (p.username) {
+      handle = `@${p.username}`;
+    } else if (user?.displayName) {
+      handle = `@${user.displayName.toLowerCase().replace(/[^a-z0-9_]/g, '')}`;
+    } else if (user?.email) {
+      handle = `@${user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '')}`;
+    }
 
     // 1. Sidebar Profile Button
     const avatarEl = $('#userAvatar');
@@ -117,7 +161,7 @@ export const ProfileUI = {
       avatarEl.innerHTML = renderAvatarHtml(p, 34);
     }
     if (nameEl) nameEl.textContent = displayName;
-    if (handleEl) handleEl.textContent = username;
+    if (handleEl) handleEl.textContent = handle;
 
 
     // 3. Settings Header & Profile Fields
@@ -623,16 +667,154 @@ export const ProfileUI = {
   },
 
   async loadUsageTab() {
-    const stats = await UserService.fetchUsage();
-    if (!stats) return;
-    const chatsEl = $('#usageChatsCount');
-    const msgsEl = $('#usageMessagesCount');
-    const memberEl = $('#usageMemberSince');
+    try {
+      const [stats, quota] = await Promise.allSettled([
+        UserService.fetchUsage(),
+        UserService.fetchQuota()
+      ]);
 
-    if (chatsEl) chatsEl.textContent = stats.totalChats || 0;
-    if (msgsEl) msgsEl.textContent = stats.totalMessages || 0;
-    if (memberEl && stats.createdAt) {
-      memberEl.textContent = new Date(stats.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+      const usageData = stats.status === 'fulfilled' ? stats.value : null;
+      const quotaData = quota.status === 'fulfilled' ? quota.value : (usageData?.summary || null);
+
+      if (!usageData && !quotaData) return;
+
+      const summary = quotaData || usageData?.summary || {};
+      const userQuota = summary.userQuota || {};
+      const day = userQuota.day || {};
+      const dailyLimits = userQuota.dailyLimits || { textRequests: 250, tokens: 600000, imageGenerations: 50, videoGenerations: 8, builderGenerations: 40, maxSpendInr: 60 };
+      const monthlyLimits = userQuota.monthlyLimits || { maxSpendInr: 800 };
+
+      // 1. Tier Badge & Reset Timer
+      const tierBadgeEl = $('#usageTierBadge');
+      if (tierBadgeEl) {
+        tierBadgeEl.textContent = summary.tierBadge || summary.tierName || 'Free Tier';
+        if (summary.tier === 'pro') {
+          tierBadgeEl.style.color = '#8b5cf6';
+          tierBadgeEl.style.background = 'rgba(139,92,246,0.15)';
+          tierBadgeEl.style.borderColor = 'rgba(139,92,246,0.3)';
+        } else if (summary.tier === 'admin') {
+          tierBadgeEl.style.color = '#ef4444';
+          tierBadgeEl.style.background = 'rgba(239,68,68,0.15)';
+          tierBadgeEl.style.borderColor = 'rgba(239,68,68,0.3)';
+        } else {
+          tierBadgeEl.style.color = '#3b82f6';
+          tierBadgeEl.style.background = 'rgba(59,130,246,0.15)';
+          tierBadgeEl.style.borderColor = 'rgba(59,130,246,0.3)';
+        }
+      }
+
+      const resetTimerEl = $('#usageResetTimer');
+      if (resetTimerEl) {
+        const sec = userQuota.resetSecondsDay || 0;
+        if (sec > 0) {
+          const hours = Math.floor(sec / 3600);
+          const mins = Math.floor((sec % 3600) / 60);
+          resetTimerEl.textContent = `Resets in ${hours}h ${mins}m`;
+        } else {
+          resetTimerEl.textContent = 'Resets at 00:00 UTC';
+        }
+      }
+
+      // 2. Card 1: Text & Prompts
+      const promptsToday = day.textRequests || 0;
+      const promptsLimit = dailyLimits.textRequests || 250;
+      const promptsPct = Math.min(100, Math.round((promptsToday / promptsLimit) * 100));
+
+      const promptsEl = $('#usagePromptsToday');
+      if (promptsEl) promptsEl.textContent = `${promptsToday} / ${promptsLimit}`;
+      const promptsBarEl = $('#usagePromptsBar');
+      if (promptsBarEl) promptsBarEl.style.width = `${promptsPct}%`;
+      const tokensTodayEl = $('#usageTokensToday');
+      if (tokensTodayEl) tokensTodayEl.textContent = (day.tokens || 0).toLocaleString();
+      const chatsEl = $('#usageChatsCount');
+      if (chatsEl) chatsEl.textContent = usageData?.totalChats || 0;
+
+      // 3. Card 2: Image Studio
+      const imagesToday = day.imageGenerations || 0;
+      const imagesLimit = dailyLimits.imageGenerations || 50;
+      const imagesPct = Math.min(100, Math.round((imagesToday / imagesLimit) * 100));
+
+      const imagesEl = $('#usageImagesToday');
+      if (imagesEl) imagesEl.textContent = `${imagesToday} / ${imagesLimit}`;
+      const imagesBarEl = $('#usageImagesBar');
+      if (imagesBarEl) imagesBarEl.style.width = `${imagesPct}%`;
+      const imagesRemEl = $('#usageImagesRemaining');
+      if (imagesRemEl) imagesRemEl.textContent = `${Math.max(0, imagesLimit - imagesToday)} left today`;
+
+      // 4. Card 3: Cinematic Video
+      const videosToday = day.videoGenerations || 0;
+      const videosLimit = dailyLimits.videoGenerations || 8;
+      const videosPct = Math.min(100, Math.round((videosToday / videosLimit) * 100));
+
+      const videosEl = $('#usageVideosToday');
+      if (videosEl) videosEl.textContent = `${videosToday} / ${videosLimit}`;
+      const videosBarEl = $('#usageVideosBar');
+      if (videosBarEl) videosBarEl.style.width = `${videosPct}%`;
+      const videosRemEl = $('#usageVideosRemaining');
+      if (videosRemEl) videosRemEl.textContent = `${Math.max(0, videosLimit - videosToday)} left today`;
+
+      // 5. Card 4: Website Builder
+      const builderToday = day.builderGenerations || 0;
+      const builderLimit = dailyLimits.builderGenerations || 40;
+      const builderPct = Math.min(100, Math.round((builderToday / builderLimit) * 100));
+
+      const builderEl = $('#usageBuilderToday');
+      if (builderEl) builderEl.textContent = `${builderToday} / ${builderLimit}`;
+      const builderBarEl = $('#usageBuilderBar');
+      if (builderBarEl) builderBarEl.style.width = `${builderPct}%`;
+      const builderRemEl = $('#usageBuilderRemaining');
+      if (builderRemEl) builderRemEl.textContent = `${Math.max(0, builderLimit - builderToday)} left today`;
+
+      // 6. Financial & Budget Guardrails
+      const spendTodayEl = $('#usageSpendToday');
+      if (spendTodayEl) spendTodayEl.textContent = `₹${(day.costInr || summary.todayTotalInr || 0).toFixed(2)}`;
+      const spendLimitDayEl = $('#usageSpendLimitDay');
+      if (spendLimitDayEl) spendLimitDayEl.textContent = `₹${(dailyLimits.maxSpendInr || 60).toFixed(2)}`;
+
+      const spendMonthEl = $('#usageSpendMonth');
+      if (spendMonthEl) spendMonthEl.textContent = `₹${(userQuota.month?.costInr || summary.monthTotalInr || 0).toFixed(2)}`;
+      const spendLimitMonthEl = $('#usageSpendLimitMonth');
+      if (spendLimitMonthEl) spendLimitMonthEl.textContent = `₹${(monthlyLimits.maxSpendInr || 800).toFixed(2)}`;
+
+      // 7. Recent Activity Audit Trail
+      const activityContainer = $('#usageRecentActivityList');
+      if (activityContainer) {
+        const records = usageData?.records || [];
+        if (records.length > 0) {
+          activityContainer.innerHTML = records.slice(0, 15).map(r => {
+            const timeStr = r.timestamp ? new Date(r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+            const typeLabel = (r.type || 'text').toUpperCase();
+            const costStr = (r.costInr && r.costInr > 0) ? `₹${r.costInr.toFixed(3)}` : 'Free';
+            const modelLabel = r.model ? r.model.split('/').pop() : (r.provider || 'AI');
+
+            return `
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:7px;font-size:12px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--bg-subtle);color:var(--text-main);">${typeLabel}</span>
+                  <span style="color:var(--text-main);font-weight:500;">${modelLabel}</span>
+                  ${r.totalTokens ? `<span style="color:var(--text-muted);font-size:11px;">(${r.totalTokens} tokens)</span>` : ''}
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <span style="color:#10b981;font-weight:600;font-size:11.5px;">${costStr}</span>
+                  <span style="color:var(--text-muted);font-size:11px;">${timeStr}</span>
+                </div>
+              </div>
+            `;
+          }).join('');
+        } else {
+          activityContainer.innerHTML = '<div style="font-size:12px;color:var(--text-muted);padding:8px;text-align:center;">No recent activity records.</div>';
+        }
+      }
+
+      // 8. Footer metadata
+      const msgsEl = $('#usageMessagesCount');
+      if (msgsEl) msgsEl.textContent = usageData?.totalMessages || 0;
+      const memberEl = $('#usageMemberSince');
+      if (memberEl && usageData?.createdAt) {
+        memberEl.textContent = new Date(usageData.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+      }
+    } catch (err) {
+      console.warn('[ProfileUI] loadUsageTab note:', err.message);
     }
   },
 

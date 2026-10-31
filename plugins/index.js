@@ -7,6 +7,7 @@ import { githubPlugin } from './providers/github/index.js';
 import { gmailPlugin } from './providers/gmail/index.js';
 import { googleCalendarPlugin } from './providers/google-calendar/index.js';
 import { googleDrivePlugin } from './providers/google-drive/index.js';
+import { googleSlidesPlugin } from './providers/google-slides/index.js';
 import { notionPlugin } from './providers/notion/index.js';
 import { webSearchPlugin } from './providers/web-search/index.js';
 import { telegramPlugin } from './providers/telegram/index.js';
@@ -26,6 +27,7 @@ export function initializePlugins() {
   registry.register(gmailPlugin);
   registry.register(googleCalendarPlugin);
   registry.register(googleDrivePlugin);
+  registry.register(googleSlidesPlugin);
   registry.register(notionPlugin);
   registry.register(webSearchPlugin);
   registry.register(telegramPlugin);

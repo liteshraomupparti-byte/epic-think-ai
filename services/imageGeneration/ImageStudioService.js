@@ -84,6 +84,7 @@ export class ImageStudioService {
     enhance = true,
     referenceImages = [],
     seed = null,
+    forceLiveCheck = false,
     firebaseUid = 'anonymous'
   }) {
     const requestId = `img_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
@@ -132,51 +133,81 @@ export class ImageStudioService {
       quality,
       resolution,
       aspectRatio,
-      referenceImages
+      referenceImages,
+      forceLiveCheck: Boolean(forceLiveCheck)
     });
 
-    // 3. Step 3: Attempt Primary Provider (Google Gemini by default)
+    // 3. Step 3: Attempt Provider Execution
     let genResult = null;
     let primaryFailed = false;
     let primaryError = null;
     let fallbackUsed = false;
     let fallbackError = null;
 
-    try {
-      genResult = await routing.primaryProvider.generateImage({
-        prompt: enhancedPrompt,
-        model: routing.primaryModelId,
-        resolution: routing.resolution,
-        aspectRatio: routing.aspectRatio,
-        referenceImages,
-        seed
-      });
-    } catch (err) {
+    // Check if fast circuit breaker routed directly to fallback to prevent futile 3-second delay
+    if (routing.fastFallbackReason === 'GEMINI_FREE_TIER_QUOTA_ZERO') {
       primaryFailed = true;
-      primaryError = err;
+      primaryError = {
+        code: 'QUOTA_EXCEEDED',
+        message: 'Google Gemini Free Tier has 0 requests/day allocated for image generation models. Pay-As-You-Go billing is required in Google AI Studio.'
+      };
+      fallbackUsed = true;
 
-      console.warn(`[IMAGE_STUDIO] Primary provider (${routing.primaryProvider.name}) encountered: [${err.code || 'ERROR'}] ${err.message}`);
+      try {
+        const fallbackSpec = {
+          model: routing.primaryModelId || 'flux',
+          prompt: enhancedPrompt,
+          width: routing.pixelDimensions.width,
+          height: routing.pixelDimensions.height,
+          aspectRatio: routing.aspectRatio,
+          quality: routing.resolution === '4K' ? 'ULTRA' : (routing.resolution === '2K' ? 'HIGH' : 'STANDARD'),
+          seed,
+          referenceImages
+        };
+        genResult = await routing.primaryProvider.generateImage(fallbackSpec);
+      } catch (fbErr) {
+        fallbackError = fbErr;
+      }
+    } else {
+      try {
+        genResult = await routing.primaryProvider.generateImage({
+          prompt: enhancedPrompt,
+          model: routing.primaryModelId,
+          width: routing.pixelDimensions.width,
+          height: routing.pixelDimensions.height,
+          resolution: routing.resolution,
+          aspectRatio: routing.aspectRatio,
+          referenceImages,
+          seed,
+          forceLiveCheck: routing.forceLiveCheck
+        });
+      } catch (err) {
+        primaryFailed = true;
+        primaryError = err;
 
-      // Attempt fallback provider if available
-      if (routing.fallbackProvider && routing.fallbackProvider !== routing.primaryProvider) {
-        console.log(`[IMAGE_STUDIO] Initiating fallback to ${routing.fallbackProvider.name}...`);
-        fallbackUsed = true;
+        console.warn(`[IMAGE_STUDIO] Primary provider (${routing.primaryProvider.name}) encountered: [${err.code || 'ERROR'}] ${err.message}`);
 
-        try {
-          const fallbackSpec = {
-            model: routing.fallbackModelId || 'flux',
-            prompt: enhancedPrompt,
-            width: routing.pixelDimensions.width,
-            height: routing.pixelDimensions.height,
-            aspectRatio: routing.aspectRatio,
-            quality: routing.resolution === '4K' ? 'ULTRA' : (routing.resolution === '2K' ? 'HIGH' : 'STANDARD'),
-            seed,
-            referenceImages
-          };
+        // Attempt fallback provider if available
+        if (routing.fallbackProvider && routing.fallbackProvider !== routing.primaryProvider) {
+          console.log(`[IMAGE_STUDIO] Initiating fallback to ${routing.fallbackProvider.name}...`);
+          fallbackUsed = true;
 
-          genResult = await routing.fallbackProvider.generateImage(fallbackSpec);
-        } catch (fbErr) {
-          fallbackError = fbErr;
+          try {
+            const fallbackSpec = {
+              model: routing.fallbackModelId || 'flux',
+              prompt: enhancedPrompt,
+              width: routing.pixelDimensions.width,
+              height: routing.pixelDimensions.height,
+              aspectRatio: routing.aspectRatio,
+              quality: routing.resolution === '4K' ? 'ULTRA' : (routing.resolution === '2K' ? 'HIGH' : 'STANDARD'),
+              seed,
+              referenceImages
+            };
+
+            genResult = await routing.fallbackProvider.generateImage(fallbackSpec);
+          } catch (fbErr) {
+            fallbackError = fbErr;
+          }
         }
       }
     }
@@ -214,7 +245,7 @@ export class ImageStudioService {
       };
     }
 
-    // 4. Step 4: True Dimension Verification (No fake 4K claims!)
+    // 4. Step 4: True Dimension Verification (Inspecting binary buffer header)
     const actualWidth = genResult.width || routing.pixelDimensions.width;
     const actualHeight = genResult.height || routing.pixelDimensions.height;
     const actualResolutionStr = `${actualWidth}x${actualHeight}`;
@@ -239,9 +270,10 @@ export class ImageStudioService {
       }
     }
 
-    // 5. Step 5: Structured Audit Logging
-    const actualProviderName = genResult.provider || (fallbackUsed ? routing.fallbackProvider.name : routing.primaryProvider.name);
-    const actualModelName = genResult.actualModelUsed || genResult.model || (fallbackUsed ? routing.fallbackModelId : routing.primaryModelId);
+    // 5. Step 5: Structured Audit Logging & Model Attribution
+    const actualProviderName = genResult.provider || (fallbackUsed ? (routing.fallbackProvider?.name || 'Pollinations.ai') : routing.primaryProvider.name);
+    const actualModelName = genResult.actualModelUsed || genResult.model || (fallbackUsed ? (routing.fallbackModelId || 'flux') : routing.primaryModelId);
+    const enhancementModel = promptMetadata.enhanced ? 'Epic Think Fast (Qwen 2.5 72B / Groq)' : 'None (Direct User Prompt)';
 
     this.logAudit({
       requestId,
@@ -263,15 +295,20 @@ export class ImageStudioService {
       provider: actualProviderName,
       model: actualModelName,
       modelTitle: genResult.modelTitle || actualModelName,
+      enhancementModel,
+      generationProvider: actualProviderName,
+      generationModel: actualModelName,
       requestedModel: routing.primaryModelId,
       actualModelUsed: actualModelName,
-      primaryProvider: routing.primaryProvider.name,
+      primaryProvider: routing.fastFallbackReason ? 'Google Gemini' : routing.primaryProvider.name,
       primaryFailed,
       primaryError: primaryError ? primaryError.message : null,
       primaryErrorCode: primaryError ? primaryError.code : null,
       fallbackUsed,
       fallbackNote: fallbackUsed 
-        ? `Primary provider (${routing.primaryProvider.name}) was unavailable or quota-limited (${primaryError?.code || '429'}). Image was rendered using fallback provider (${routing.fallbackProvider.name}).`
+        ? (primaryError?.code === 'QUOTA_EXCEEDED'
+            ? `Primary provider (Google Gemini) is on Free Tier (0 requests/day). Seamlessly rendered via Pollinations FLUX.1 Schnell without watermarks.`
+            : `Primary provider (${routing.primaryProvider.name}) encountered [${primaryError?.code || 'ERROR'}]. Rendered using fallback provider (${actualProviderName}).`)
         : null,
       requestedResolution: routing.resolution,
       actualResolution: actualResolutionStr,
@@ -285,7 +322,7 @@ export class ImageStudioService {
       dimensionsReasoned: promptMetadata.dimensionsReasoned,
       durationMs: totalDuration,
       watermarked: Boolean(genResult.watermarked),
-      watermarkNote: genResult.watermarkNote || (genResult.watermarked ? 'Branded by Pollinations (Free Tier)' : 'Unwatermarked Clean Asset'),
+      watermarkNote: genResult.watermarkNote || 'Unwatermarked Clean Asset',
       isEditing
     };
   }

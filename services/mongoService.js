@@ -19,6 +19,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import { QuotaTrackingService, USER_TIERS } from './usage/QuotaTrackingService.js';
 
 dotenv.config();
 
@@ -34,6 +35,8 @@ let db = null;
 let usersCol = null;
 let conversationsCol = null;
 let messagesCol = null;
+let usageRecordsCol = null;
+let userQuotasCol = null;
 let isConnected = false;
 let isConnecting = false;
 let reconnectTimer = null;
@@ -42,7 +45,9 @@ let reconnectTimer = null;
 let fallbackStore = {
   users: {},         // { [firebaseUid]: userDoc }
   conversations: {}, // { [firebaseUid]: { [chatId]: conversationDoc } }
-  messages: {}       // { [chatId]: [messageDoc] }
+  messages: {},      // { [chatId]: [messageDoc] }
+  usage_records: [], // [usageRecordDoc]
+  user_quotas: {}    // { [firebaseUid]: userQuotaDoc }
 };
 
 // Load existing fallback cache from disk (bundled first, then /tmp if exists)
@@ -53,7 +58,9 @@ try {
     fallbackStore = {
       users: parsed.users || {},
       conversations: parsed.conversations || {},
-      messages: parsed.messages || {}
+      messages: parsed.messages || {},
+      usage_records: parsed.usage_records || [],
+      user_quotas: parsed.user_quotas || {}
     };
   }
 } catch (err) {
@@ -72,6 +79,12 @@ try {
     }
     if (parsed.messages) {
       fallbackStore.messages = { ...fallbackStore.messages, ...parsed.messages };
+    }
+    if (Array.isArray(parsed.usage_records)) {
+      fallbackStore.usage_records = parsed.usage_records;
+    }
+    if (parsed.user_quotas) {
+      fallbackStore.user_quotas = { ...fallbackStore.user_quotas, ...parsed.user_quotas };
     }
   }
 } catch (_) {}
@@ -127,6 +140,8 @@ export async function initMongoDB() {
       usersCol = db.collection('users');
       conversationsCol = db.collection('conversations');
       messagesCol = db.collection('messages');
+      usageRecordsCol = db.collection('usage_records');
+      userQuotasCol = db.collection('user_quotas');
 
       // Create / verify compound and query indexes for maximum performance and data integrity
       await Promise.allSettled([
@@ -134,6 +149,7 @@ export async function initMongoDB() {
         usersCol.createIndex({ firebaseUid: 1 }, { unique: true }),
         usersCol.createIndex({ username: 1 }, { unique: true, sparse: true }),
         usersCol.createIndex({ email: 1 }),
+        usersCol.createIndex({ tier: 1 }),
         usersCol.createIndex({ updatedAt: -1 }),
         usersCol.createIndex({ "usage.lastActiveAt": -1 }),
 
@@ -149,12 +165,22 @@ export async function initMongoDB() {
         messagesCol.createIndex({ conversationId: 1, createdAt: 1 }),
         messagesCol.createIndex({ firebaseUid: 1, conversationId: 1 }),
         messagesCol.createIndex({ email: 1, conversationId: 1 }),
-        messagesCol.createIndex({ id: 1 }, { unique: true, sparse: true })
+        messagesCol.createIndex({ id: 1 }, { unique: true, sparse: true }),
+
+        // Usage Records collection indexes for fast time-series & user telemetry
+        usageRecordsCol.createIndex({ firebaseUid: 1, timestamp: -1 }),
+        usageRecordsCol.createIndex({ firebaseUid: 1, type: 1, timestamp: -1 }),
+        usageRecordsCol.createIndex({ date: 1, type: 1 }),
+        usageRecordsCol.createIndex({ month: 1 }),
+        usageRecordsCol.createIndex({ timestamp: -1 }),
+
+        // User Quotas collection index
+        userQuotasCol.createIndex({ firebaseUid: 1 }, { unique: true })
       ]);
 
       isConnected = true;
       isConnecting = false;
-      console.log(`[DB] Connected successfully to MongoDB database: "${db.databaseName}"`);
+      console.log(`[DB] Connected successfully to MongoDB database: "${db.databaseName}" (with Usage & Quota collections)`);
 
       // Sync any pending fallback data into MongoDB
       await syncFallbackToMongo();
@@ -212,9 +238,13 @@ async function syncFallbackToMongo() {
     for (const fUid of Object.keys(fallbackStore.users || {})) {
       const u = fallbackStore.users[fUid];
       if (u && u.firebaseUid) {
+        const cleanUser = { ...u };
+        for (const k of Object.keys(cleanUser)) {
+          if (k.includes('.')) delete cleanUser[k];
+        }
         await usersCol.updateOne(
-          { firebaseUid: u.firebaseUid },
-          { $set: u },
+          { firebaseUid: cleanUser.firebaseUid },
+          { $set: cleanUser },
           { upsert: true }
         );
         syncedUsers++;
@@ -267,6 +297,28 @@ async function syncFallbackToMongo() {
           }
         }
       }
+    }
+
+    // Sync usage records
+    if (Array.isArray(fallbackStore.usage_records) && fallbackStore.usage_records.length > 0 && usageRecordsCol) {
+      try {
+        for (const rec of fallbackStore.usage_records) {
+          if (rec.id) {
+            await usageRecordsCol.updateOne({ id: rec.id }, { $set: rec }, { upsert: true });
+          }
+        }
+      } catch (_) {}
+    }
+
+    // Sync user quotas
+    if (fallbackStore.user_quotas && userQuotasCol) {
+      try {
+        for (const [qUid, qDoc] of Object.entries(fallbackStore.user_quotas)) {
+          if (qDoc && qUid) {
+            await userQuotasCol.updateOne({ firebaseUid: qUid }, { $set: qDoc }, { upsert: true });
+          }
+        }
+      } catch (_) {}
     }
 
     if (syncedChats > 0 || syncedUsers > 0) {
@@ -426,6 +478,7 @@ export async function getUserProfile(uid, userFallback = null) {
       jobTitle: '',
       preferredLanguage: 'en',
       timezone: 'Asia/Kolkata',
+      tier: userFallback?.tier || 'free',
       onboardingCompleted: Boolean(firstName && lastName && (userFallback?.signInProvider === 'google.com' || photoUrl)),
       profileCompleted: 0,
       preferences: {
@@ -544,6 +597,20 @@ export async function getUserProfile(uid, userFallback = null) {
       needsUpdate = true;
     }
 
+    if (doc.profilePhotoUrl && typeof doc.profilePhotoUrl === 'string' && doc.profilePhotoUrl.startsWith('/uploads/avatars/')) {
+      try {
+        const diskFile = path.resolve(__dirname, '..', doc.profilePhotoUrl.replace(/^\//, ''));
+        if (fs.existsSync(diskFile)) {
+          const buf = fs.readFileSync(diskFile);
+          const ext = path.extname(diskFile).toLowerCase().replace('.', '') || 'png';
+          const mime = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
+          doc.profilePhotoUrl = `data:${mime};base64,${buf.toString('base64')}`;
+          updates.profilePhotoUrl = doc.profilePhotoUrl;
+          needsUpdate = true;
+        }
+      } catch (_) {}
+    }
+
     if (doc.jobTitle === undefined) {
       doc.jobTitle = '';
       updates.jobTitle = '';
@@ -572,7 +639,7 @@ export async function getUserProfile(uid, userFallback = null) {
         } catch (_) {}
       }
       if (!fallbackStore.users) fallbackStore.users = {};
-      fallbackStore.users[fUid] = { ...doc, ...updates };
+      fallbackStore.users[fUid] = { ...doc };
       persistFallbackStore();
     }
   }
@@ -785,16 +852,168 @@ export async function getUserUsageStats(uid) {
 
   const profile = await getUserProfile(fUid);
   const created = profile?.createdAt || Date.now();
+  const summary = QuotaTrackingService.getUsageSummary(fUid, profile?.tier || 'free');
 
   return {
     totalChats,
     totalConversations: totalChats,
     totalMessages,
+    tier: profile?.tier || 'free',
+    tierName: summary.tierName,
+    tierBadge: summary.tierBadge,
     createdAt: created,
     memberSince: created,
-    lastActiveAt: profile?.lastLoginAt || profile?.updatedAt || Date.now()
+    lastActiveAt: profile?.lastLoginAt || profile?.updatedAt || Date.now(),
+    summary
   };
 }
+
+/**
+ * Record a single usage record into MongoDB & Fallback Cache
+ */
+export async function recordUsageToDb(record) {
+  if (!record || !record.id) return;
+  await ensureConnected();
+
+  // Save to fallbackStore
+  if (!fallbackStore.usage_records) fallbackStore.usage_records = [];
+  fallbackStore.usage_records.push(record);
+  if (fallbackStore.usage_records.length > 500) {
+    fallbackStore.usage_records.shift();
+  }
+  persistFallbackStore();
+
+  if (isConnected && usageRecordsCol) {
+    try {
+      await usageRecordsCol.updateOne(
+        { id: record.id },
+        { $set: record },
+        { upsert: true }
+      );
+    } catch (err) {
+      console.warn('[DB:USAGE] recordUsageToDb error:', err.message);
+    }
+  }
+}
+
+/**
+ * Get atomic user quota document from MongoDB or Fallback Cache
+ */
+export async function getUserQuotaDoc(uid) {
+  if (!uid) return null;
+  await ensureConnected();
+  const fUid = String(uid);
+
+  if (isConnected && userQuotasCol) {
+    try {
+      const doc = await userQuotasCol.findOne({ firebaseUid: fUid });
+      if (doc) return doc;
+    } catch (_) {}
+  }
+
+  if (fallbackStore.user_quotas && fallbackStore.user_quotas[fUid]) {
+    return fallbackStore.user_quotas[fUid];
+  }
+
+  return null;
+}
+
+/**
+ * Update atomic user quota document in MongoDB & Fallback Cache
+ */
+export async function updateUserQuotaDoc(uid, quotaDoc) {
+  if (!uid || !quotaDoc) return;
+  await ensureConnected();
+  const fUid = String(uid);
+
+  // Save to fallbackStore
+  if (!fallbackStore.user_quotas) fallbackStore.user_quotas = {};
+  fallbackStore.user_quotas[fUid] = quotaDoc;
+  persistFallbackStore();
+
+  if (isConnected && userQuotasCol) {
+    try {
+      await userQuotasCol.updateOne(
+        { firebaseUid: fUid },
+        { $set: quotaDoc },
+        { upsert: true }
+      );
+    } catch (err) {
+      console.warn('[DB:USAGE] updateUserQuotaDoc error:', err.message);
+    }
+  }
+}
+
+/**
+ * Get detailed usage records and activity history for a user
+ */
+export async function getUserDetailedUsage(uid, limit = 50) {
+  if (!uid) return { records: [], summary: QuotaTrackingService.getUsageSummary() };
+  await ensureConnected();
+  const fUid = String(uid);
+
+  let records = [];
+  if (isConnected && usageRecordsCol) {
+    try {
+      records = await usageRecordsCol
+        .find({ firebaseUid: fUid })
+        .sort({ timestamp: -1 })
+        .limit(limit)
+        .toArray();
+    } catch (_) {}
+  }
+
+  if (records.length === 0 && fallbackStore.usage_records) {
+    records = fallbackStore.usage_records
+      .filter(r => r.firebaseUid === fUid)
+      .slice(-limit)
+      .reverse();
+  }
+
+  const profile = await getUserProfile(fUid);
+  const summary = QuotaTrackingService.getUsageSummary(fUid, profile?.tier || 'free');
+
+  return {
+    records,
+    summary,
+    tier: profile?.tier || 'free',
+    count: records.length
+  };
+}
+
+/**
+ * Update user account tier (e.g. 'free' -> 'pro' -> 'admin')
+ */
+export async function updateUserTier(uid, tier) {
+  if (!uid) throw new Error('UID is required');
+  if (!USER_TIERS[tier]) throw new Error(`Invalid tier: "${tier}". Allowed: ${Object.keys(USER_TIERS).join(', ')}`);
+  await ensureConnected();
+  const fUid = String(uid);
+
+  if (isConnected && usersCol) {
+    await usersCol.updateOne(
+      { firebaseUid: fUid },
+      { $set: { tier, updatedAt: Date.now() } }
+    );
+  }
+
+  if (fallbackStore.users && fallbackStore.users[fUid]) {
+    fallbackStore.users[fUid].tier = tier;
+    fallbackStore.users[fUid].updatedAt = Date.now();
+    persistFallbackStore();
+  }
+
+  // Update in QuotaTrackingService
+  QuotaTrackingService.getOrInitUserQuota(fUid, USER_TIERS[tier]);
+
+  return await getUserProfile(fUid);
+}
+
+// Register DB hooks with QuotaTrackingService
+QuotaTrackingService.registerDbHooks({
+  recordUsageToDb,
+  updateUserQuotaDoc
+});
 
 /**
  * Securely delete user profile and all user-owned data from MongoDB
