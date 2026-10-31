@@ -2,18 +2,14 @@
  * Epic Think AI - Dedicated Image Generation & Editing API Routes
  * 
  * Endpoints:
- * - POST /api/image/generate (Secure image generation with Pollinations & Gemini, deduplication, budget control)
+ * - POST /api/image/generate (Secure image generation with Gemini Primary & Pollinations Fallback)
  * - GET  /api/image/capabilities (Supported models, modes, resolutions, aspect ratios)
  * - GET  /api/image/models (Alias for capabilities)
- * - GET  /api/image/usage (Current monthly and daily spending against ₹500–₹1,500 budget)
  */
 
 import express from 'express';
 import { requireAuth } from '../services/firebaseAuthService.js';
 import { ImageStudioService } from '../services/imageGeneration/ImageStudioService.js';
-import { ImageModelRouter } from '../services/imageGeneration/ImageModelRouter.js';
-import { UsageMeter } from '../services/media/UsageMeter.js';
-import { QuotaTrackingService } from '../services/usage/QuotaTrackingService.js';
 
 const router = express.Router();
 
@@ -42,7 +38,7 @@ const checkRateLimit = (key) => {
   return { allowed: true, remaining: MAX_REQUESTS_PER_WINDOW - entry.count };
 };
 
-// Periodic cleanup of stale rate limits
+// Periodic cleanup of stale rate limits (unref'd to prevent blocking process exit)
 const cleanupTimer = setInterval(() => {
   const now = Date.now();
   for (const [key, entry] of rateLimitMap.entries()) {
@@ -58,6 +54,7 @@ const authenticateOrGuest = async (req, res, next) => {
   if (req.headers.authorization) {
     return requireAuth(req, res, next);
   }
+  // Safe default: do NOT trust client-supplied UID in body
   req.user = { uid: 'guest_user', email: 'guest@epicthink.ai' };
   next();
 };
@@ -68,13 +65,9 @@ const authenticateOrGuest = async (req, res, next) => {
 router.get(['/capabilities', '/models'], async (req, res) => {
   try {
     const meta = await ImageStudioService.getStudioMetadata();
-    const routerCaps = ImageModelRouter.getCapabilities();
-    const usage = UsageMeter.getUsageSummary(req.user?.uid);
     res.json({
       success: true,
-      ...meta,
-      routerCapabilities: routerCaps,
-      usage
+      ...meta
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -82,40 +75,11 @@ router.get(['/capabilities', '/models'], async (req, res) => {
 });
 
 /**
- * GET /api/image/usage
- */
-router.get('/usage', authenticateOrGuest, (req, res) => {
-  const summary = UsageMeter.getUsageSummary(req.user?.uid);
-  res.json({
-    success: true,
-    ...summary
-  });
-});
-
-/**
- * GET /api/image/quota-status
- */
-router.get('/quota-status', async (req, res) => {
-  const { GeminiImageProvider } = await import('../services/imageGeneration/GeminiImageProvider.js');
-  res.json({ success: true, ...GeminiImageProvider.getQuotaStatus() });
-});
-
-/**
- * POST /api/image/quota-reset
- */
-router.post('/quota-reset', async (req, res) => {
-  const { GeminiImageProvider } = await import('../services/imageGeneration/GeminiImageProvider.js');
-  GeminiImageProvider.resetCircuit();
-  res.json({ success: true, message: 'Gemini quota circuit breaker reset.', ...GeminiImageProvider.getQuotaStatus() });
-});
-
-/**
  * POST /api/image/generate
  */
-router.post('/generate', authenticateOrGuest, QuotaTrackingService.createMiddleware({ type: 'image', estimatedCostInr: 0 }), async (req, res) => {
+router.post('/generate', authenticateOrGuest, async (req, res) => {
   // 1. Rate Limiting Check
-  const verifiedUid = req.user?.uid || 'guest_user';
-  const rateLimitKey = verifiedUid !== 'guest_user' ? verifiedUid : (req.ip || 'global');
+  const rateLimitKey = (req.user && req.user.uid !== 'guest_user') ? req.user.uid : (req.ip || 'global');
   const rateCheck = checkRateLimit(rateLimitKey);
 
   if (!rateCheck.allowed) {
@@ -137,8 +101,7 @@ router.post('/generate', authenticateOrGuest, QuotaTrackingService.createMiddlew
     style = 'photorealistic',
     enhance = true,
     referenceImages = [],
-    seed,
-    forceLiveCheck = false
+    seed
   } = req.body || {};
 
   if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
@@ -149,22 +112,8 @@ router.post('/generate', authenticateOrGuest, QuotaTrackingService.createMiddlew
     });
   }
 
-  // 3. Duplicate Request Protection (Deduplication Lock)
-  const fingerprint = UsageMeter.getRequestFingerprint(verifiedUid, 'image', prompt, {
-    mode,
-    model,
-    resolution,
-    aspectRatio
-  });
-
-  const acquired = UsageMeter.acquireLock(fingerprint, 20000);
-  if (!acquired) {
-    return res.status(429).json({
-      success: false,
-      error: 'A generation request with identical parameters is already in progress. Please wait for it to complete.',
-      errorCode: 'DUPLICATE_REQUEST_PENDING'
-    });
-  }
+  // 3. Cryptographically Verified Firebase UID (never trust body.uid)
+  const verifiedUid = req.user?.uid || 'guest_user';
 
   try {
     const result = await ImageStudioService.generateImage({
@@ -178,7 +127,6 @@ router.post('/generate', authenticateOrGuest, QuotaTrackingService.createMiddlew
       enhance: enhance !== false,
       referenceImages,
       seed,
-      forceLiveCheck: Boolean(forceLiveCheck),
       firebaseUid: verifiedUid
     });
 
@@ -203,9 +151,6 @@ router.post('/generate', authenticateOrGuest, QuotaTrackingService.createMiddlew
       provider: result.provider,
       model: result.model,
       modelTitle: result.modelTitle,
-      enhancementModel: result.enhancementModel,
-      generationProvider: result.generationProvider,
-      generationModel: result.generationModel,
       requestedModel: result.requestedModel,
       actualModelUsed: result.actualModelUsed,
       primaryProvider: result.primaryProvider,
@@ -236,8 +181,6 @@ router.post('/generate', authenticateOrGuest, QuotaTrackingService.createMiddlew
       error: err.message,
       errorCode: err.code || 'INTERNAL_ERROR'
     });
-  } finally {
-    UsageMeter.releaseLock(fingerprint);
   }
 });
 

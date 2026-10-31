@@ -25,7 +25,6 @@ import { MultiPageManager } from '../services/websiteBuilder/MultiPageManager.js
 import { modelRegistry } from '../ai/index.js';
 import { retainMemory, recallMemory } from '../services/hindsightService.js';
 import { requireAuth } from '../services/firebaseAuthService.js';
-import { QuotaTrackingService } from '../services/usage/QuotaTrackingService.js';
 
 const router = express.Router();
 
@@ -159,11 +158,10 @@ router.get('/projects/:id/files', optionalAuth, async (req, res) => {
 });
 
 /**
- * Create or Update a specific file
+ * Update a specific file
  * PUT /api/builder/projects/:id/files
- * POST /api/builder/projects/:id/files
  */
-const handleWriteFile = async (req, res) => {
+router.put('/projects/:id/files', optionalAuth, async (req, res) => {
     try {
         const { id } = req.params;
         const { path: filePath, content, commitMessage } = req.body || {};
@@ -184,36 +182,6 @@ const handleWriteFile = async (req, res) => {
             success: true,
             path: filePath,
             checkpoint
-        });
-    } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
-    }
-};
-
-router.put('/projects/:id/files', optionalAuth, handleWriteFile);
-router.post('/projects/:id/files', optionalAuth, handleWriteFile);
-
-/**
- * Patch a specific file with targeted chunk replacement
- * PATCH /api/builder/projects/:id/files
- */
-router.patch('/projects/:id/files', optionalAuth, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { path: filePath, patch, patches, commitMessage } = req.body || {};
-
-        if (!filePath || (!patch && !patches)) {
-            return res.status(400).json({ success: false, error: 'path and patch (or patches) are required' });
-        }
-
-        const patchPayload = patches || patch;
-        const result = await ProjectManager.patchFile(id, filePath, patchPayload, commitMessage);
-
-        PreviewServer.notifyProjectChange(id, { type: 'file_updated', file: filePath });
-
-        res.json({
-            success: true,
-            ...result
         });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -245,7 +213,7 @@ router.post('/projects/:id/plan', optionalAuth, async (req, res) => {
  * Generate complete project from prompt & plan
  * POST /api/builder/projects/:id/generate
  */
-router.post('/projects/:id/generate', optionalAuth, QuotaTrackingService.createMiddleware({ type: 'builder', estimatedCostInr: 0.15, estimatedTokens: 2000 }), async (req, res) => {
+router.post('/projects/:id/generate', optionalAuth, async (req, res) => {
     try {
         const { id } = req.params;
         const { prompt, preset = 'luxury_gold', plan, framework = 'html_modern', modelPreset } = req.body || {};
@@ -292,20 +260,6 @@ router.post('/projects/:id/generate', optionalAuth, QuotaTrackingService.createM
         // 6. Notify preview server
         PreviewServer.notifyProjectChange(id, { type: 'project_generated' });
 
-        // 7. Record builder usage
-        QuotaTrackingService.recordUsageEvent({
-            uid: req.user?.uid || 'guest_user',
-            email: req.user?.email || null,
-            tier: req.userTier?.id || 'free',
-            type: 'builder',
-            provider: 'groq',
-            model: modelPreset || 'Epic Think 4o',
-            promptTokens: Math.round((prompt || '').length / 4),
-            completionTokens: Math.round(writtenFiles.length * 400),
-            totalTokens: Math.round((prompt || '').length / 4) + Math.round(writtenFiles.length * 400),
-            metadata: { projectId: id, filesCount: writtenFiles.length }
-        }).catch(() => {});
-
         res.json({
             success: true,
             projectId: id,
@@ -325,7 +279,7 @@ router.post('/projects/:id/generate', optionalAuth, QuotaTrackingService.createM
  * Natural language & visual context editing
  * POST /api/builder/projects/:id/edit
  */
-router.post('/projects/:id/edit', optionalAuth, QuotaTrackingService.createMiddleware({ type: 'builder', estimatedCostInr: 0.10, estimatedTokens: 1000 }), async (req, res) => {
+router.post('/projects/:id/edit', optionalAuth, async (req, res) => {
     try {
         const { id } = req.params;
         const { prompt, selectedElement, modelPreset, model } = req.body || {};
@@ -485,20 +439,6 @@ router.post('/projects/:id/heal', optionalAuth, async (req, res) => {
             PreviewServer.notifyProjectChange(id, { type: 'self_healed' });
         }
         res.json({ success: true, healingResult: result });
-    } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
-    }
-});
-
-/**
- * Verify Project (Phase 5 completion criteria verification)
- * GET /api/builder/projects/:id/verify
- */
-router.get('/projects/:id/verify', optionalAuth, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const verification = await SelfHealingEngine.verifyProject(id);
-        res.json({ success: true, verification });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }

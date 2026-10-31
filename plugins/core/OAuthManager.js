@@ -31,10 +31,6 @@ export class OAuthManager {
     'google-drive': new GoogleOAuthAdapter(),
     google_calendar: new GoogleOAuthAdapter(),
     'google-calendar': new GoogleOAuthAdapter(),
-    google_slides: new GoogleOAuthAdapter(),
-    'google-slides': new GoogleOAuthAdapter(),
-    google_workspace: new GoogleOAuthAdapter(),
-    'google-workspace': new GoogleOAuthAdapter(),
     notion: new NotionOAuthAdapter()
   };
 

@@ -10,41 +10,8 @@
  * 6. Debounced username availability checks
  */
 
-function loadCachedProfileFromStorage(uid = null) {
-  if (typeof localStorage === 'undefined') return null;
-  try {
-    if (uid) {
-      const perUserRaw = localStorage.getItem(`eta_cached_profile_${uid}`);
-      if (perUserRaw) {
-        const p = JSON.parse(perUserRaw);
-        if (p && typeof p === 'object') return p;
-      }
-    }
-    const raw = localStorage.getItem('eta_cached_profile');
-    if (raw) {
-      const p = JSON.parse(raw);
-      if (p && typeof p === 'object') return p;
-    }
-  } catch (_) {}
-  return null;
-}
-
-export function getCachedProfile(uid = null) {
-  return loadCachedProfileFromStorage(uid) || cachedProfile;
-}
-
-let cachedProfile = loadCachedProfileFromStorage();
-let activeFirebaseUser = null;
+let cachedProfile = null;
 const listeners = new Set();
-
-export function setActiveUser(user) {
-  if (user) {
-    activeFirebaseUser = user;
-    if (user.uid && !cachedProfile) {
-      cachedProfile = loadCachedProfileFromStorage(user.uid);
-    }
-  }
-}
 
 /**
  * Determine API Base URL across local dev, hosted, and live-server environments
@@ -59,51 +26,6 @@ export const getApiBase = () => {
   }
   return 'http://localhost:3001';
 };
-
-/**
- * Per-user local avatar cache so the saved photo paints instantly on page refresh
- * (before the /api/user/profile request resolves).
- */
-const AVATAR_CACHE_PREFIX = 'eta_cached_avatar_';
-
-export function getCachedAvatar(uid = null) {
-  if (typeof localStorage === 'undefined') return null;
-  try {
-    const targetUid = uid || activeFirebaseUser?.uid || cachedProfile?.firebaseUid || cachedProfile?.uid;
-    if (targetUid) {
-      const perUser = localStorage.getItem(`${AVATAR_CACHE_PREFIX}${targetUid}`);
-      if (perUser) return perUser;
-      const userProfileRaw = localStorage.getItem(`eta_cached_profile_${targetUid}`);
-      if (userProfileRaw) {
-        const up = JSON.parse(userProfileRaw);
-        if (up?.profilePhotoUrl) return up.profilePhotoUrl;
-        if (up?.photoURL) return up.photoURL;
-      }
-    }
-    const globalAv = localStorage.getItem('eta_cached_avatar');
-    if (globalAv) return globalAv;
-    const prof = cachedProfile || loadCachedProfileFromStorage(targetUid);
-    if (prof?.profilePhotoUrl) return prof.profilePhotoUrl;
-    if (prof?.photoURL) return prof.photoURL;
-
-    // Scan any available avatar key in localStorage as safe fallback
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k && k.startsWith(AVATAR_CACHE_PREFIX)) {
-        const val = localStorage.getItem(k);
-        if (val) return val;
-      }
-    }
-    return null;
-  } catch (_) {
-    return null;
-  }
-}
-
-if (typeof window !== 'undefined') {
-  window.getCachedAvatar = getCachedAvatar;
-  window.getCachedProfile = getCachedProfile;
-}
 
 /**
  * Safely resolve avatar URLs to ensure absolute origin resolution across ports
@@ -129,14 +51,7 @@ export function resolveAvatarUrl(url) {
 /**
  * Safely retrieve authentication token without breaking non-browser environments
  */
-async function getAuthToken(overrideUser = null) {
-  const target = overrideUser || activeFirebaseUser;
-  if (target && typeof target.getIdToken === 'function') {
-    try {
-      const tok = await target.getIdToken();
-      if (tok) return tok;
-    } catch (_) {}
-  }
+async function getAuthToken() {
   if (typeof window !== 'undefined') {
     try {
       const auth = await import('./authService.js');
@@ -172,29 +87,15 @@ export function getDeterministicAvatarStyle(identifier = 'user') {
 export function renderAvatarHtml(profile, size = 36, customClass = '') {
   const safeSize = parseInt(size, 10) || 36;
   const name = profile?.displayName || `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim() || 'User';
-  const effectiveUid = profile?.firebaseUid || profile?.uid || profile?.id || activeFirebaseUser?.uid || '';
-
-  // 1. Check profile object (handles MongoDB profile and Firebase User object)
-  let rawPhoto = profile?.profilePhotoUrl || profile?.photoURL || profile?.avatarUrl || profile?.picture;
-
-  // 2. Check UID-specific avatar cache
-  if (!rawPhoto && effectiveUid) {
-    rawPhoto = getCachedAvatar(effectiveUid);
-  }
-
-  // 3. Check global avatar cache
-  if (!rawPhoto) {
-    rawPhoto = getCachedAvatar();
-  }
-
+  const rawPhoto = profile?.profilePhotoUrl;
   const photoUrl = resolveAvatarUrl(rawPhoto);
   const initials = computeInitials(profile);
-  const style = getDeterministicAvatarStyle(effectiveUid || profile?.username || name);
+  const style = getDeterministicAvatarStyle(profile?.firebaseUid || profile?.username || name);
   const fontSize = Math.max(10, Math.round(safeSize * 0.4));
 
   if (photoUrl) {
     return `<div class="avatar-circle-wrapper ${customClass}" style="width:${safeSize}px;height:${safeSize}px;min-width:${safeSize}px;min-height:${safeSize}px;border-radius:50%;overflow:hidden;position:relative;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.25);background:${style.background};">
-      <img src="${photoUrl}" alt="${name.replace(/"/g, '&quot;')}" style="width:100%;height:100%;object-fit:cover;display:block;position:relative;z-index:1;" onerror="this.style.display='none';if(!this.dataset.triedCache && typeof window!=='undefined' && window.getCachedAvatar){const fb=window.getCachedAvatar('${effectiveUid}');if(fb && fb!==this.src){this.dataset.triedCache='1';this.src=fb;this.style.display='block';return;}}if(this.nextElementSibling)this.nextElementSibling.style.display='flex';"/>
+      <img src="${photoUrl}" alt="${name.replace(/"/g, '&quot;')}" style="width:100%;height:100%;object-fit:cover;display:block;position:relative;z-index:1;" onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='flex';"/>
       <span class="avatar-fallback-initials" style="display:none;width:100%;height:100%;color:${style.color};font-size:${fontSize}px;font-weight:600;align-items:center;justify-content:center;text-transform:uppercase;user-select:none;position:absolute;top:0;left:0;z-index:0;">${initials}</span>
     </div>`;
   }
@@ -282,45 +183,10 @@ export async function optimizeImageFile(file, maxDimension = 512, quality = 0.9)
   });
 }
 
-function syncAvatarCache(profile) {
-  if (!profile || typeof localStorage === 'undefined') return;
-  try {
-    const uid = profile.firebaseUid || profile.uid || activeFirebaseUser?.uid;
-    localStorage.setItem('eta_cached_profile', JSON.stringify(profile));
-    if (uid) {
-      localStorage.setItem(`eta_cached_profile_${uid}`, JSON.stringify(profile));
-    }
-    const photo = profile.profilePhotoUrl || profile.photoURL;
-    if (photo) {
-      if (uid) {
-        localStorage.setItem(`eta_cached_avatar_${uid}`, photo);
-      }
-      localStorage.setItem('eta_cached_avatar', photo);
-    } else if (profile._explicitRemoval === true) {
-      if (uid) {
-        localStorage.removeItem(`eta_cached_avatar_${uid}`);
-      }
-      localStorage.removeItem('eta_cached_avatar');
-    }
-  } catch (_) {}
-}
-
-/**
- * Safely parse a fetch Response as JSON (handles HTML/text error pages such as 413)
- */
-async function readJsonSafe(res) {
-  try {
-    return await res.json();
-  } catch (_) {
-    return null;
-  }
-}
-
 /**
  * Broadcast profile state change to local subscribers
  */
 function notifySubscribers(profile) {
-  syncAvatarCache(profile);
   for (const listener of listeners) {
     try {
       listener(profile);
@@ -334,8 +200,6 @@ function notifySubscribers(profile) {
 }
 
 export const UserService = {
-  setActiveUser,
-
   /**
    * Subscribe to profile state changes
    */
@@ -367,32 +231,19 @@ export const UserService = {
    */
   clearCache() {
     cachedProfile = null;
-    activeFirebaseUser = null;
-    try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.removeItem('eta_cached_profile');
-        localStorage.removeItem('eta_cached_avatar');
-      }
-    } catch (_) {}
     notifySubscribers(null);
   },
 
   /**
    * Fetch canonical profile from backend
    */
-  async fetchProfile(forceRefresh = false, firebaseUser = null) {
-    if (firebaseUser) {
-      setActiveUser(firebaseUser);
-    }
-    const targetUid = firebaseUser?.uid || activeFirebaseUser?.uid || cachedProfile?.firebaseUid;
+  async fetchProfile(forceRefresh = false) {
     if (cachedProfile && !forceRefresh) {
       return cachedProfile;
     }
 
-    const token = await getAuthToken(firebaseUser);
-    if (!token) {
-      return cachedProfile || loadCachedProfileFromStorage(targetUid);
-    }
+    const token = await getAuthToken();
+    if (!token) return null;
 
     try {
       const res = await fetch(`${getApiBase()}/api/user/profile`, {
@@ -407,19 +258,14 @@ export const UserService = {
 
       const json = await res.json();
       if (json.success && (json.data || json.profile)) {
-        const fetched = json.data || json.profile;
-        if (!fetched.profilePhotoUrl) {
-          const cachedPhoto = getCachedAvatar(fetched.firebaseUid || targetUid);
-          if (cachedPhoto) fetched.profilePhotoUrl = cachedPhoto;
-        }
-        cachedProfile = fetched;
+        cachedProfile = json.data || json.profile;
         notifySubscribers(cachedProfile);
         return cachedProfile;
       }
-      return cachedProfile || loadCachedProfileFromStorage(targetUid);
+      return null;
     } catch (err) {
       console.warn('[UserService:Fetch]', err.message);
-      return cachedProfile || loadCachedProfileFromStorage(targetUid);
+      return cachedProfile;
     }
   },
 
@@ -444,11 +290,7 @@ export const UserService = {
       throw new Error(json.error?.message || 'Failed to update profile.');
     }
 
-    const updated = json.data || json.profile;
-    if (updated && !updated.profilePhotoUrl && cachedProfile?.profilePhotoUrl) {
-      updated.profilePhotoUrl = cachedProfile.profilePhotoUrl;
-    }
-    cachedProfile = updated;
+    cachedProfile = json.data || json.profile;
     notifySubscribers(cachedProfile);
     return cachedProfile;
   },
@@ -470,52 +312,53 @@ export const UserService = {
       }
     }
 
-    // Prefer sending only the optimized (512px) image as JSON. Sending the raw file
-    // as well can exceed serverless body limits (Vercel: 4.5 MB) and silently fail.
-    let body;
-    const headers = { 'Authorization': `Bearer ${token}` };
+    const formData = new FormData();
+    formData.append('avatar', file);
     if (dataUrl) {
-      headers['Content-Type'] = 'application/json';
-      body = JSON.stringify({ avatarDataUrl: dataUrl });
-    } else {
-      const formData = new FormData();
-      formData.append('avatar', file);
-      body = formData;
+      formData.append('avatarDataUrl', dataUrl);
     }
 
     let res;
+    let json;
     try {
       res = await fetch(`${getApiBase()}/api/user/profile/avatar`, {
         method: 'POST',
-        headers,
-        body
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
       });
+      json = await res.json();
     } catch (networkErr) {
       console.warn('[Avatar:Upload Network Error]', networkErr);
-      throw new Error('Network connection error. Your photo was not saved — please try again.');
-    }
-
-    const json = await readJsonSafe(res);
-    if (!res.ok || !json || !json.success) {
-      if (res.status === 413) {
-        throw new Error('Image is too large. Please choose a smaller photo.');
+      // Offline / network fallback: persist optimized dataUrl locally so user never loses their avatar
+      if (dataUrl) {
+        if (!cachedProfile) cachedProfile = {};
+        cachedProfile.profilePhotoUrl = dataUrl;
+        notifySubscribers(cachedProfile);
+        try {
+          const uid = cachedProfile.firebaseUid || 'user';
+          localStorage.setItem(`eta_cached_avatar_${uid}`, dataUrl);
+        } catch (_) {}
+        return {
+          success: true,
+          profile: cachedProfile,
+          profilePhotoUrl: dataUrl,
+          offlineSaved: true
+        };
       }
-      throw new Error(json?.error?.message || `Failed to upload avatar photo (HTTP ${res.status}).`);
+      throw new Error('Network connection error. Failed to reach server.');
     }
 
-    const savedProfile = json.data?.profile || json.profile;
-    const finalPhoto = json.data?.profilePhotoUrl || json.profilePhotoUrl || dataUrl;
-    if (savedProfile) {
-      cachedProfile = { ...savedProfile, profilePhotoUrl: savedProfile.profilePhotoUrl || finalPhoto };
-    } else {
-      cachedProfile = { ...(cachedProfile || {}), profilePhotoUrl: finalPhoto };
+    if (!res.ok || !json.success) {
+      throw new Error(json.error?.message || 'Failed to upload avatar photo.');
     }
 
-    const uid = cachedProfile.firebaseUid || activeFirebaseUser?.uid;
-    if (uid && finalPhoto) {
+    cachedProfile = json.data?.profile || json.profile;
+    if (cachedProfile && dataUrl) {
       try {
-        localStorage.setItem(`eta_cached_avatar_${uid}`, finalPhoto);
-        localStorage.setItem('eta_cached_avatar', finalPhoto);
+        const uid = cachedProfile.firebaseUid || 'user';
+        localStorage.setItem(`eta_cached_avatar_${uid}`, dataUrl);
       } catch (_) {}
     }
 
@@ -545,12 +388,10 @@ export const UserService = {
     }
 
     if (cachedProfile) {
-      cachedProfile._explicitRemoval = true;
       cachedProfile.profilePhotoUrl = null;
       try {
-        const uid = cachedProfile.firebaseUid || activeFirebaseUser?.uid;
-        if (uid) localStorage.removeItem(`eta_cached_avatar_${uid}`);
-        localStorage.removeItem('eta_cached_avatar');
+        const uid = cachedProfile.firebaseUid || 'user';
+        localStorage.removeItem(`eta_cached_avatar_${uid}`);
       } catch (_) {}
     }
 
@@ -639,7 +480,7 @@ export const UserService = {
   },
 
   /**
-   * Fetch live MongoDB usage statistics and telemetry records
+   * Fetch live MongoDB usage statistics
    */
   async fetchUsage() {
     const token = await getAuthToken();
@@ -649,43 +490,7 @@ export const UserService = {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const json = await res.json();
-    return json.data || json || null;
-  },
-
-  /**
-   * Fetch current user quota, rate limits, tier, and remaining allowances
-   */
-  async fetchQuota() {
-    const token = await getAuthToken();
-    if (!token) return null;
-
-    const res = await fetch(`${getApiBase()}/api/user/quota`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const json = await res.json();
-    return json.data || json || null;
-  },
-
-  /**
-   * Change user tier (e.g. 'free' | 'pro' | 'admin')
-   */
-  async updateTier(tier) {
-    const token = await getAuthToken();
-    if (!token) throw new Error('Authentication required.');
-
-    const res = await fetch(`${getApiBase()}/api/user/tier`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ tier })
-    });
-    const json = await res.json();
-    if (!res.ok || !json.success) {
-      throw new Error(json.error?.message || 'Failed to update tier.');
-    }
-    return json;
+    return json.data || null;
   },
 
   /**

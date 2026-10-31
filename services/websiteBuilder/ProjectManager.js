@@ -315,43 +315,6 @@ export class ProjectManager {
     return this.saveFile(projectId, relativePath, content);
   }
 
-  /**
-   * Apply targeted patch (string replacement) to a file safely
-   * @param {string} projectId
-   * @param {string} relativePath
-   * @param {{ target: string, replacement: string } | Array<{ target: string, replacement: string }>} patch
-   * @param {string} [commitMessage]
-   */
-  static async patchFile(projectId, relativePath, patch, commitMessage = null) {
-    const content = await this.readFile(projectId, relativePath);
-    const patches = Array.isArray(patch) ? patch : [patch];
-    let patched = content;
-
-    for (const p of patches) {
-      if (!p || !p.target) continue;
-      if (!patched.includes(p.target)) {
-        throw new Error(`Patch target not found in ${relativePath}: "${p.target.slice(0, 60)}..."`);
-      }
-      patched = patched.replace(p.target, p.replacement);
-    }
-
-    await this.writeFile(projectId, relativePath, patched);
-    let checkpoint = null;
-    try {
-      checkpoint = await this.createCheckpoint(
-        projectId,
-        commitMessage || `Patch applied to ${relativePath}`
-      );
-    } catch (_) {}
-
-    return {
-      success: true,
-      path: relativePath,
-      size: Buffer.byteLength(patched, 'utf8'),
-      checkpoint
-    };
-  }
-
   static async listFiles(projectId) {
     return this.getFiles(projectId);
   }

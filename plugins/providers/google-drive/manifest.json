@@ -2,14 +2,13 @@
   "id": "google_drive",
   "name": "Google Drive",
   "version": "1.0.0",
-  "description": "Search cloud files, read documents, inspect folder structures, manage Google Sheets, and upload assets.",
+  "description": "Search cloud files, read documents, inspect folder structures, and upload assets.",
   "author": "Epic Think AI Team",
   "category": "productivity",
   "authType": "oauth2",
   "icon": "folder",
   "requiredScopes": [
-    "https://www.googleapis.com/auth/drive.file",
-    "https://www.googleapis.com/auth/spreadsheets"
+    "https://www.googleapis.com/auth/drive.file"
   ],
   "tools": [
     {
@@ -30,21 +29,6 @@
     {
       "name": "upload_file",
       "description": "Upload a new text/document file to Google Drive.",
-      "permissionTier": "WRITE"
-    },
-    {
-      "name": "create_spreadsheet",
-      "description": "Create a new Google Sheet / Spreadsheet.",
-      "permissionTier": "WRITE"
-    },
-    {
-      "name": "read_sheet_data",
-      "description": "Read rows and cells from a Google Sheet.",
-      "permissionTier": "READ"
-    },
-    {
-      "name": "append_sheet_row",
-      "description": "Append rows of data to an existing Google Sheet.",
       "permissionTier": "WRITE"
     }
   ]
