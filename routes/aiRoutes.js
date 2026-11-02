@@ -47,7 +47,9 @@ router.post('/chat', optionalAuth, async (req, res) => {
     partialResponse = '',
     maxTokens = null,
     webSearch = false,
-    reasoning = false
+    reasoning = false,
+    useGraph = false,
+    workflow = null
   } = req.body || {};
   const userPrompt = prompt || text || message || (Array.isArray(messages) ? messages[messages.length - 1]?.content : null);
   const effectiveMessages = recentMessages || history || (Array.isArray(messages) ? messages.slice(0, -1) : []);
@@ -77,6 +79,8 @@ router.post('/chat', optionalAuth, async (req, res) => {
       maxTokens,
       webSearch: Boolean(webSearch),
       reasoning: Boolean(reasoning),
+      useGraph: Boolean(useGraph || workflow === 'langgraph'),
+      workflow,
       location
     });
 
@@ -142,7 +146,9 @@ router.post('/stream', optionalAuth, async (req, res) => {
     partialResponse = '',
     maxTokens = null,
     webSearch = false,
-    reasoning = false
+    reasoning = false,
+    useGraph = false,
+    workflow = null
   } = req.body || {};
   const userPrompt = prompt || text || message || (Array.isArray(messages) ? messages[messages.length - 1]?.content : null);
   const effectiveMessages = recentMessages || history || (Array.isArray(messages) ? messages.slice(0, -1) : []);
@@ -496,6 +502,45 @@ Format your response strictly as valid JSON with NO commentary:
       providerUsed: generated.providerUsed,
       modelUsed: generated.modelUsed
     });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+
+/**
+ * LangGraph Brain Structure & Inspection
+ * GET /api/ai/graph/info
+ */
+router.get('/graph/info', (req, res) => {
+  try {
+    const info = AIEngine.getGraphInfo();
+    res.json({ success: true, ...info });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * Dedicated LangGraph Resilient Execution
+ * POST /api/ai/graph
+ */
+router.post('/graph', optionalAuth, async (req, res) => {
+  const { prompt, text, message, conversationId, recentMessages, modelPreset, location } = req.body || {};
+  const userPrompt = prompt || text || message;
+  if (!userPrompt) {
+    return res.status(400).json({ success: false, error: 'Missing required field: "prompt" or "message".' });
+  }
+  try {
+    const result = await AIEngine.runGraph({
+      uid: req.user.uid,
+      prompt: userPrompt,
+      conversationId,
+      recentMessages: recentMessages || [],
+      modelPreset: modelPreset || 'Epic Think 4o',
+      location
+    });
+    res.json(result);
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

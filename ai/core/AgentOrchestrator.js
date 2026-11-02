@@ -19,6 +19,7 @@ import { WebSearchClient } from '../../plugins/providers/web-search/WebSearchCli
 import { SeoAuditEngine } from '../../services/websiteBuilder/SeoAuditEngine.js';
 import { ProjectManager } from '../../services/websiteBuilder/ProjectManager.js';
 import { getUserProfile } from '../../services/mongoService.js';
+import { executeAgentGraph } from '../graph/index.js';
 
 export class AgentOrchestrator {
   /**
@@ -62,7 +63,8 @@ export class AgentOrchestrator {
     reasoning = false,
     location = null,
     signal = null,
-    onEvent = null
+    onEvent = null,
+    useGraph = false
   }) {
     const startTime = Date.now();
     const bankId = `epic-think-user-${uid}`;
@@ -110,6 +112,24 @@ export class AgentOrchestrator {
           };
         }
       }
+    }
+
+    // LangGraph Resilient Brain Workflow Integration
+    const shouldUseGraph = Boolean(useGraph || (reasoning && !isContinuation) || process.env.AI_ENABLE_LANGGRAPH === 'true');
+    if (shouldUseGraph) {
+      emit('ai:thinking', { thought: 'Engaging LangGraph resilient multi-step reasoning workflow...' });
+      return await executeAgentGraph({
+        router: this.router,
+        uid,
+        userPrompt,
+        conversationId,
+        recentMessages,
+        modelPreset,
+        location,
+        maxIterations: this.maxIterations,
+        signal,
+        onEvent
+      });
     }
 
     // 1. Recall Hindsight Semantic Memory & User Personalization Profile

@@ -15,6 +15,8 @@
     "test:all": "node test/test-full-stack.js && node test/test-mongo-realtime.js && node test/test-hindsight-integration.js && node test/test-intro-auth-flow.js"
   },
   "dependencies": {
+    "@langchain/core": "^1.3.2",
+    "@langchain/langgraph": "^1.6.0",
     "@tsparticles/engine": "^3.9.1",
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.9.1",
