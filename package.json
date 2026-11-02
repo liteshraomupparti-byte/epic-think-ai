@@ -21,6 +21,7 @@
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.9.1",
     "@vectorize-io/hindsight-client": "^0.10.1",
+    "browser-use-sdk": "^3.12.1",
     "clsx": "^2.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

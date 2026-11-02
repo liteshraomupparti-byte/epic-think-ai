@@ -7,7 +7,7 @@ import { browserUseClient } from './BrowserUseClient.js';
 export const browserUseTools = [
   {
     name: 'browser_run_task',
-    description: 'Execute an autonomous multi-step browser task (e.g. search, click, extract, fill forms, check flights, find products) using Browser Use Cloud or stealth browser.',
+    description: 'Execute an autonomous multi-step browser task (e.g. search, click, extract, fill forms, check flights, find products) using Browser Use V4 hosted agent with GPT-6 Luna or bu-ultrafast.',
     permissionTier: 'EXTERNAL_ACTION',
     parameters: {
       type: 'object',
@@ -16,19 +16,29 @@ export const browserUseTools = [
           type: 'string',
           description: 'The natural language instruction for the browser agent (e.g. "Go to github.com/trending, find top 3 trending JS repositories and their stars").'
         },
+        speedFirst: {
+          type: 'boolean',
+          description: 'Whether to use ultra-low latency preset (bu-ultrafast) for fast, interaction-heavy flows.'
+        },
+        model: {
+          type: 'string',
+          description: 'Explicit model override (e.g. "bu-ultrafast", "bu-fast"). Leave omitted to use GPT-6 Luna with High reasoning.'
+        },
         wait: {
           type: 'boolean',
           description: 'Whether to wait for task completion (default: true). Set false for long-running asynchronous jobs.'
         },
         timeoutMs: {
           type: 'integer',
-          description: 'Timeout in milliseconds (default: 40000).'
+          description: 'Timeout in milliseconds (default: 45000).'
         }
       },
       required: ['task']
     },
     handler: async (args, context) => {
       return await browserUseClient.runTask(args.task, {
+        speedFirst: args.speedFirst,
+        model: args.model,
         wait: args.wait !== false,
         timeoutMs: args.timeoutMs,
         uid: context?.uid
@@ -126,6 +136,44 @@ export const browserUseTools = [
     },
     handler: async (args) => {
       return await browserUseClient.getTaskStatus(args.runId);
+    }
+  },
+  {
+    name: 'browser_cancel_run',
+    description: 'Cancel an in-progress Browser Use task run to stop execution and prevent credit waste.',
+    permissionTier: 'EXTERNAL_ACTION',
+    parameters: {
+      type: 'object',
+      properties: {
+        runId: {
+          type: 'string',
+          description: 'The run ID to cancel.'
+        }
+      },
+      required: ['runId']
+    },
+    handler: async (args) => {
+      const success = await browserUseClient.cancelRun(args.runId);
+      return { success, runId: args.runId, message: success ? 'Run cancelled successfully' : 'Failed to cancel run' };
+    }
+  },
+  {
+    name: 'browser_stop',
+    description: 'Stop a managed cloud browser instance to release resources.',
+    permissionTier: 'EXTERNAL_ACTION',
+    parameters: {
+      type: 'object',
+      properties: {
+        browserId: {
+          type: 'string',
+          description: 'The browser instance ID to stop.'
+        }
+      },
+      required: ['browserId']
+    },
+    handler: async (args) => {
+      const success = await browserUseClient.stopBrowser(args.browserId);
+      return { success, browserId: args.browserId, message: success ? 'Browser stopped' : 'Failed to stop browser' };
     }
   }
 ];

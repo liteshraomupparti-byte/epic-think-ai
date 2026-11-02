@@ -6,7 +6,7 @@
 
 import { initializePlugins, registry } from '../plugins/index.js';
 import { ToolExecutionEngine } from '../plugins/core/ToolExecutionEngine.js';
-import { browserUseClient } from '../plugins/providers/browser-use/BrowserUseClient.js';
+import { browserUseClient, BrowserUseClient } from '../plugins/providers/browser-use/BrowserUseClient.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -37,13 +37,15 @@ async function runTests() {
     assert(plugin.category === 'search', 'Plugin category is search');
 
     const tools = plugin.getTools();
-    assert(tools.length === 5, `Plugin exposes all 5 tools (found ${tools.length})`);
+    assert(tools.length === 7, `Plugin exposes all 7 tools (found ${tools.length})`);
     const toolNames = tools.map(t => t.name);
     assert(toolNames.includes('browser_run_task'), 'Exposes browser_run_task');
     assert(toolNames.includes('browser_navigate'), 'Exposes browser_navigate');
     assert(toolNames.includes('browser_extract'), 'Exposes browser_extract');
     assert(toolNames.includes('browser_screenshot'), 'Exposes browser_screenshot');
     assert(toolNames.includes('browser_get_task_status'), 'Exposes browser_get_task_status');
+    assert(toolNames.includes('browser_cancel_run'), 'Exposes browser_cancel_run');
+    assert(toolNames.includes('browser_stop'), 'Exposes browser_stop');
   } catch (err) {
     assert(false, `Test 1 failed: ${err.message}`);
   }
@@ -86,10 +88,23 @@ async function runTests() {
     assert(false, `Test 4 failed: ${err.message}`);
   }
 
-  // TEST 5: Autonomous Task Execution
+  // TEST 5: Autonomous Browser Task (Tested with Mock SDK Client to preserve live credits)
   try {
     console.log('\n--- Running Test 5: Autonomous Browser Task ---');
-    const taskResult = await browserUseClient.runTask('Navigate to https://example.com and inspect headers');
+    const mockSdk = {
+      runs: {
+        create: async (body) => ({ id: 'run_test_5', status: 'running', ...body }),
+        waitForCompletion: async () => ({
+          status: 'completed',
+          isSuccess: true,
+          result: 'Browser navigation complete. Inspected headers successfully.',
+          costUsd: 0.03
+        }),
+        cancel: async () => {}
+      }
+    };
+    const testClient = new BrowserUseClient({ apiKey: 'bu_test_key', client: mockSdk });
+    const taskResult = await testClient.runTask('Navigate to https://example.com and inspect headers');
     assert(taskResult && taskResult.success === true, 'Autonomous task completed successfully');
     assert(taskResult.output && taskResult.output.length > 20, 'Task generated output text');
     console.log(`  Output preview: "${taskResult.output.slice(0, 100)}..."`);
