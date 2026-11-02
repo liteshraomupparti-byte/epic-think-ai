@@ -17,6 +17,8 @@ import { CodeGenerator } from '../services/websiteBuilder/CodeGenerator.js';
 import { DesignSystemEngine, THEME_PRESETS } from '../services/websiteBuilder/DesignSystemEngine.js';
 import { PreviewServer } from '../services/websiteBuilder/PreviewServer.js';
 import SelfHealingEngine from '../services/websiteBuilder/SelfHealingEngine.js';
+import { PlaywrightVerifier } from '../services/websiteBuilder/PlaywrightVerifier.js';
+import { CheckpointManager } from '../services/websiteBuilder/CheckpointManager.js';
 import { ImageGenerationService } from '../services/websiteBuilder/ImageGenerationService.js';
 import { VideoGenerationService } from '../services/websiteBuilder/VideoGenerationService.js';
 import { ResponsiveAuditEngine } from '../services/websiteBuilder/ResponsiveAuditEngine.js';
@@ -431,6 +433,84 @@ router.get('/projects/:id/diagnose', optionalAuth, async (req, res) => {
  * Run Self-Healing
  * POST /api/builder/projects/:id/heal
  */
+
+/**
+ * Headless Multi-Viewport Browser Verification (Playwright)
+ * POST /api/builder/projects/:id/verify
+ */
+router.post('/projects/:id/verify', optionalAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { previewUrl } = req.body || {};
+        const audit = await PlaywrightVerifier.verifyWebsite(id, { previewUrl });
+        res.json({ success: true, audit });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+/**
+ * Full Workflow: PLAN -> INSPECT -> GENERATE -> EDIT -> BUILD -> PREVIEW -> TEST -> REPAIR -> VERIFY
+ * POST /api/builder/projects/:id/verify-repair
+ */
+router.post('/projects/:id/verify-repair', optionalAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { previewUrl, autoRepair = true } = req.body || {};
+        const result = await SelfHealingEngine.verifyAndRepairWorkflow(id, { previewUrl, autoRepair });
+        if (result.repaired) {
+            PreviewServer.notifyProjectChange(id, { type: 'workflow_healed' });
+        }
+        res.json({ success: true, workflow: result });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+/**
+ * List Checkpoints
+ * GET /api/builder/projects/:id/checkpoints-list
+ */
+router.get('/projects/:id/checkpoints-list', optionalAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const checkpoints = CheckpointManager.listCheckpoints(id);
+        res.json({ success: true, checkpoints });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+/**
+ * Create Checkpoint
+ * POST /api/builder/projects/:id/checkpoints-create
+ */
+router.post('/projects/:id/checkpoints-create', optionalAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { label = 'manual-checkpoint', metadata = {} } = req.body || {};
+        const cp = await CheckpointManager.createCheckpoint(id, label, metadata);
+        res.json({ success: true, checkpoint: cp });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+/**
+ * Restore Checkpoint
+ * POST /api/builder/projects/:id/checkpoints/:checkpointId/restore-snapshot
+ */
+router.post('/projects/:id/checkpoints/:checkpointId/restore-snapshot', optionalAuth, async (req, res) => {
+    try {
+        const { id, checkpointId } = req.params;
+        const restored = await CheckpointManager.restoreCheckpoint(id, checkpointId);
+        PreviewServer.notifyProjectChange(id, { type: 'checkpoint_restored' });
+        res.json({ success: true, restored });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 router.post('/projects/:id/heal', optionalAuth, async (req, res) => {
     try {
         const { id } = req.params;

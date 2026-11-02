@@ -14,6 +14,7 @@ import { SafeLogger } from '../../plugins/core/SafeLogger.js';
 import { AIProviderError, AITimeoutError, AICancellationError } from '../errors/AIErrors.js';
 import { GenerationConfig } from './GenerationConfig.js';
 import { diagnosticsStore } from './GenerationDiagnostics.js';
+import { CostTracker } from '../../services/observability/CostTracker.js';
 
 export const TaskType = {
   CHAT: 'CHAT',
@@ -50,6 +51,7 @@ export class AIModelRouter {
       this.fallbackProvider = config.fallbackProvider || process.env.AI_FALLBACK_PROVIDER || 'gemini';
       this.fallbackModel = config.fallbackModel || process.env.AI_FALLBACK_MODEL || 'gemini-3.5-flash';
       this.maxRetries = parseInt(process.env.AI_MAX_RETRIES, 10) || 2;
+      this.dedupCache = new Map();
     }
   }
 
@@ -184,6 +186,18 @@ export class AIModelRouter {
     }
 
     let lastError = null;
+    // Deduplication check: Avoid duplicate paid requests within 15 seconds
+    const cacheKey = (!tools || tools.length === 0) && !streaming
+      ? `${effectivePreset}:${systemPrompt || ''}:${effectivePrompt}`
+      : null;
+
+    if (cacheKey && this.dedupCache && this.dedupCache.has(cacheKey)) {
+      const cached = this.dedupCache.get(cacheKey);
+      if (Date.now() - cached.timestamp < 15000) {
+        return { ...cached.result, isCached: true };
+      }
+    }
+
 
     for (let i = 0; i < candidateChain.length; i++) {
       const candidate = candidateChain[i];
@@ -270,18 +284,40 @@ export class AIModelRouter {
             streaming
           });
 
-          return {
+                    const promptTokens = result.usage?.promptTokens || Math.round((effectivePrompt || '').length / 4);
+          const completionTokens = result.usage?.completionTokens || Math.round((result.content || '').length / 4);
+          const costInfo = CostTracker.calculateLlmCost({
+            model: candidate.model,
+            promptTokens,
+            completionTokens,
+            provider: candidate.providerId
+          });
+
+          const returnResult = {
             success: true,
             ...result,
+            text: result.content || result.text || '',
+            content: result.content || result.text || '',
             finishReason,
             isTruncated,
             canContinue: isTruncated,
             maxOutputTokens: effectiveMaxTokens,
             providerUsed: candidate.providerId,
+            provider: candidate.providerId,
             modelUsed: candidate.model,
+            model: candidate.model,
             isFallback,
-            attemptCount: attempt + 1
+            attemptCount: attempt + 1,
+            cost: costInfo,
+            costUsd: costInfo.totalCostUsd,
+            totalCostUsd: costInfo.totalCostUsd
           };
+
+          if (cacheKey && this.dedupCache) {
+            this.dedupCache.set(cacheKey, { timestamp: Date.now(), result: returnResult });
+          }
+
+          return returnResult;
         } catch (err) {
           lastError = err;
           healthMonitor.recordFailure(candidate.providerId, err);

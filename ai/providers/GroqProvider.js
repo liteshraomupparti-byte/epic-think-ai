@@ -107,7 +107,7 @@ export class GroqProvider extends BaseAIProvider {
       }
 
       const choice = data.choices?.[0] || {};
-      const content = choice.message?.content || '';
+      const content = choice.message?.content || choice.message?.reasoning || '';
 
       return this.normalizeResponse({
         content,

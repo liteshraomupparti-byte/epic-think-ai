@@ -1,0 +1,33 @@
+{
+  "id": "firecrawl",
+  "name": "Firecrawl Web Crawler & Research",
+  "version": "1.0.0",
+  "description": "Deep website crawling, clean LLM-ready markdown extraction, sitemap enumeration, and web research powered by Firecrawl.",
+  "author": "Epic Think AI Team",
+  "category": "search",
+  "authType": "none",
+  "icon": "globe",
+  "requiredScopes": ["web:read", "web:crawl"],
+  "tools": [
+    {
+      "name": "firecrawl_scrape",
+      "description": "Convert any URL into clean, structured Markdown, extracting page metadata, main content, and headers.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "firecrawl_crawl",
+      "description": "Crawl an entire website or domain up to a maximum page limit, extracting structured markdown for all reachable subpages.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "firecrawl_map",
+      "description": "Quickly enumerate all URLs, routes, and sitemaps belonging to a domain without downloading full page bodies.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "firecrawl_search",
+      "description": "Perform a deep web research search, returning clean markdown content of the top matching web pages.",
+      "permissionTier": "READ"
+    }
+  ]
+}

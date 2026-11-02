@@ -13,6 +13,7 @@ import { telegramPlugin } from './providers/telegram/index.js';
 import { discordPlugin } from './providers/discord/index.js';
 import { whatsappPlugin } from './providers/whatsapp/index.js';
 import { browserUsePlugin } from './providers/browser-use/index.js';
+import firecrawlPlugin from './providers/firecrawl/index.js';
 import { SafeLogger } from './core/SafeLogger.js';
 
 let initialized = false;
@@ -33,6 +34,7 @@ export function initializePlugins() {
   registry.register(discordPlugin);
   registry.register(whatsappPlugin);
   registry.register(browserUsePlugin);
+  registry.register(firecrawlPlugin);
 
   SafeLogger.info('All 10 plugins registered successfully', {
     totalPlugins: registry.getAllPlugins().length

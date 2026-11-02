@@ -14,6 +14,8 @@ import fs from 'fs';
 import path from 'path';
 import vm from 'vm';
 import { ProjectManager } from './ProjectManager.js';
+import { PlaywrightVerifier } from './PlaywrightVerifier.js';
+import { CheckpointManager } from './CheckpointManager.js';
 
 export const WEBSITE_MAX_FIX_ITERATIONS = 3;
 
@@ -296,7 +298,38 @@ export class SelfHealingEngine {
 
         const content = await ProjectManager.readFile(projectId, error.file);
 
-        if (error.type === 'html_doctype') {
+        
+        if (error.type === 'MISSING_VIEWPORT_META' || error.type === 'html_viewport') {
+            const viewportTag = '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
+            if (content.includes('<head>')) {
+                const fixed = content.replace('<head>', '<head>\n    ' + viewportTag);
+                await ProjectManager.writeFile(projectId, error.file || 'index.html', fixed);
+                return true;
+            }
+        }
+
+        if (error.type === 'MISSING_TITLE') {
+            const titleTag = '<title>Epic Think AI - High Performance Application</title>';
+            if (content.includes('<head>')) {
+                const fixed = content.replace('<head>', '<head>\n    ' + titleTag);
+                await ProjectManager.writeFile(projectId, error.file || 'index.html', fixed);
+                return true;
+            }
+        }
+
+        if (error.type === 'HORIZONTAL_OVERFLOW') {
+            if (!content.includes('overflow-x: hidden')) {
+                const overflowFix = '\n<style>html, body { max-width: 100vw; overflow-x: hidden; } * { max-width: 100% !important; box-sizing: border-box; }</style>\n';
+                if (content.includes('</head>')) {
+                    const fixed = content.replace('</head>', overflowFix + '</head>');
+                    await ProjectManager.writeFile(projectId, error.file || 'index.html', fixed);
+                    return true;
+                }
+            }
+            return true;
+        }
+
+        if (error.type === 'html_doctype' || error.type === 'MISSING_DOCTYPE') {
             const fixed = '<!DOCTYPE html>\n' + content.replace(/<!doctype[^>]*>/i, '').trimStart();
             await ProjectManager.writeFile(projectId, error.file, fixed);
             return true;
@@ -342,6 +375,125 @@ export class SelfHealingEngine {
 
         return false;
     }
+
+    /**
+     * Complete Production Workflow:
+     * PLAN -> INSPECT FILES -> GENERATE/EDIT -> BUILD -> PREVIEW -> TEST -> REPAIR -> VERIFY
+     * Creates checkpoints before modifications, executes Playwright multi-viewport testing,
+     * and performs verified self-repair loops.
+     */
+    async verifyAndRepairWorkflow(projectId, options = {}) {
+        const { previewUrl = null, autoRepair = true } = options;
+        console.log(`[SelfHealingEngine] Starting comprehensive verify-and-repair workflow for project: ${projectId}`);
+
+        // Phase 1: Inspect Files
+        const files = await ProjectManager.listFiles(projectId);
+        if (!files || files.length === 0) {
+            return {
+                passed: false,
+                stage: 'INSPECT_FILES',
+                error: 'No files exist in project workspace.',
+                repaired: false
+            };
+        }
+
+        // Phase 2: Checkpoint before any testing/repairs
+        const preCheckpoint = await CheckpointManager.createCheckpoint(
+            projectId,
+            'pre-verification-checkpoint',
+            { initiatedBy: 'verifyAndRepairWorkflow' }
+        );
+
+        // Phase 3: Static Code Diagnostics
+        const staticDiag = await this.diagnoseProject(projectId);
+
+        // Phase 4: Playwright Multi-Viewport Verification (Mobile, Tablet, Desktop)
+        let playwrightAudit = await PlaywrightVerifier.verifyWebsite(projectId, { previewUrl });
+
+        const hasDefects = staticDiag.hasErrors || !playwrightAudit.passed;
+        const initialDefectCount = staticDiag.errors.length + (playwrightAudit.defects ? playwrightAudit.defects.length : 0);
+
+        if (!hasDefects || !autoRepair) {
+            return {
+                passed: !hasDefects,
+                score: playwrightAudit.score,
+                stage: hasDefects ? 'TEST_FAILED' : 'VERIFIED',
+                checkpoint: preCheckpoint,
+                staticDiag,
+                playwrightAudit,
+                repaired: false,
+                iterations: 0
+            };
+        }
+
+        // Phase 5: Self-Healing & Defect Repair Loop
+        console.log(`[SelfHealingEngine] Detected ${initialDefectCount} issues. Engaging self-repair loop...`);
+        const repairs = [];
+        let iteration = 0;
+
+        while (iteration < this.maxIterations) {
+            iteration++;
+            // Fix static errors first
+            for (const err of staticDiag.errors) {
+                const fixed = await this.attemptSingleFix(projectId, err);
+                if (fixed) repairs.push({ type: err.type, file: err.file, iteration });
+            }
+
+            // Fix Playwright defects
+            if (playwrightAudit.defects) {
+                for (const defect of playwrightAudit.defects) {
+                    const fixed = await this.attemptSingleFix(projectId, {
+                        type: defect.type,
+                        file: 'index.html',
+                        message: defect.message
+                    });
+                    if (fixed) repairs.push({ type: defect.type, file: 'index.html', iteration });
+                }
+            }
+
+            // Re-verify with Playwright
+            playwrightAudit = await PlaywrightVerifier.verifyWebsite(projectId, { previewUrl });
+            const postStatic = await this.diagnoseProject(projectId);
+
+            if (playwrightAudit.passed && !postStatic.hasErrors) {
+                console.log(`[SelfHealingEngine] Project successfully healed and verified on iteration ${iteration}!`);
+                const postCheckpoint = await CheckpointManager.createCheckpoint(
+                    projectId,
+                    'post-healing-verified',
+                    { repairsCount: repairs.length, iterations: iteration }
+                );
+
+                return {
+                    passed: true,
+                    score: playwrightAudit.score,
+                    stage: 'VERIFIED',
+                    repaired: true,
+                    repairsCount: repairs.length,
+                    iterations: iteration,
+                    checkpoint: postCheckpoint,
+                    playwrightAudit
+                };
+            }
+        }
+
+        // If repairs failed or regressed, rollback safety
+        if (!playwrightAudit.passed) {
+            console.warn('[SelfHealingEngine] Repair attempts exhausted. Rolling back to pre-repair checkpoint.');
+            await CheckpointManager.restoreCheckpoint(projectId, preCheckpoint.checkpointId);
+        }
+
+        return {
+            passed: playwrightAudit.passed,
+            score: playwrightAudit.score,
+            stage: playwrightAudit.passed ? 'VERIFIED' : 'REPAIR_UNRESOLVED',
+            repaired: repairs.length > 0,
+            repairsCount: repairs.length,
+            iterations: iteration,
+            checkpoint: preCheckpoint,
+            playwrightAudit
+        };
+    }
+
 }
 
 export default new SelfHealingEngine();

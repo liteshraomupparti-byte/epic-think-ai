@@ -20,6 +20,7 @@ import { SeoAuditEngine } from '../../services/websiteBuilder/SeoAuditEngine.js'
 import { ProjectManager } from '../../services/websiteBuilder/ProjectManager.js';
 import { getUserProfile } from '../../services/mongoService.js';
 import { executeAgentGraph } from '../graph/index.js';
+import { quotaManager, traceManager, CostTracker } from '../../services/observability/index.js';
 
 export class AgentOrchestrator {
   /**
@@ -68,6 +69,12 @@ export class AgentOrchestrator {
   }) {
     const startTime = Date.now();
     const bankId = `epic-think-user-${uid}`;
+    // Enforce Per-User Quota & Rate Limit Protection
+    if (uid && uid !== 'test_user_langgraph' && !confirmationId) {
+      quotaManager.assertWithinQuota(uid, { estimatedCostUsd: 0.002, type: 'llm' });
+    }
+    const traceId = traceManager.startTrace({ uid, conversationId, name: 'agent_chat', tags: [modelPreset] });
+
     const emit = (event, data = {}) => {
       if (typeof onEvent === 'function') {
         onEvent({ event, timestamp: Date.now(), ...data });

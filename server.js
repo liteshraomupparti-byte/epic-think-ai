@@ -48,6 +48,7 @@ import aiRoutes from './routes/aiRoutes.js';
 import imageRoutes from './routes/imageRoutes.js';
 import builderRoutes from './routes/builderRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import observabilityRoutes from './routes/observabilityRoutes.js';
 import { PreviewServer } from './services/websiteBuilder/PreviewServer.js';
 import { ProjectManager } from './services/websiteBuilder/ProjectManager.js';
 import { initializePlugins } from './plugins/index.js';
@@ -96,6 +97,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/image', imageRoutes);
 app.use('/api/builder', builderRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/observability', observabilityRoutes);
 app.use('/preview', PreviewServer.createExpressHandler());
 
 // ============================================================================
