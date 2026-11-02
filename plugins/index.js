@@ -12,6 +12,7 @@ import { webSearchPlugin } from './providers/web-search/index.js';
 import { telegramPlugin } from './providers/telegram/index.js';
 import { discordPlugin } from './providers/discord/index.js';
 import { whatsappPlugin } from './providers/whatsapp/index.js';
+import { browserUsePlugin } from './providers/browser-use/index.js';
 import { SafeLogger } from './core/SafeLogger.js';
 
 let initialized = false;
@@ -31,8 +32,9 @@ export function initializePlugins() {
   registry.register(telegramPlugin);
   registry.register(discordPlugin);
   registry.register(whatsappPlugin);
+  registry.register(browserUsePlugin);
 
-  SafeLogger.info('All 9 plugins registered successfully', {
+  SafeLogger.info('All 10 plugins registered successfully', {
     totalPlugins: registry.getAllPlugins().length
   });
 

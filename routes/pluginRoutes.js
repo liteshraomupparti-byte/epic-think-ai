@@ -258,11 +258,11 @@ router.get('/:id/oauth/callback', async (req, res) => {
  * Connect Bot Token (Telegram, Discord, WhatsApp)
  * POST /api/plugins/:id/bot-token
  */
-router.post('/:id/bot-token', requireAuth, async (req, res) => {
+router.post(['/:id/bot-token', '/:id/api-key'], requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const uid = req.user.uid;
-    const { token } = req.body;
+    const token = req.body.token || req.body.apiKey;
 
     if (!token) {
       return res.status(400).json({ success: false, error: 'Token is required.' });

@@ -1,0 +1,38 @@
+{
+  "id": "browser_use",
+  "name": "Browser Use - AI Web Agent",
+  "version": "1.0.0",
+  "description": "Stealth AI browser agent for autonomous navigation, data extraction, form interaction, and multi-step web automation powered by Browser Use.",
+  "author": "Epic Think AI Team",
+  "category": "search",
+  "authType": "none",
+  "icon": "compass",
+  "requiredScopes": ["browser:read", "browser:automate"],
+  "tools": [
+    {
+      "name": "browser_run_task",
+      "description": "Execute an autonomous multi-step browser task (e.g. search, click, extract, fill forms) using Browser Use Cloud or local stealth browser.",
+      "permissionTier": "EXTERNAL_ACTION"
+    },
+    {
+      "name": "browser_navigate",
+      "description": "Navigate to any URL using stealth browser settings, extracting clean page content, title, and headers.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "browser_extract",
+      "description": "Extract structured data, tables, listings, or schemas from any target webpage.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "browser_screenshot",
+      "description": "Capture a visual snapshot or screenshot of a webpage with customizable viewports.",
+      "permissionTier": "READ"
+    },
+    {
+      "name": "browser_get_task_status",
+      "description": "Retrieve step-by-step logs, live browser view URL, and progress of an active Browser Use task.",
+      "permissionTier": "READ"
+    }
+  ]
+}

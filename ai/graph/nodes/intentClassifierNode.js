@@ -2,7 +2,7 @@
  * Epic Think AI - LangGraph Intent Classifier Node
  * 
  * Classifies query intent, evaluates task complexity, discovers active tools,
- * and sets up search/builder routing flags.
+ * and sets up search/builder/browser-use routing flags.
  */
 
 import { IntentDispatcher } from '../../core/IntentDispatcher.js';
@@ -39,23 +39,27 @@ export async function intentClassifierNode(state, config = {}) {
   const needsWebSearch = isLocalPlaceIntent || /(?:search (?:the )?web|web search|browse the web|latest news|search online|search google|current news)\b/i.test(userPrompt);
   const needsSeoAudit = /(?:seo audit|seo analysis|audit seo|analyze seo|technical seo|meta tags audit|seo report|check seo|lighthouse seo)\b/i.test(userPrompt);
 
-  // 5. Evaluate complexity
+  // 5. Detect autonomous browser agent / Browser Use intent
+  const needsBrowserUse = /(?:open (?:the )?browser|use browser|browser automation|browser-use|browse to|navigate to|click on|fill (?:the )?form|automate (?:the )?web|scrape with browser|stealth browser)\b/i.test(userPrompt);
+
+  // 6. Evaluate complexity
   let complexity = 'LOW';
-  if (needsBuilder || (activeTools.length > 0 && /(?:create|delete|update|send|fetch|query|analyze|debug|deploy|build)\b/i.test(userPrompt))) {
+  if (needsBuilder || needsBrowserUse || (activeTools.length > 0 && /(?:create|delete|update|send|fetch|query|analyze|debug|deploy|build)\b/i.test(userPrompt))) {
     complexity = 'HIGH';
   } else if (needsWebSearch || needsSeoAudit || userPrompt.length > 120 || /\b(?:compare|step by step|detailed|analyze|explain why)\b/i.test(userPrompt)) {
     complexity = 'MEDIUM';
   }
 
   const intent = {
-    type: needsBuilder ? 'BUILDER' : (isGreeting ? 'GREETING' : (needsWebSearch ? 'RESEARCH' : (activeTools.length > 0 ? 'TOOL_EXECUTION' : 'CHAT'))),
+    type: needsBuilder ? 'BUILDER' : (needsBrowserUse ? 'BROWSER_AUTOMATION' : (isGreeting ? 'GREETING' : (needsWebSearch ? 'RESEARCH' : (activeTools.length > 0 ? 'TOOL_EXECUTION' : 'CHAT')))),
     complexity,
     isGreeting,
     needsBuilder,
     builderIntent,
     needsWebSearch,
     isLocalPlaceIntent,
-    needsSeoAudit
+    needsSeoAudit,
+    needsBrowserUse
   };
 
   emit('graph:node:end', { node: 'intentClassifier', intent });

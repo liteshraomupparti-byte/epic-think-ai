@@ -67,7 +67,13 @@ export async function toolExecutionNode(state, config = {}) {
     });
 
     try {
-      const execResult = await ToolExecutionEngine.executeTool(pluginId, toolName, parsedArgs, { uid, conversationId });
+      const execResult = await ToolExecutionEngine.execute({
+        uid,
+        pluginId,
+        toolName,
+        args: parsedArgs,
+        conversationId
+      });
       const sanitized = ResultSanitizer.sanitize(execResult);
 
       const toolPayload = {
