@@ -45,12 +45,8 @@ import { initRealtimeSync, broadcastToUser } from './services/realtimeSync.js';
 import pluginRoutes from './routes/pluginRoutes.js';
 import agentRoutes from './routes/agentRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
-import imageRoutes from './routes/imageRoutes.js';
-import builderRoutes from './routes/builderRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import observabilityRoutes from './routes/observabilityRoutes.js';
-import { PreviewServer } from './services/websiteBuilder/PreviewServer.js';
-import { ProjectManager } from './services/websiteBuilder/ProjectManager.js';
 import { initializePlugins } from './plugins/index.js';
 import { initAIEngine } from './ai/index.js';
 
@@ -94,11 +90,8 @@ app.use('/api/plugins', pluginRoutes);
 app.use('/api/agent', agentRoutes);
 app.use('/api', agentRoutes); // Exposes /api/confirmations and aliases
 app.use('/api/ai', aiRoutes);
-app.use('/api/image', imageRoutes);
-app.use('/api/builder', builderRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/observability', observabilityRoutes);
-app.use('/preview', PreviewServer.createExpressHandler());
 
 // ============================================================================
 // REAL-TIME CONVERSATIONS & MONGODB API (PROTECTED BY FIREBASE AUTH)
@@ -637,8 +630,7 @@ if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
     console.log(` Epic Think AI Backend Server Running on Port ${PORT}`);
     console.log(` Web Interface:   http://localhost:${PORT}/`);
     console.log(` Alternative URL: http://localhost:${PORT}/Epic%20Think%20AI.html`);
-    console.log(` Website Builder: http://localhost:${PORT}/#website-builder`);
-    console.log(` Memory Status:   http://localhost:${PORT}/api/memory/status`);
+        console.log(` Memory Status:   http://localhost:${PORT}/api/memory/status`);
     console.log(` Mongo Status:    http://localhost:${PORT}/api/conversations/status`);
     console.log(` Real-Time WS:    ws://localhost:${PORT}/ws`);
     console.log('====================================================');

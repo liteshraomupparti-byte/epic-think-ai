@@ -17,7 +17,6 @@ import { IntentDispatcher } from './IntentDispatcher.js';
 import { GenerationConfig } from './GenerationConfig.js';
 import { WebSearchClient } from '../../plugins/providers/web-search/WebSearchClient.js';
 import { SeoAuditEngine } from '../../services/websiteBuilder/SeoAuditEngine.js';
-import { ProjectManager } from '../../services/websiteBuilder/ProjectManager.js';
 import { getUserProfile } from '../../services/mongoService.js';
 import { executeAgentGraph } from '../graph/index.js';
 import { quotaManager, traceManager, CostTracker } from '../../services/observability/index.js';
@@ -167,63 +166,7 @@ export class AgentOrchestrator {
     const isConversationalGreeting = /^(?:hi|hello|hey|greetings|good\s+(?:morning|afternoon|evening)|howdy|sup|how\s+are\s+you|who\s+are\s+you|what\s+can\s+you\s+do)\b[!?.]*$/i.test(userPrompt.trim());
     const toolsForRun = isConversationalGreeting ? [] : activeTools;
 
-    // 2b. Intent Detection & Autonomous Builder (Lovable / Emergent AI Trigger)
-    const intentAnalysis = IntentDispatcher.detectIntent(userPrompt, recentMessages, conversationId, uid);
     let builderProject = null;
-
-    if (intentAnalysis.intent === 'BUILD_APP') {
-      emit('ai:thinking', { thought: `Autonomous Builder: Detected application build intent. Synthesizing full project files and live preview...` });
-      builderProject = await IntentDispatcher.executeAutonomousBuild({
-        prompt: userPrompt,
-        uid,
-        conversationId,
-        modelPreset
-      });
-      if (builderProject) {
-        emit('ai:thinking', { thought: `Autonomous Builder: Built "${builderProject.title}" with live preview at ${builderProject.previewUrl}` });
-      }
-    } else if (intentAnalysis.intent === 'MODIFY_APP') {
-      emit('ai:thinking', { thought: `Autonomous Builder: Detected modification prompt. Updating project files and refreshing live preview...` });
-      builderProject = await IntentDispatcher.executeAutonomousEdit({
-        projectId: intentAnalysis.projectId,
-        prompt: userPrompt,
-        uid,
-        conversationId,
-        modelPreset
-      });
-      if (builderProject) {
-        emit('ai:thinking', { thought: `Autonomous Builder: Applied "${builderProject.description}" to "${builderProject.title}"` });
-      }
-    }
-
-    // If an autonomous build or prompt modification completed, return directly with live preview
-    if (builderProject) {
-      const isEdit = builderProject.action === 'modified';
-      const durationMs = Date.now() - startTime;
-      const finalMsg = isEdit
-        ? `### ✨ Application Updated: **${builderProject.title}**\n\nI have updated your application based on your prompt: **"${userPrompt}"** with zero build errors!\n\n#### 🛠️ Modifications Applied:\n- **Change**: ${builderProject.description}\n- **Updated File(s)**: \`${builderProject.modifiedFiles?.join('`, `') || builderProject.modifiedFile}\`\n- **Live Preview**: Refreshed in real-time.\n\n${IntentDispatcher.formatBuilderCardMarkdown(builderProject)}`
-        : `### 🚀 Autonomous Build Complete: **${builderProject.title}**\n\nI have autonomously architected and built your application from your prompt with **zero blocking questions**!\n\n#### 🏗️ Architecture & Features Built:\n- **Responsive UI**: Mobile-first layout with smooth interactions and clean typography.\n- **Interactive Logic**: Client-side state handling, dynamic components, and mock API ready.\n- **0 Build Errors**: Synthesized, verified, and self-healed in Website Builder.\n\n${IntentDispatcher.formatBuilderCardMarkdown(builderProject)}`;
-
-      emit('ai:complete', {
-        text: finalMsg,
-        provider: 'Epic Think Autonomous Engine',
-        model: modelPreset,
-        durationMs
-      });
-
-      return {
-        success: true,
-        text: finalMsg,
-        provider: 'Epic Think Autonomous Engine',
-        model: modelPreset,
-        recalledMemoriesCount: recalledMemories.length,
-        executedToolCalls: [],
-        requiresConfirmation: false,
-        confirmationTicket: null,
-        durationMs,
-        builderProject
-      };
-    }
 
     // 2c. Proactive Web Search (if toggled by user or explicitly requested in query)
     // 2c. Proactive Web Search & SEO Intelligence
@@ -241,12 +184,7 @@ export class AgentOrchestrator {
         if (urlMatch) {
           seoReport = await SeoAuditEngine.auditUrl(urlMatch[0]);
         } else {
-          // Check for existing website builder projects
-          const projects = await ProjectManager.listProjects().catch(() => []);
-          const activeProjId = projects.length > 0 ? projects[0].id : null;
-          if (activeProjId) {
-            seoReport = await SeoAuditEngine.auditProject(activeProjId);
-          }
+          /* external URL audit only */
         }
 
         if (seoReport && seoReport.success) {
@@ -642,10 +580,7 @@ export class AgentOrchestrator {
       }
     }
 
-    // If an autonomous builder project was created, append the Lovable preview card
-    if (builderProject && !finalAnswer.includes(':::builder-card')) {
-      finalAnswer += '\n\n' + IntentDispatcher.formatBuilderCardMarkdown(builderProject);
-    }
+    /* builder card disabled */
 
     const durationMs = Date.now() - startTime;
     emit('ai:complete', {
