@@ -110,6 +110,18 @@ export class ModelRegistry {
     // GOOGLE GEMINI AI STUDIO
     // -------------------------------------------------------------
     this.register({
+      id: 'gemini-3.8-flash',
+      provider: 'gemini',
+      name: 'Gemini 3.8 Flash (Latest Flagship)',
+      capabilities: { text: true, vision: true, tools: true, streaming: true, reasoning: true },
+      speedClass: 'fast',
+      qualityClass: 'flagship',
+      contextWindow: 1048576,
+      maxOutputTokens: 8192,
+      presetMapping: ['Epic Think 4o', 'Smartest', 'Epic Think Fast', 'Fast', 'Auto']
+    });
+
+    this.register({
       id: 'gemini-3.5-flash',
       provider: 'gemini',
       name: 'Gemini 3.5 Flash',
@@ -194,7 +206,7 @@ export class ModelRegistry {
         return { provider: 'groq', model: 'openai/gpt-oss-20b' };
       }
       if (availableProviders.has('gemini')) {
-        return { provider: 'gemini', model: 'gemini-3.5-flash' };
+        return { provider: 'gemini', model: 'gemini-3.8-flash' };
       }
       if (availableProviders.has('openrouter')) {
         return { provider: 'openrouter', model: 'meta-llama/llama-3.3-70b-instruct' };
@@ -207,7 +219,7 @@ export class ModelRegistry {
         return { provider: 'groq', model: 'openai/gpt-oss-20b' };
       }
       if (availableProviders.has('gemini')) {
-        return { provider: 'gemini', model: 'gemini-3.5-flash' };
+        return { provider: 'gemini', model: 'gemini-3.8-flash' };
       }
       if (availableProviders.has('openrouter')) {
         return { provider: 'openrouter', model: 'meta-llama/llama-3.3-70b-instruct' };
@@ -220,7 +232,7 @@ export class ModelRegistry {
         return { provider: 'groq', model: 'openai/gpt-oss-120b' };
       }
       if (availableProviders.has('gemini')) {
-        return { provider: 'gemini', model: 'gemini-3.5-flash' };
+        return { provider: 'gemini', model: 'gemini-3.8-flash' };
       }
       if (availableProviders.has('openrouter')) {
         return { provider: 'openrouter', model: 'meta-llama/llama-3.3-70b-instruct' };
@@ -232,7 +244,7 @@ export class ModelRegistry {
       return { provider: 'groq', model: 'openai/gpt-oss-120b' };
     }
     if (availableProviders.has('gemini')) {
-      return { provider: 'gemini', model: 'gemini-3.5-flash' };
+      return { provider: 'gemini', model: 'gemini-3.8-flash' };
     }
     if (availableProviders.has('openrouter')) {
       return { provider: 'openrouter', model: 'meta-llama/llama-3.3-70b-instruct' };

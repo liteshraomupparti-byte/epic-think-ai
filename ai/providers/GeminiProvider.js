@@ -18,7 +18,7 @@ export class GeminiProvider extends BaseAIProvider {
       baseUrl: config.baseUrl || 'https://generativelanguage.googleapis.com/v1beta',
       timeoutMs: config.timeoutMs || parseInt(process.env.AI_REQUEST_TIMEOUT_MS, 10) || 55000
     });
-    this.defaultModel = config.defaultModel || 'gemini-3.5-flash';
+    this.defaultModel = config.defaultModel || process.env.GEMINI_MODEL || 'gemini-3.8-flash';
   }
 
   /**

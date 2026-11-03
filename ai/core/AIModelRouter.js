@@ -40,7 +40,7 @@ export class AIModelRouter {
       this.defaultProvider = providersOrOptions.defaultProvider || config.defaultProvider || process.env.AI_DEFAULT_PROVIDER || 'groq';
       this.defaultModel = providersOrOptions.defaultModel || config.defaultModel || process.env.AI_DEFAULT_MODEL || 'openai/gpt-oss-120b';
       this.fallbackProvider = providersOrOptions.fallbackProvider || config.fallbackProvider || process.env.AI_FALLBACK_PROVIDER || 'gemini';
-      this.fallbackModel = providersOrOptions.fallbackModel || config.fallbackModel || process.env.AI_FALLBACK_MODEL || 'gemini-3.5-flash';
+      this.fallbackModel = providersOrOptions.fallbackModel || config.fallbackModel || process.env.AI_FALLBACK_MODEL || 'gemini-3.8-flash';
       this.maxRetries = providersOrOptions.maxRetries || parseInt(process.env.AI_MAX_RETRIES, 10) || 2;
     } else {
       this.providers = providersOrOptions || {};
@@ -49,7 +49,7 @@ export class AIModelRouter {
       this.defaultProvider = config.defaultProvider || process.env.AI_DEFAULT_PROVIDER || 'groq';
       this.defaultModel = config.defaultModel || process.env.AI_DEFAULT_MODEL || 'openai/gpt-oss-120b';
       this.fallbackProvider = config.fallbackProvider || process.env.AI_FALLBACK_PROVIDER || 'gemini';
-      this.fallbackModel = config.fallbackModel || process.env.AI_FALLBACK_MODEL || 'gemini-3.5-flash';
+      this.fallbackModel = config.fallbackModel || process.env.AI_FALLBACK_MODEL || 'gemini-3.8-flash';
       this.maxRetries = parseInt(process.env.AI_MAX_RETRIES, 10) || 2;
       this.dedupCache = new Map();
     }
@@ -125,7 +125,7 @@ export class AIModelRouter {
       if (provider && provider.isConfigured && monitor.canExecute(pId)) {
         let m = provider.defaultModel;
         if (pId === 'groq') m = 'openai/gpt-oss-120b';
-        if (pId === 'gemini') m = 'gemini-3.5-flash';
+        if (pId === 'gemini') m = 'gemini-3.8-flash';
         if (pId === 'openrouter') m = 'meta-llama/llama-3.3-70b-instruct';
 
         candidates.push({ providerId: pId, model: m });
