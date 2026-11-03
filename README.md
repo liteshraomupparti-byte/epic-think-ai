@@ -115,4 +115,5 @@ python deployment/serve_api.py
 ---
 
 ## 📄 License
-ISC License. Built with ❤️ for Epic Think AI.
+
+MIT License. See [LICENSE](LICENSE) for details. Built with ❤️ for Epic Think AI.
