@@ -607,16 +607,6 @@ const server = http.createServer(app);
 // Initialize WebSocket real-time synchronization
 initRealtimeSync(server);
 
-// Initialize Website Builder Live Preview WebSocket synchronization
-PreviewServer.attachWebSocket(server);
-
-// Ensure default projects exist with verified templates
-try {
-  await ProjectManager.ensureProjectFiles('devika_collections');
-  console.log('[BUILDER] Default project "devika_collections" verified & ready.');
-} catch (err) {
-  console.warn('[BUILDER] Default project init note:', err.message);
-}
 
 // Initialize MongoDB connection
 initMongoDB().catch((err) => {
