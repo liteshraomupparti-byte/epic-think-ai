@@ -693,7 +693,7 @@ export const ProfileUI = {
           <span class="connected-app-status ${app.connected ? 'connected' : 'disconnected'}">
             ${app.connected ? '● Connected' : '○ Not Connected'}
           </span>
-          <button type="button" class="secondary-btn" style="padding:6px 12px;font-size:12px;" onclick="document.querySelector('#settingsModal').classList.remove('open');document.querySelector('#pluginStoreModal').classList.add('open');">
+          <button type="button" class="secondary-btn" style="padding:6px 12px;font-size:12px;" onclick="document.querySelector('#settingsModal')?.classList.remove('open'); if (window.openPluginStoreModal) { window.openPluginStoreModal(); } else { document.querySelector('#pluginStoreModal')?.classList.add('open'); }">
             ${app.connected ? 'Manage' : 'Connect'}
           </button>
         </div>
